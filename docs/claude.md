@@ -54,3 +54,5 @@ Fine-tuning an open-source LLM for clothing fit recommendation — predicting wh
 
 ## Related files
 - `docs/README.md` — full game plan with code snippets, timeline, evaluation protocol
+- `docs/cursor.md` — research synthesis, critique of the plan, OpenCode alignment, first-timer pitfalls
+- `opencode.md` (repo root) — baseline/LLM improvements, priorities P0–P3, pydantic JSON pattern

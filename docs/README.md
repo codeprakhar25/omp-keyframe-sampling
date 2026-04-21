@@ -1,5 +1,7 @@
 # Clothing Fit Recommendation — Fine-Tuning Game Plan
 
+**Research notes & honest eval (Cursor):** [cursor.md](./cursor.md)
+
 ## TL;DR
 If your goal is **accurate size prediction** (`small / fit / large`), run two tracks in parallel:
 
