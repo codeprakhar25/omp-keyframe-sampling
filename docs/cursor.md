@@ -1,6 +1,6 @@
 # Cursor notes — clothing fit recommendation & fine-tuning
 
-This file is the **research + honest eval** view for this repo. The full step-by-step plan (code, timeline, stack) lives in [`docs/README.md`](./README.md). Project context for agents is in [`docs/claude.md`](./claude.md). The repo-root **OpenCode** analysis is summarized [below](#opencode-analysis); see [`opencode.md`](../opencode.md) for full code snippets.
+This file is the **research + honest eval** view for this repo. The full step-by-step plan (code, timeline, stack) lives in [`docs/README.md`](./README.md). Project context for agents is in [`docs/claude.md`](./claude.md). **Prior research & algorithm choices** (papers, GBDT/TF-IDF/LoRA/QLoRA/SFT/DPO) are in the sections *Prior research and how this project sits on it* and *Algorithms and technical strategies* below. The repo-root **OpenCode** analysis is summarized [under OpenCode analysis](#opencode-analysis); see [`opencode.md`](../opencode.md) for full code snippets.
 
 ---
 
@@ -33,6 +33,75 @@ You do **not** need an LLM to solve the classification core; an LLM is optional 
 - **Class imbalance:** `"fit"` dominates; model quality lives or dies on **minority classes** (`small`, `large`). Optimize for **macro-F1** and per-class recall, not headline accuracy.
 - **Reviews are gold** but dangerous: random splits leak future language into training. **`README.md`’s time-ordered split** is non-negotiable if timestamps exist; if not, split by **user** or **item** groups to approximate leakage control.
 - Tabular fields are noisy (height/weight strings, bust sizes). Parsing + missingness indicators matter as much as “which LLM.”
+
+---
+
+## Prior research and how this project sits on it
+
+### Foundational work (this exact dataset / task)
+
+- **Misra, Wan & McAuley — *Decomposing Fit Semantics for Product Size Recommendation in Metric Spaces* (RecSys 2018).**  
+  [ACM link](https://dl.acm.org/doi/10.1145/3240323.3240398) — Introduces the **fit-as-semantics** view: “small / fit / large” is not arbitrary; it connects **user measurements**, **item sizing**, and **language** in reviews. The Kaggle release is the public artifact of that research program. Your job is **not** to reproduce the paper’s full metric-space machinery on day one; it *is* to respect the same **leakage discipline** and **imbalance** they highlight when you build splits and metrics.
+
+- **Kaggle bundle — [Clothing Fit Dataset for Size Recommendation](https://www.kaggle.com/datasets/rmisra/clothing-fit-dataset-for-size-recommendation).**  
+  Two retailers (**ModCloth**, **RentTheRunway**), overlapping schema, different missingness. Prior work treats this as a **hybrid tabular + text** problem: measurements and categories give a prior; reviews refine or contradict.
+
+### Adjacent empirical / industry write-ups (good for column semantics, not “truth”)
+
+- **Rent The Runway–style deep dives** (e.g. blog analyses of columns, “fit” vs rating) help you **engineer features** and sanity-check labels. Treat blog numbers as **illustrative**; always recompute on your split.
+
+### LLMs + fashion / recommendation (why LoRA / DPO show up in our stack)
+
+- **“Decoding Style”–class work (e.g. instruction-tuned LMs + LoRA for outfit / style tasks)** — Example direction: [arXiv 2409.12150](https://arxiv.org/html/2409.12150v1) (*Decoding Style*, fashion recommendation with Mistral-class models and preference-style training). **Takeaway for us:** small open LMs can be **specialized** to narrow domains with **parameter-efficient** updates; **DPO** (or similar) appears when the product cares about **ranking explanations**, not only accuracy.
+
+- **Parameter-efficient fine-tuning — LoRA** — [Hu et al., LoRA (2021)](https://arxiv.org/abs/2106.09685). **Takeaway:** train low-rank adapters on attention (and often MLP) projections instead of full weights; far less VRAM and storage.
+
+- **QLoRA** — [Dettmers et al. (2023)](https://arxiv.org/abs/2305.14314). **Takeaway:** keep the **base model in 4-bit** while adapters and optimizer states stay in higher precision so consumer GPUs can **fine-tune** multi-billion-parameter LMs.
+
+### Where “research” stops and “your experiment” starts
+
+Papers and blogs suggest **families** of methods (GBDT + text, hybrid recsys, PEFT for LMs). **No** off-the-shelf paper gives you a drop-in “best” checkpoint for *your* split, **cold-start** policy, and **JSON API**. The strategy below is: **cite the lineage**, then **lock an eval protocol** and let baselines + ablations decide.
+
+---
+
+## Algorithms and technical strategies (what we run)
+
+### A. Core learning problem (both tracks)
+
+- **Formal task:** multi-class classification with ordered-ish semantics → treat as **3-class** `small | fit | large` (not ordinal regression in v1 unless you add that experiment later).
+- **Primary scores:** **macro-F1** + **per-class recall** on `small` and `large`; confusion matrix always. **Accuracy** is a misleading headline when “fit” dominates.
+- **Calibration (optional but recommended if you expose `confidence`):** map model scores to **reliability** (e.g. **Platt scaling** or **isotonic regression** on a validation fold) so “0.85” means something operationally.
+
+### B. Track 1 — Tabular + text baselines (no LLM generation)
+
+| Component | Algorithm / method | Why it fits this dataset |
+|-----------|-------------------|---------------------------|
+| **Tree ensembles (main workhorses)** | **CatBoost**, **XGBoost**, **LightGBM** — all **gradient-boosted decision trees (GBDT)** with different handling of **speed**, **default hyperparameters**, and **categorical** features. | Strong on **mixed types** (numeric heights/weights after parsing, high-cardinality `category`, `size`, `body_type`). CatBoost’s **ordered boosting** and native categoricals reduce leakage from naive target encoding. |
+| **Ensembling (Phase 1+)** | **Stacking** or simple **soft-voting** of diverse GBDTs + a shallow **logistic regression** or ridge meta-learner (see `opencode.md`). | Raises the **ceiling** so the LLM track must beat a serious non-neural baseline, not a single under-tuned model. |
+| **Text → features (sparse)** | **TF–IDF** with word + **character n-grams** (captures “tight”, “runs big”, typos). | Cheap, strong for **short reviews**; interpretable coefficients if you use linear heads on top (optional). |
+| **Text → features (dense)** | **Sentence embeddings** (e.g. `sentence-transformers` small models like **MiniLM**-family) pooled to one vector per review. | Captures **semantic** fit language beyond keyword overlap; concatenate to tabular features or late-fuse in a second-stage model. |
+| **Class imbalance** | **Class weights** in GBDT loss; **stratified** CV; optionally **downsample** majority in mini-batches for neural baselines only. | Stops the model from always predicting “fit”. **SMOTE** and heavy synthetic oversampling are *optional* and often risky for text+tabular hybrids—prefer weights + better features first. |
+| **Leakage control (not an “algorithm” but part of strategy)** | **Group splits** by `user_id` / `item_id`, or **time-based** splits if timestamps exist. | Same algorithm with a **random** split can look SOTA and fail in production. |
+
+**Practical ordering:** one strong **CatBoost** (or XGBoost) pipeline with clean features → add **TF-IDF or embeddings** → then **second model + stack** if you need a harder bar for the LLM.
+
+### C. Track 2 — LLM fine-tuning (generation + JSON)
+
+| Stage | Algorithm / method | Role |
+|-------|-------------------|------|
+| **Base model** | Causal **decoder-only** Transformer (e.g. **Qwen2.5 / Qwen3** instruct checkpoints). | Instruction following + enough capacity to **condition** on measurements + item + review snippet. |
+| **Efficient adaptation** | **LoRA** on selected projections (`q_proj`, `k_proj`, `v_proj`, `o_proj`, and often MLP `gate_proj` / `up_proj` / `down_proj`). | Updates a **small** set of parameters; full weights frozen. |
+| **Memory-efficient base load** | **4-bit quantization (QLoRA)** — NF4 weights + BF16 LoRA adapters per [QLoRA](https://arxiv.org/abs/2305.14314). | Makes **8B-class** training feasible on **~16 GB** VRAM with sensible batching. |
+| **Training objective (v1)** | **Supervised fine-tuning (SFT)** — maximize likelihood of the **assistant** JSON (and optional rationale) given a fixed **user** prompt template. | Standard **TRL `SFTTrainer`** + **PEFT** pattern; easiest to debug and to validate **JSON parse rate**. |
+| **Training objective (v2+)** | **DPO** (Direct Preference Optimization) or related **preference** losses — compare two candidate explanations for the same input. | Improves **human preference** on text without a full RLHF stack; see Unsloth DPO docs when SFT is stable. |cd .git
+| **Infra / speed** | **Unsloth**-accelerated kernels + **HF Accelerate** / **bitsandbytes**. | Faster iteration cycles for a first implementation pass. |
+| **Inference later** | **vLLM** (throughput) or **llama.cpp** **GGUF** (edge / CPU). | Deployment is separate from **training** algorithm choice. |
+
+### D. System strategies (how algorithms are composed)
+
+- **Two-tier routing:** GBDT produces class + probability → if confidence high and class “easy”, **skip** LLM; else call LLM for **JSON + explanation** (cost/latency control).
+- **Guardrails:** **Pydantic** (or JSON Schema) **validate → retry once** with “fix JSON” hint → else **fallback** to GBDT label. This is **not** optional for production-shaped APIs.
+- **Cold-start slice:** same algorithms, but **evaluated** on users/items **unseen** in training — the metric that tells you if you’re learning **generalizable** fit vs memorizing IDs.
 
 ---
 
@@ -139,9 +208,10 @@ Checked against this file: OpenCode agrees with **`README.md` / `claude.md`** on
 
 | Doc | Role |
 |-----|------|
-| [`README.md`](./README.md) | Full game plan: phases, code sketches, metrics, timeline, references |
+| [`README.md`](./README.md) | Full game plan: phases, code sketches, metrics, timeline, extended reference list |
 | [`claude.md`](./claude.md) | Short agent context: decisions, stack, checklist |
 | [`opencode.md`](../opencode.md) | OpenCode analysis: priorities, improvements, stacking/code snippets |
+| This file (`cursor.md`) | Research lineage, algorithm rationale, honest eval, OpenCode alignment |
 
 ---
 
