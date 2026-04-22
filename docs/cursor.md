@@ -111,7 +111,7 @@ Order matters for first-timers: **measurement harness → baseline → optional 
 
 ### Phase A — Baseline you can ship (do this first)
 
-1. **Download & audit:** label distribution, missing rates, duplicate `(user_id, item_id)`, ModCloth vs RTR breakdown.
+1. **Downad & audit:** label distribution, missing rates, duplicate `(user_id, item_id)`, ModCloth vs RTR breakdown.
 2. **Define splits:** time-based if possible; else group split by user (and report a **cold-start** slice: users/items unseen in train).
 3. **Parse & feature:** numeric height/weight, bust parsing, category, size; optional BMI; **TF-IDF or small sentence embeddings** on review text.
 4. **Train a strong tabular model:** CatBoost / XGBoost / LightGBM with **class weights** or focal-style handling; tune on **macro-F1**.
