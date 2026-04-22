@@ -13,6 +13,9 @@ def add(a, b):
 def multiply(a, b):
     return a * b
 
+def subtract(a, b):
+    return a - b
+
 # print(add(2, 3))
 # print(add(5, 7))
 # print(add(10, 20))
