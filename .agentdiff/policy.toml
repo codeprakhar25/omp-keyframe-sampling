@@ -1,0 +1,11 @@
+# agentdiff policy — ml-resarch
+# Enforced in CI on every PR via: agentdiff policy check
+
+# Fail if AI wrote more than 75% of lines in this commit range
+max_ai_percent = 75.0
+
+# Every committed file must have at least one attribution record
+require_attribution = true
+
+# Every trace must carry a valid ed25519 signature (use verify for tamper check)
+require_signed = true
