@@ -1,0 +1,35 @@
+{
+  "os":  "Linux-6.8.0-52-generic-x86_64-with-glibc2.39",
+  "python":  "CPython 3.12.3",
+  "startedAt":  "2026-05-03T08:49:19.268787Z",
+  "program":  "workspace/02_llm_finetune.ipynb",
+  "codePath":  "workspace/02_llm_finetune.ipynb",
+  "email":  "prakharkhatri123@gmail.com",
+  "root":  "/workspace",
+  "host":  "4db7b2e371b1",
+  "executable":  "/usr/local/bin/python",
+  "cpu_count":  80,
+  "cpu_count_logical":  160,
+  "gpu":  "NVIDIA H100 80GB HBM3",
+  "gpu_count":  1,
+  "disk":  {
+    "/":  {
+      "total":  "32212254720",
+      "used":  "4225622016"
+    }
+  },
+  "memory":  {
+    "total":  "2164144472064"
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "NVIDIA H100 80GB HBM3",
+      "memoryTotal":  "85520809984",
+      "cudaCores":  16896,
+      "architecture":  "Hopper",
+      "uuid":  "GPU-b0fa9c9d-7d4d-288d-debd-7802a64f47c2"
+    }
+  ],
+  "cudaVersion":  "12.4",
+  "writerId":  "5tznvj9gqm3ri6mhwhydr5g2gfiis6yf"
+}

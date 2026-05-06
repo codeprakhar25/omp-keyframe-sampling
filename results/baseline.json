@@ -1,0 +1,6 @@
+{
+  "baseline_macro_f1": 0.5707,
+  "baseline_small_f1": 0.5171,
+  "baseline_large_f1": 0.4607,
+  "llm_target_macro_f1": 0.6007
+}
