@@ -21,4 +21,6 @@ catboost_info/
 trained-info/**/tokenizer.json
 
 # Local agent/config
-.claude/
+.claude/.gstack
+data/
+*.safetensors**
