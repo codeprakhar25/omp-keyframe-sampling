@@ -52,6 +52,17 @@ Fine-tuning an open-source LLM for clothing fit recommendation — predicting wh
 - [ ] Comparison + evaluation
 - [ ] Deployment
 
+## Budget & compute reality (2026-04-25)
+
+Available compute: ~$2 RunPod credits remaining.
+
+**Decided approach given budget:**
+1. **Phase A on CPU instance (~$0.10/hr)** — CatBoost baseline first. Costs almost nothing. Must have a macro-F1 number before spending GPU time.
+2. **Phase B smoke test on RTX 4090 (~$0.74/hr)** — Use **Qwen2.5-3B**, NOT Qwen3-8B. 3B fits in 8GB VRAM (much cheaper instance), iterates 3x faster, validates the pipeline. Scale to 8B only after pipeline is confirmed working.
+3. **Qwen3-8B on A100 (~$1.50/hr)** — Only after Phase A metrics are logged and smoke test passes.
+
+**Do not start QLoRA before baseline macro-F1 is on record.** This is the single most important constraint.
+
 ## Related files
 - `docs/README.md` — full game plan with code snippets, timeline, evaluation protocol
 - `docs/cursor.md` — research synthesis, critique of the plan, OpenCode alignment, first-timer pitfalls

@@ -1,0 +1,8 @@
+{
+  "baseline_macro_f1": 0.5178,
+  "baseline_small_f1": 0.4084,
+  "baseline_large_f1": 0.4062,
+  "llm_target_macro_f1": 0.5478,
+  "tfidf_baseline_macro_f1": 0.5707,
+  "features": "tabular + sentence-embeddings (all-MiniLM-L6-v2)"
+}
