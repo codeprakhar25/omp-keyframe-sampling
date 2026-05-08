@@ -1,3 +1,26 @@
 .gstack
 data/
+*.safetensors**.gstack
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+*.db
+*.bak
+*.swp
+
+# Training / experiment telemetry (not needed for reproducibility in-repo)
+wandb/
+catboost_info/
+
+# Large model/tokenizer artifacts should live in LFS, a release, or Hugging Face
+*.safetensors
+trained-info/**/tokenizer.json
+
+# Local agent/config
+.claude/.gstack
+data/
 *.safetensors**

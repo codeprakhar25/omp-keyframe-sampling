@@ -1,0 +1,9 @@
+{
+  "llm_macro_f1": 0.7312,
+  "llm_small_f1": 0.6926,
+  "llm_large_f1": 0.6442,
+  "json_validity": 0.9998,
+  "lora_rank": 16,
+  "model": "Qwen3-8B QLoRA 4-bit",
+  "passes_gate": true
+}

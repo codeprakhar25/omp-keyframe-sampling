@@ -1,0 +1,19 @@
+{
+  "llm_macro_f1": 0.7312,
+  "llm_small_f1": 0.6926,
+  "llm_large_f1": 0.6442,
+  "json_validity": 0.9998,
+  "lora_rank": 16,
+  "model": "Qwen3-8B QLoRA 4-bit",
+  "passes_gate": true,
+  "sample_macro_f1": 0.197567882725304,
+  "sample_accuracy": 0.3484848484848485,
+  "json_validity_sample": 1.0,
+  "zeroshot_macro_f1": 0.3184274438372799,
+  "random_baseline_f1": 0.333,
+  "original_paper_f1_est": 0.635,
+  "human_ceiling_est": 0.875,
+  "judge_accurate_pct": 0.52,
+  "judge_excellent_pct": 0.06,
+  "judge_good_pct": 0.5
+}
