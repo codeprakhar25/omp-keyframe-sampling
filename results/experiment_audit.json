@@ -61,19 +61,19 @@
     "column": "item_id",
     "entity": "item",
     "test": {
-      "seen_in_train": 2,
-      "seen_rate": 0.002833,
-      "unique": 706,
-      "unseen_rate": 0.997167,
-      "unseen_vs_train": 704
+      "seen_in_train": 2838,
+      "seen_rate": 0.535775,
+      "unique": 5297,
+      "unseen_rate": 0.464225,
+      "unseen_vs_train": 2459
     },
-    "train_unique": 5852,
+    "train_unique": 4514,
     "val": {
-      "seen_in_train": 1,
-      "seen_rate": 0.00149,
-      "unique": 671,
-      "unseen_rate": 0.99851,
-      "unseen_vs_train": 670
+      "seen_in_train": 3079,
+      "seen_rate": 0.762506,
+      "unique": 4038,
+      "unseen_rate": 0.237494,
+      "unseen_vs_train": 959
     }
   },
   "review_label_clues": {
@@ -123,57 +123,57 @@
           "matched_phrases": [
             "too big"
           ],
-          "review_excerpt": "this is a comfy tee but it's there's not much to it and it's too big... i ended up using it as a night shirt."
-        },
-        {
-          "fit": "large",
-          "matched_phrases": [
-            "size down"
-          ],
-          "review_excerpt": "size down with these shirts. they're the most comfortable shirts you'll ever wear, but they're huge!"
-        },
-        {
-          "fit": "large",
-          "matched_phrases": [
-            "oversized"
-          ],
-          "review_excerpt": "according to the sizing guide, i should have gotten a 1x. i normally wear a 1x in t shirts anyway. this was wayyy bigger than oversized on me. i suggest sizing down. i also expected it to be more structured and fitted but it just hung on me"
+          "review_excerpt": "i'm 5'8\", 122 lbs, and 34a, and the 2l was too big, but rtr doesn't offer 0l sizes. the length, with 2\" heels was ok, though for closer ballroom dancing was a little bit too long and kept getting in the way. it was too big in the waist and "
         },
         {
           "fit": "fit",
           "matched_phrases": [
-            "fits perfectly"
+            "true to size"
           ],
-          "review_excerpt": "this fits perfectly and is so comfy! i love the length of the sleeves and the length at the bottom of the shirt. overall i love it!"
+          "review_excerpt": "i am almost 5'8 and was 1 month post pregnancy. i weighed about 160 and loved this dress. i bought the 8 as well thinking i might be able to squeeze it on. the 10 really fit great and seems to be true to size. it was flattery in the areas i"
+        },
+        {
+          "fit": "small",
+          "matched_phrases": [
+            "size up",
+            "tight"
+          ],
+          "review_excerpt": "i loved this dress! it was simple yet elegant. not much accessories needed either, which made getting ready that much easier. i felt like the material was a bit tight and not as stretchy as i had hoped, which is why it was a good idea to ge"
+        },
+        {
+          "fit": "fit",
+          "matched_phrases": [
+            "fit well"
+          ],
+          "review_excerpt": "some of the reviews said it runs small in the chest... i think it actually fit well in the chest. it was almost a bit large in the top, where there was some gapping at the top. (and i have a larger chest: 34dd) it fit well around the rib ca"
         },
         {
           "fit": "large",
           "matched_phrases": [
-            "loose",
             "baggy"
           ],
-          "review_excerpt": "this is supposed to be a baggy shirt but it's a little bit too loose on me. but i still really like it, the fabric is really soft, and i just tuck part of it in to give me a bit more shape"
+          "review_excerpt": "i sized up and now wish i hadn't because the waist is just baggy. pants fit my legs and hips fine but the waist...it's like i got a kangaroo pouch when i wear these. if you are (like me) not blessed with curves then you might want to go wit"
         }
       ],
       "matching_label_clue_by_class": {
         "fit": {
-          "count": 2223,
-          "rate_within_class": 0.080614
+          "count": 4986,
+          "rate_within_class": 0.168611
         },
         "large": {
-          "count": 2445,
-          "rate_within_class": 0.337521
+          "count": 2060,
+          "rate_within_class": 0.371841
         },
         "small": {
-          "count": 3329,
-          "rate_within_class": 0.513655
+          "count": 3609,
+          "rate_within_class": 0.583037
         }
       },
       "rows": 41301,
-      "rows_with_any_clue": 12375,
-      "rows_with_any_clue_rate": 0.29963,
-      "rows_with_matching_label_clue": 7997,
-      "rows_with_matching_label_clue_rate": 0.193627
+      "rows_with_any_clue": 16511,
+      "rows_with_any_clue_rate": 0.399772,
+      "rows_with_matching_label_clue": 10655,
+      "rows_with_matching_label_clue_rate": 0.257984
     },
     "train": {
       "examples": [
@@ -182,129 +182,128 @@
           "matched_phrases": [
             "true to size"
           ],
-          "review_excerpt": "this dress was beautiful! it's a little more pink than the pic shows, which was gorgeous in person. i was really impressed that all the zillion sequins seemed to be still in tact! i have also rented two other versions of this dress (the lon"
+          "review_excerpt": "runs true to size. love the petal sleeves"
+        },
+        {
+          "fit": "large",
+          "matched_phrases": [
+            "too big"
+          ],
+          "review_excerpt": "i ordered this as a backup and i ended loving it even more than my first choice. i usually stick to dresses with a defined waistline but this was surprisingly flattering and forgiving. i usually wear a 6 and it was way too big, but the 4 fi"
+        },
+        {
+          "fit": "fit",
+          "matched_phrases": [
+            "perfect fit"
+          ],
+          "review_excerpt": "i've gotten 4 cardigans from modcloth and i'll continue to buy them. they are a great addition to any wardrobe, not to mention, it's stretchy and soft, and a perfect fit. highly recommend."
         },
         {
           "fit": "fit",
           "matched_phrases": [
             "true to size"
           ],
-          "review_excerpt": "amazing dress!! true to size and fit like a dream!! it looks light pink or a little gold in different light, but it always looks beautiful! i was so incredibly pleased with this choice! it truly is a showstopper and i got tons of compliment"
+          "review_excerpt": "the only con to this dress is that it does not have pockets. this dress fits true to size and is very form flattering. i would definitely rent it again. it worked well for my office work day and after work outing."
         },
+        {
+          "fit": "large",
+          "matched_phrases": [
+            "run large"
+          ],
+          "review_excerpt": "i love these cardigans. i think they run large but i prefer them to fit snug without having to be buttoned. a 1x fit comfortably while buttoned. the l can be buttoned without gaping but you can tell it's a bit of a stretch."
+        }
+      ],
+      "matching_label_clue_by_class": {
+        "fit": {
+          "count": 24939,
+          "rate_within_class": 0.178281
+        },
+        "large": {
+          "count": 9328,
+          "rate_within_class": 0.349533
+        },
+        "small": {
+          "count": 14026,
+          "rate_within_class": 0.536183
+        }
+      },
+      "rows": 192732,
+      "rows_with_any_clue": 75646,
+      "rows_with_any_clue_rate": 0.392493,
+      "rows_with_matching_label_clue": 48293,
+      "rows_with_matching_label_clue_rate": 0.250571
+    },
+    "val": {
+      "examples": [
         {
           "fit": "fit",
           "matched_phrases": [
-            "fit perfectly",
-            "fit perfect"
+            "true to size"
           ],
-          "review_excerpt": "this was my initially meant to be my back up dress but when i tried it on i was amazed at how well it fit. i was worried that the size 6 may be too small but it fit perfectly. the color is also much more vibrant than the photo lets on. i wo"
+          "review_excerpt": "these jeans were made very well. i do think i should have ordered a size smaller though. i think they run true to size but i'm always unsure what size to get in jeans because i have a very small waist and curvy hips. i think i will likely r"
         },
         {
           "fit": "fit",
           "matched_phrases": [
             "fit well"
           ],
-          "review_excerpt": "great dress! tons of compliments. 0 and 2 both fit well but went with the 2 because it was longer. i ordered the regular length and the dress, which is a bit longer in back, just barely skimmed the floor in 4 1/2\" heels. if you are at the c"
+          "review_excerpt": "the dress was a little big for me in the chest, but otherwise fit well. it was lightweight and very comfortable!"
         },
         {
           "fit": "fit",
           "matched_phrases": [
             "true to size"
           ],
-          "review_excerpt": "this dress is beautiful and i had an amazing rental experience! i have never received so many compliments from people i didn't know: from the wait staff to men--yes, men commented on how amazing the dress was. my favorite part was that i go"
-        }
-      ],
-      "matching_label_clue_by_class": {
-        "fit": {
-          "count": 30744,
-          "rate_within_class": 0.21625
-        },
-        "large": {
-          "count": 9330,
-          "rate_within_class": 0.377153
-        },
-        "small": {
-          "count": 15275,
-          "rate_within_class": 0.591458
-        }
-      },
-      "rows": 192733,
-      "rows_with_any_clue": 85911,
-      "rows_with_any_clue_rate": 0.445751,
-      "rows_with_matching_label_clue": 55349,
-      "rows_with_matching_label_clue_rate": 0.28718
-    },
-    "val": {
-      "examples": [
-        {
-          "fit": "small",
-          "matched_phrases": [
-            "size up"
-          ],
-          "review_excerpt": "i liked the color, the silhouette, and the fabric of this dress. but the ruching just looked bunchy and ruined the whole thing. i was so disappointed, i really waned to like this dress. runs a little small; i would need to size up to make i"
-        },
-        {
-          "fit": "small",
-          "matched_phrases": [
-            "size up"
-          ],
-          "review_excerpt": "i'm simply too tall for this. the wrap portion cut across my breast instead of scooping under and the slit up the back on someone my height revealed butt cheek. returning. bummed. the color, thickness of fabric and cut of cap sleeves were a"
-        },
-        {
-          "fit": "small",
-          "matched_phrases": [
-            "snug"
-          ],
-          "review_excerpt": "i snagged this dress when it went on sale and wanted to love it but ended up returning it. i can see it being very flattering on a lot of people. for me it was a little snug and i'm really short so the length was a little longer. it's very "
+          "review_excerpt": "after having these in my cart for so long, i finally ordered them and i so glad i did! they are super soft, comfortable, fit very true to size, and are so versatile. i can wear them to work, to a party, or just out running errands. the leng"
         },
         {
           "fit": "fit",
           "matched_phrases": [
             "true to size"
           ],
-          "review_excerpt": "i bought this dress based on some rave reviews. when i put it on it was...okay. the length is good and the fit is true to size (i'm 5'4, 120 pounds, and ordered a s), but the ruching at the waist was unflattering on me. if you carry a littl"
+          "review_excerpt": "i ordered this in an extra small, even though the measurements said 2324, and i wear a 25. usually things are always bigger than what they list here, and i wanted to wear it a bit high waisted. hm nope this one is dead on with the sizing. i"
         },
         {
-          "fit": "small",
+          "fit": "fit",
           "matched_phrases": [
-            "tight"
+            "true to size"
           ],
-          "review_excerpt": "this was another dress i got for my mom who's usually a size small but it was way too tight"
+          "review_excerpt": "love this utility looking off the shoulder but with a feminine twist! i love off the shoulder because it definitely has a feminine look to it and the sleeves do have a lace detailing too. the fit is true to size and would look great for a w"
         }
       ],
       "matching_label_clue_by_class": {
         "fit": {
-          "count": 2246,
-          "rate_within_class": 0.077262
+          "count": 5288,
+          "rate_within_class": 0.180121
         },
         "large": {
-          "count": 1729,
-          "rate_within_class": 0.298928
+          "count": 2116,
+          "rate_within_class": 0.382018
         },
         "small": {
-          "count": 2718,
-          "rate_within_class": 0.421657
+          "count": 3687,
+          "rate_within_class": 0.575734
         }
       },
-      "rows": 41300,
-      "rows_with_any_clue": 10616,
-      "rows_with_any_clue_rate": 0.257046,
-      "rows_with_matching_label_clue": 6693,
-      "rows_with_matching_label_clue_rate": 0.162058
+      "rows": 41301,
+      "rows_with_any_clue": 16745,
+      "rows_with_any_clue_rate": 0.405438,
+      "rows_with_matching_label_clue": 11091,
+      "rows_with_matching_label_clue_rate": 0.268541
     }
   },
   "review_overlap": {
     "available": true,
     "test": {
-      "exact_review_text_overlap_count": 831,
-      "exact_review_text_overlap_rate": 0.020121,
+      "exact_review_text_overlap_count": 667,
+      "exact_review_text_overlap_rate": 0.01615,
       "non_empty_reviews": 41301
     },
-    "train_unique_review_text": 190563,
+    "train_unique_review_text": 182528,
     "val": {
-      "exact_review_text_overlap_count": 817,
-      "exact_review_text_overlap_rate": 0.023501,
-      "non_empty_reviews": 34764
+      "exact_review_text_overlap_count": 664,
+      "exact_review_text_overlap_rate": 0.016077,
+      "non_empty_reviews": 41301
     }
   },
   "split_summary": {
@@ -333,29 +332,29 @@
         "rented_for"
       ],
       "label_counts": {
-        "fit": 27576,
-        "large": 7244,
-        "small": 6481
+        "fit": 29571,
+        "large": 5540,
+        "small": 6190
       },
       "label_percentages": {
-        "fit": 0.667684,
-        "large": 0.175395,
-        "small": 0.156921
+        "fit": 0.715988,
+        "large": 0.134137,
+        "small": 0.149875
       },
       "missing_percentages": {
-        "age": 1.0,
-        "body_type": 0.0,
-        "bust_size": 0.0,
+        "age": 0.307281,
+        "body_type": 0.079465,
+        "bust_size": 0.052347,
         "category": 0.0,
         "fit": 0.0,
         "has_height": 0.0,
         "has_weight": 0.0,
         "height_in": 0.0,
         "item_id": 0.0,
-        "rating": 0.000993,
-        "rating_norm": 0.000993,
-        "rented_for": 1.0,
-        "review_date": 1.0,
+        "rating": 0.000266,
+        "rating_norm": 0.000266,
+        "rented_for": 0.300719,
+        "review_date": 0.300695,
         "review_len": 0.0,
         "review_summary": 0.0,
         "review_text": 0.0,
@@ -365,7 +364,15 @@
         "user_id": 0.0,
         "weight_lbs": 0.0
       },
-      "rows": 41301
+      "rows": 41301,
+      "source_counts": {
+        "mc": 12419,
+        "rtr": 28882
+      },
+      "source_percentages": {
+        "mc": 0.300695,
+        "rtr": 0.699305
+      }
     },
     "train": {
       "columns": [
@@ -392,29 +399,29 @@
         "rented_for"
       ],
       "label_counts": {
-        "fit": 142169,
-        "large": 24738,
-        "small": 25826
+        "fit": 139886,
+        "large": 26687,
+        "small": 26159
       },
       "label_percentages": {
-        "fit": 0.737647,
-        "large": 0.128354,
-        "small": 0.133999
+        "fit": 0.725806,
+        "large": 0.138467,
+        "small": 0.135727
       },
       "missing_percentages": {
-        "age": 0.005962,
-        "body_type": 0.075944,
-        "bust_size": 0.095526,
+        "age": 0.303561,
+        "body_type": 0.044782,
+        "bust_size": 0.071213,
         "category": 0.0,
         "fit": 0.0,
         "has_height": 0.0,
         "has_weight": 0.0,
         "height_in": 0.0,
         "item_id": 0.0,
-        "rating": 0.000425,
-        "rating_norm": 0.000425,
-        "rented_for": 0.001033,
-        "review_date": 0.000981,
+        "rating": 0.000664,
+        "rating_norm": 0.000664,
+        "rented_for": 0.300734,
+        "review_date": 0.300687,
         "review_len": 0.0,
         "review_summary": 0.0,
         "review_text": 0.0,
@@ -424,7 +431,15 @@
         "user_id": 0.0,
         "weight_lbs": 0.0
       },
-      "rows": 192733
+      "rows": 192732,
+      "source_counts": {
+        "mc": 57952,
+        "rtr": 134780
+      },
+      "source_percentages": {
+        "mc": 0.300687,
+        "rtr": 0.699313
+      }
     },
     "val": {
       "columns": [
@@ -451,29 +466,29 @@
         "rented_for"
       ],
       "label_counts": {
-        "fit": 29070,
-        "large": 5784,
-        "small": 6446
+        "fit": 29358,
+        "large": 5539,
+        "small": 6404
       },
       "label_percentages": {
-        "fit": 0.703874,
-        "large": 0.140048,
-        "small": 0.156077
+        "fit": 0.71083,
+        "large": 0.134113,
+        "small": 0.155057
       },
       "missing_percentages": {
-        "age": 1.0,
-        "body_type": 0.0,
-        "bust_size": 0.0,
+        "age": 0.303939,
+        "body_type": 0.065955,
+        "bust_size": 0.061112,
         "category": 0.0,
         "fit": 0.0,
         "has_height": 0.0,
         "has_weight": 0.0,
         "height_in": 0.0,
         "item_id": 0.0,
-        "rating": 0.000654,
-        "rating_norm": 0.000654,
-        "rented_for": 1.0,
-        "review_date": 1.0,
+        "rating": 0.000266,
+        "rating_norm": 0.000266,
+        "rented_for": 0.300695,
+        "review_date": 0.300695,
         "review_len": 0.0,
         "review_summary": 0.0,
         "review_text": 0.0,
@@ -483,7 +498,15 @@
         "user_id": 0.0,
         "weight_lbs": 0.0
       },
-      "rows": 41300
+      "rows": 41301,
+      "source_counts": {
+        "mc": 12419,
+        "rtr": 28882
+      },
+      "source_percentages": {
+        "mc": 0.300695,
+        "rtr": 0.699305
+      }
     }
   },
   "user_overlap": {
@@ -491,19 +514,19 @@
     "column": "user_id",
     "entity": "user",
     "test": {
-      "seen_in_train": 2777,
-      "seen_rate": 0.103646,
-      "unique": 26793,
-      "unseen_rate": 0.896354,
-      "unseen_vs_train": 24016
+      "seen_in_train": 9808,
+      "seen_rate": 0.348147,
+      "unique": 28172,
+      "unseen_rate": 0.651853,
+      "unseen_vs_train": 18364
     },
-    "train_unique": 105744,
+    "train_unique": 115838,
     "val": {
-      "seen_in_train": 3328,
-      "seen_rate": 0.109632,
-      "unique": 30356,
-      "unseen_rate": 0.890368,
-      "unseen_vs_train": 27028
+      "seen_in_train": 10795,
+      "seen_rate": 0.394698,
+      "unique": 27350,
+      "unseen_rate": 0.605302,
+      "unseen_vs_train": 16555
     }
   }
 }
