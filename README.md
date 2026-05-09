@@ -162,12 +162,22 @@ The next planned experiments are:
 6. Dropout comparison between `lora_dropout=0` and `lora_dropout=0.05`.
 7. Confidence calibration for the JSON `confidence` field.
 
+The detailed experiment plan is in [`docs/experiments.md`](docs/experiments.md). A first audit script is available at `scripts/experiment_audit.py`:
+
+```bash
+python scripts/build_splits.py --data-dir data
+python scripts/experiment_audit.py --data-dir data --results-dir results
+```
+
+`build_splits.py` uses a source-balanced split by default so RentTheRunway and ModCloth are represented in each split.
+
 ## How to Reproduce
 
 1. Download the dataset from Kaggle and place it under `data/`.
-2. Run `01_eda_baseline.ipynb` to build the baseline metrics.
-3. Run `02_llm_finetune.ipynb` on a CUDA GPU environment.
-4. Run `03_evaluation.ipynb` to generate evaluation reports and plots.
+2. Run `scripts/build_splits.py` to create `data/train.parquet`, `data/val.parquet`, and `data/test.parquet`.
+3. Run `01_eda_baseline.ipynb` to build the baseline metrics.
+4. Run `02_llm_finetune.ipynb` on a CUDA GPU environment.
+5. Run `03_evaluation.ipynb` to generate evaluation reports and plots.
 
 The fine-tuning notebook was designed for a cloud GPU environment. A local laptop is enough for reading the notebooks and baseline analysis, but not for efficient QLoRA training.
 

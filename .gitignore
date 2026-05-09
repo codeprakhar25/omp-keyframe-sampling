@@ -1,7 +1,8 @@
-.gstack
-data/
-*.safetensors**.gstack
+.gstack/
+.claude/
 .venv/
+data/
+
 __pycache__/
 *.pyc
 *.pyo
@@ -19,8 +20,3 @@ catboost_info/
 # Large model/tokenizer artifacts should live in LFS, a release, or Hugging Face
 *.safetensors
 trained-info/**/tokenizer.json
-
-# Local agent/config
-.claude/.gstack
-data/
-*.safetensors**
