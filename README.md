@@ -1,6 +1,22 @@
-# Clothing Fit Prediction with QLoRA
+# ML Research
 
-This repository is a learning-focused machine learning project on clothing size and fit prediction. The goal is to predict whether a rented or purchased clothing item will fit a user as `small`, `fit`, or `large`, using a mix of tabular features and review text.
+A collection of small, self-contained research experiments. Each lives in its own directory with its own spec, data, and results.
+
+## Projects
+
+### [`prompt-compiler-pilot/`](./prompt-compiler-pilot)
+
+**Does structural prompt reformulation help frontier coding agents?**
+
+A pre-registered directional pilot (May 2026) testing whether a lightweight middleware model that restructures messy developer prompts improves pass@1 on coding tasks for Claude Sonnet 4.6.
+
+Key finding: messy prompts had zero effect on performance (clean = messy across all 30 tasks), and the reformulator was net-negative — introducing one catastrophic failure by hallucinating structural requirements. Full write-up in [`prompt-compiler-pilot/WRITEUP.md`](./prompt-compiler-pilot/WRITEUP.md).
+
+---
+
+### Clothing Fit Prediction with QLoRA
+
+A learning-focused project on clothing size and fit prediction. The goal is to predict whether a rented or purchased clothing item will fit a user as `small`, `fit`, or `large`, using a mix of tabular features and review text.
 
 The project starts with classical ML baselines, then fine-tunes an instruction-tuned language model using QLoRA and compares the results on the same held-out evaluation setup.
 
