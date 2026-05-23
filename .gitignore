@@ -22,3 +22,6 @@ catboost_info/
 # Large model/tokenizer artifacts should live in LFS, a release, or Hugging Face
 *.safetensors
 trained-info/**/tokenizer.json
+
+.vscode/
+new-v2/
