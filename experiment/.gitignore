@@ -17,8 +17,10 @@ agentbench_train.json
 swe_bench*.csv
 
 # ---- Generated artifacts ----
-wiki/                 # generated from AGENTS.md at run time
-results/              # run outputs: SQLite DB, JSON, logs
+# wiki/ is generated from AGENTS.md at run time
+wiki/
+# results/ holds run outputs: SQLite DB, JSON, logs
+results/
 *.db
 *.db-wal
 *.db-shm
