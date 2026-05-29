@@ -1,0 +1,48 @@
+# ---- Secrets ----
+.env
+*.key
+*.pem
+
+# ---- Cloned target repositories (transient, large) ----
+repos/
+harness/repo-validation/
+
+# ---- External datasets / replication packages (not ours; large) ----
+data/
+Dataset_and_Replication_Package/
+Dataset_and_Replication_Package.zip
+*.zip
+agentbench_train.csv
+agentbench_train.json
+swe_bench*.csv
+
+# ---- Generated artifacts ----
+wiki/                 # generated from AGENTS.md at run time
+results/              # run outputs: SQLite DB, JSON, logs
+*.db
+*.db-wal
+*.db-shm
+*.log
+
+# ---- Interactive / scratch docs (not part of the package) ----
+*.html
+HANDOFF.md
+exp.md
+manual.md
+paper-1.md
+paper-2.md
+sad.json
+new-v2/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# ---- OS / editor ----
+.DS_Store
+*.swp
