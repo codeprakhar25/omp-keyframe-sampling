@@ -1,0 +1,134 @@
+[
+  {
+    "repo": "pdm-project/pdm",
+    "number": 3769,
+    "title": "Accept build system extensions from template on matching backend",
+    "complexity": "medium",
+    "prompt_source": "issue",
+    "linked_issue": 3766,
+    "base_sha": "5bf3a29315be6b004772ddeff9f99fd57f07955e",
+    "files_changed": 3,
+    "total_lines": 64
+  },
+  {
+    "repo": "pdm-project/pdm",
+    "number": 3781,
+    "title": "fix: update pdm_scheme to set pep582_base in sysconfig and add corresponding test",
+    "complexity": "medium",
+    "prompt_source": "pr_body",
+    "linked_issue": null,
+    "base_sha": "6d24baa08b9a5392521634a1f29d88efdd70c63f",
+    "files_changed": 4,
+    "total_lines": 60
+  },
+  {
+    "repo": "pdm-project/pdm",
+    "number": 3790,
+    "title": "fix: update plugin installation path to use project_plugins_dir",
+    "complexity": "complex",
+    "prompt_source": "pr_body",
+    "linked_issue": null,
+    "base_sha": "2cf992eccaf34180ff351abbb4b107dc028c258b",
+    "files_changed": 8,
+    "total_lines": 114
+  },
+  {
+    "repo": "pdm-project/pdm",
+    "number": 3797,
+    "title": "fix: Use an existing `pyproject.toml` with PDM",
+    "complexity": "complex",
+    "prompt_source": "issue",
+    "linked_issue": 3786,
+    "base_sha": "bdf8b5cb955bcbe83ea509b4a981c6a77be1c322",
+    "files_changed": 4,
+    "total_lines": 289
+  },
+  {
+    "repo": "firebase/firebase-admin-python",
+    "number": 939,
+    "title": "Remove debug print for HTTP status error",
+    "complexity": "simple",
+    "prompt_source": "pr_body",
+    "linked_issue": null,
+    "base_sha": "005b44dc3f5600f0ecebc8c24a5e91392c7fcc75",
+    "files_changed": 1,
+    "total_lines": 1
+  },
+  {
+    "repo": "firebase/firebase-admin-python",
+    "number": 940,
+    "title": "feat(fcm): Add support for bandwidth constrained and restricted satellite APIs",
+    "complexity": "medium",
+    "prompt_source": "pr_body",
+    "linked_issue": null,
+    "base_sha": "581ef26c3ea0964d44bbd77dfbae1940985c1300",
+    "files_changed": 3,
+    "total_lines": 44
+  },
+  {
+    "repo": "firebase/firebase-admin-python",
+    "number": 920,
+    "title": "feat(functions): Enable Cloud Task Queue Emulator support",
+    "complexity": "complex",
+    "prompt_source": "pr_body",
+    "linked_issue": null,
+    "base_sha": "fc6c8ee67ea29fe498e7cfca907a5c9fa41a3fed",
+    "files_changed": 10,
+    "total_lines": 385
+  },
+  {
+    "repo": "firebase/firebase-admin-python",
+    "number": 942,
+    "title": "feat(fpnv): Add support for Firebase Phone Number Verification",
+    "complexity": "complex",
+    "prompt_source": "pr_body",
+    "linked_issue": null,
+    "base_sha": "9a330efe41dbca4695c5e84c470ce63989427e35",
+    "files_changed": 2,
+    "total_lines": 561
+  },
+  {
+    "repo": "OpShin/opshin",
+    "number": 595,
+    "title": "fix: align int(str) with Python whitespace handling",
+    "complexity": "medium",
+    "prompt_source": "issue",
+    "linked_issue": 68,
+    "base_sha": "e7d23d149964b609d7b9afb67556dcca82ae05e2",
+    "files_changed": 2,
+    "total_lines": 164
+  },
+  {
+    "repo": "OpShin/opshin",
+    "number": 616,
+    "title": "Loop optimizer steps to fixed-point",
+    "complexity": "medium",
+    "prompt_source": "issue",
+    "linked_issue": 615,
+    "base_sha": "80f9d10664b01a2608ad57d0a95934a447c8ed5f",
+    "files_changed": 2,
+    "total_lines": 72
+  },
+  {
+    "repo": "OpShin/opshin",
+    "number": 605,
+    "title": "Correctly handle fallthrough",
+    "complexity": "complex",
+    "prompt_source": "pr_body",
+    "linked_issue": null,
+    "base_sha": "30eba7c29ab44e6b3b10c825ed14be9250eceb1e",
+    "files_changed": 6,
+    "total_lines": 598
+  },
+  {
+    "repo": "OpShin/opshin",
+    "number": 610,
+    "title": "Fix nested Any and Union list casts",
+    "complexity": "complex",
+    "prompt_source": "issue",
+    "linked_issue": 496,
+    "base_sha": "032e24f8396b47a9e34aef9f352680dd92650733",
+    "files_changed": 5,
+    "total_lines": 622
+  }
+]

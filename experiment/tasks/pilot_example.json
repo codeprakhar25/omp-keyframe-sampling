@@ -1,0 +1,17 @@
+[
+  {
+    "_comment": "This is a placeholder. Generate real tasks with: python -m harness.task_generator --repos firebase/firebase-admin-python pdm-project/pdm OpShin/opshin --per-repo 6 --output tasks/pilot.json",
+    "task_id": "firebase__firebase-admin-python__EXAMPLE",
+    "repo_full_name": "firebase/firebase-admin-python",
+    "repo_url": "https://github.com/firebase/firebase-admin-python.git",
+    "base_sha": "",
+    "pr_number": 0,
+    "complexity": "simple",
+    "prompt": "REPLACE_ME — run task_generator to populate this",
+    "prompt_source": "placeholder",
+    "gold_diff": "",
+    "pr_title": "Example placeholder",
+    "linked_issue_number": null,
+    "metadata": {}
+  }
+]
