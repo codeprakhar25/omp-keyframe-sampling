@@ -29,6 +29,7 @@ results/
 # ---- Interactive / scratch docs (not part of the package) ----
 *.html
 HANDOFF.md
+PILOT_HANDOFF.md
 exp.md
 manual.md
 paper-1.md

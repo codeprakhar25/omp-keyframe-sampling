@@ -44,10 +44,14 @@ def clone_repo(repo_url: str, target_dir: str) -> bool:
         log.info("Repo already cloned at %s", target_dir)
         return True
 
-    log.info("Cloning %s → %s", repo_url, target_dir)
+    # FULL clone (no --depth=1): base_sha must be present LOCALLY so checkout_sha
+    # needs no runtime `git fetch`. On the egress-locked pod GitHub is unreachable
+    # during the agent/eval phases, so any runtime fetch would hang/fail. Cloning
+    # full in the setup phase (network open, no agent) makes checkout offline-safe.
+    log.info("Cloning (full) %s → %s", repo_url, target_dir)
     try:
         subprocess.run(
-            ["git", "clone", "--depth=1", repo_url, target_dir],
+            ["git", "clone", repo_url, target_dir],
             check=True, capture_output=True, text=True,
         )
         return True
@@ -95,15 +99,23 @@ def evaluate_diff(actual_diff: str, gold_diff: str) -> bool:
 
 def checkout_sha(repo_dir: str, sha: str) -> bool:
     log.info("Checking out %s in %s", sha, repo_dir)
-    try:
-        subprocess.run(["git", "-C", repo_dir, "fetch", "--depth=1", "origin", sha],
-                       check=True, capture_output=True, text=True)
-    except subprocess.CalledProcessError:
+    # OFFLINE-SAFE: if sha is already present locally (full clone, setup phase),
+    # skip the network fetch entirely. On the egress-locked pod GitHub is blocked,
+    # so an unconditional `git fetch` would hang/fail. Only fetch when missing.
+    sha_present = subprocess.run(
+        ["git", "-C", repo_dir, "cat-file", "-e", f"{sha}^{{commit}}"],
+        capture_output=True, text=True,
+    ).returncode == 0
+    if not sha_present:
         try:
-            subprocess.run(["git", "-C", repo_dir, "fetch", "--unshallow"],
+            subprocess.run(["git", "-C", repo_dir, "fetch", "--depth=1", "origin", sha],
                            check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError:
-            pass
+            try:
+                subprocess.run(["git", "-C", repo_dir, "fetch", "--unshallow"],
+                               check=True, capture_output=True, text=True)
+            except subprocess.CalledProcessError:
+                pass
 
     try:
         subprocess.run(
@@ -118,6 +130,83 @@ def checkout_sha(repo_dir: str, sha: str) -> bool:
     except subprocess.CalledProcessError as e:
         log.error("Checkout failed: %s", e.stderr)
         return False
+
+
+def scrub_git_remotes(repo_dir: str) -> list[str]:
+    """SAFETY: remove ALL git remotes from the workspace so the agent has nowhere
+    to push. This is the primary defense against the agent forking/pushing/opening
+    a real PR (see PILOT_HANDOFF incident #12, PR #953). Matches Paper 2's harness
+    (arXiv:2602.11988), which strips git history + all remotes inside Docker.
+
+    Returns the list of removed remote names (for logging/audit).
+    """
+    removed: list[str] = []
+    try:
+        res = subprocess.run(
+            ["git", "-C", repo_dir, "remote"],
+            capture_output=True, text=True,
+        )
+        for name in res.stdout.split():
+            subprocess.run(
+                ["git", "-C", repo_dir, "remote", "remove", name],
+                capture_output=True, text=True,
+            )
+            removed.append(name)
+    except Exception as e:  # noqa: BLE001
+        log.warning("scrub_git_remotes failed: %s", e)
+    # Belt-and-suspenders: block the push protocol entirely even if a remote is
+    # re-added. A bogus pushurl + insteadOf makes any push target unreachable.
+    subprocess.run(
+        ["git", "-C", repo_dir, "config", "--local", "remote.origin.pushurl",
+         "no-push://blocked.invalid"],
+        capture_output=True, text=True,
+    )
+    log.info("SAFETY: scrubbed %d git remote(s) in workspace: %s",
+             len(removed), removed or "(none)")
+    return removed
+
+
+def strip_future_history(repo_dir: str, base_sha: str) -> None:
+    """SAFETY/VALIDITY: remove all git history AFTER base_sha so the agent cannot
+    read the gold/solution commit out of local history.
+
+    The deep-checkout path runs `git fetch --unshallow`, which pulls the FULL repo
+    history into the workspace — including commits that come AFTER base_sha (the
+    actual PR that solves the task). An agent can then `git log` → find the future
+    commit → `git show` it → read the answer. Observed on firebase#942 (agent ran
+    `git log 9a330ef..f493fb0` + `git show f493fb0`). This is gold-leakage.
+
+    Fix (matches Paper 2, arXiv:2602.11988 "git commit history removed"): with HEAD
+    detached at base_sha, delete every ref (branches/tags/remote-tracking), expire
+    the reflog, and gc-prune. base_sha stays reachable via detached HEAD, so eval's
+    base_sha anchoring (get_diff, test-file reset) is unaffected; everything past it
+    is pruned and unreadable.
+    """
+    if not base_sha:
+        log.warning("strip_future_history: no base_sha, skipping (history NOT isolated)")
+        return
+    try:
+        # Ensure HEAD is detached exactly at base_sha (keeps it reachable post-gc).
+        subprocess.run(["git", "-C", repo_dir, "checkout", "--detach", base_sha],
+                       check=True, capture_output=True, text=True)
+        # Delete ALL refs (heads, tags, remotes). Detached HEAD is unaffected.
+        res = subprocess.run(["git", "-C", repo_dir, "for-each-ref", "--format=%(refname)"],
+                             capture_output=True, text=True)
+        for ref in res.stdout.split():
+            subprocess.run(["git", "-C", repo_dir, "update-ref", "-d", ref],
+                           capture_output=True, text=True)
+        # Drop the packed remote HEAD symref + prune unreachable objects.
+        subprocess.run(["git", "-C", repo_dir, "reflog", "expire", "--expire=now", "--all"],
+                       capture_output=True, text=True)
+        subprocess.run(["git", "-C", repo_dir, "gc", "--prune=now", "--quiet"],
+                       capture_output=True, text=True)
+        # Audit: count reachable commits — should be base_sha + its ancestors only.
+        cnt = subprocess.run(["git", "-C", repo_dir, "rev-list", "--all", "--count"],
+                             capture_output=True, text=True).stdout.strip()
+        log.info("SAFETY: stripped future history, rooted at %s (reachable commits=%s)",
+                 base_sha[:10], cnt)
+    except subprocess.CalledProcessError as e:
+        log.error("strip_future_history failed: %s", e.stderr)
 
 
 def get_diff(repo_dir: str, base_sha: str = "") -> str:
@@ -181,6 +270,14 @@ def run_single_task(
             run_log = RunLog(run_id=run_id, task_id=task.task_id, strategy=strategy.value, agent=agent_backend.value)
             run_log.error = "Checkout failed"
             return run_log
+
+    # SAFETY GATE (run AFTER checkout — needs origin to fetch base_sha — and BEFORE
+    # the agent runs):
+    #   1. scrub remotes      → no push target (push/PR block, layer 1)
+    #   2. strip future history → agent can't read the gold commit from git log
+    scrub_git_remotes(workspace_dir)
+    if task.base_sha:
+        strip_future_history(workspace_dir, task.base_sha)
 
     agents_md_content = load_agents_md(workspace_dir)
 
