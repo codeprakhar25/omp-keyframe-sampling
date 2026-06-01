@@ -66,8 +66,10 @@ class RunConfig:
     agents_md_path: str | None = None
     wiki_dir: str | None = None
 
-    # Cost cap
-    max_cost_usd: float = 4.0
+    # Cost cap. 6.0 (was 4.0): opshin cells are turn-heavy (610 hit 101 turns);
+    # $4 risked killing them on budget before finishing. Still a runaway guard,
+    # just higher headroom. Env-overridable for tight-budget runs.
+    max_cost_usd: float = float(os.environ.get("EXP_MAX_COST_USD", "6.0"))
 
     def to_dict(self) -> dict[str, Any]:
         return {

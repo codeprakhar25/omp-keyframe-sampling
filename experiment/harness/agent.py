@@ -187,7 +187,10 @@ class ClaudeCodeAgent:
         """
         import threading
 
-        INACTIVITY_TIMEOUT = 900   # s with zero output → assume stuck, kill
+        # 1800s (was 900): opshin agents run slow compiler tests via Bash that
+        # stream nothing for long stretches; 900s risked a false "stuck" kill
+        # during a legit long test run. Env-overridable.
+        INACTIVITY_TIMEOUT = int(os.environ.get("EXP_INACTIVITY_TIMEOUT", "1800"))
         # 7200s (was 3600): opshin compiler tests are slow; 3600 killed
         # opshin 610 always_on/selective + 605 none mid-run. Pod is dedicated
         # (no laptop to free), so a longer wall-clock cap is safe.
