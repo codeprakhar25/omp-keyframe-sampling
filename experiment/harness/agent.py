@@ -133,6 +133,11 @@ class ClaudeCodeAgent:
         env["GH_TOKEN"] = ""
         env["GITHUB_TOKEN"] = ""
         env["GIT_TERMINAL_PROMPT"] = "0"
+        # Claude Code refuses --dangerously-skip-permissions when running as root
+        # (rc=1, "cannot be used with root/sudo privileges"). On the locked pod we
+        # ARE root inside a sandbox (egress-locked, no creds, scrubbed remotes), so
+        # mark it a sandbox to allow the flag. Without this the agent never starts.
+        env["IS_SANDBOX"] = "1"
 
         live = _live_enabled()
         log.info("Running ClaudeCodeAgent: cwd=%s model=%s strategy=%s live=%s deny=%s",

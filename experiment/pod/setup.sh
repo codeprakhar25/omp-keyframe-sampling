@@ -26,6 +26,13 @@ mkdir -p "$UV_CACHE_DIR" "$XDG_CACHE_HOME"
 echo "==> UV_CACHE_DIR=$UV_CACHE_DIR"
 
 # ---- 1. toolchain --------------------------------------------------------
+# tmux (run_repeats.sh) + rsync (laptop pull needs rsync on BOTH ends).
+if ! command -v tmux >/dev/null 2>&1 || ! command -v rsync >/dev/null 2>&1; then
+  echo "==> installing tmux + rsync"
+  apt-get update -y >/dev/null 2>&1 && apt-get install -y tmux rsync >/dev/null 2>&1 \
+    || echo "WARN: apt install tmux/rsync failed — install manually if needed"
+fi
+
 if ! command -v uv >/dev/null 2>&1; then
   echo "==> installing uv"
   curl -LsSf https://astral.sh/uv/install.sh | sh
