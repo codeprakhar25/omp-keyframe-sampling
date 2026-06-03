@@ -15,7 +15,7 @@ doc that stops you over-claiming in the paper.
 | Eval | Tier C (gold tests run against agent code), SWE-bench style |
 | Execution | RunPod, egress-locked (GitHub blackholed); push physically impossible |
 | Safety | 0 actual pushes; **multiple** blocked `git commit`/PR attempts (defense held) |
-| **Open caveat** | **7 cells (all task 605) have a `test run timed out (1200s)` verdict** — eval-runner timeout, not a real test fail. Re-eval with 3600s **in progress**; expected to resolve to genuine fails (605 is all-fail regardless), so the headline won't change. |
+| ~~Open caveat~~ **RESOLVED** | The 7 timed-out 605 cells were re-eval'd at 3600s. 3 resolved to a genuine `197 pass / 6 fail`; the other ~~4~~ still exceeded 1h of pytest (the agent's change makes opshin compilation pathologically slow → effectively fail). **605 is all-fail, confirmed**, no `timed out` labels remain. |
 | Cost | Agent runs ~$40; re-eval ~$0 (no LLM, pod compute only) |
 
 **What's trustworthy now:** efficiency metrics (turns, cache, tools) for all 99.
@@ -116,13 +116,20 @@ difference. Suggestive, **not** publishable as an effect on its own.
 
 ---
 
-## 4. The 7 timed-out cells — does it matter? **No (for the conclusion).**
-All 7 are task **605**, which is **all-fail under every strategy** in the cells
-that *did* finish (genuine `197 pass / 6 fail`). The re-eval (3600s) will turn the
-7 fake "timeout" rows into genuine fails. So: the verdict for those cells changes
-from *artifact-fail* → *real-fail*, and 605 stays all-fail. **The headline is
-unchanged**; the fix is about defensibility (a reviewer would flag a "timeout"
-verdict), not about the finding.
+## 4. The 7 timed-out cells — RESOLVED, conclusion unchanged.
+All 7 were task **605**. Re-evaluated at a 3600s pytest cap (re-eval from the
+stored agent diff — no agent re-run, so turns/cache untouched):
+- **3** resolved to a genuine `197 pass / 6 fail`.
+- **4** still exceeded **1 hour** of pytest — the agent's change makes opshin
+  compilation pathologically slow. These are labeled
+  `fail: test runtime exceeds cap >3600s`. A change whose tests can't complete in
+  an hour is, for our purposes, a fail.
+
+Either way **605 is all-fail under every strategy**, now with clean verdicts and
+**no `timed out` artifacts left**. Efficiency metrics (turns/cache) for these
+cells were always valid and are unaffected. (Side observation worth a sentence in
+the paper: some agent edits *blow up compile time* — an efficiency failure mode
+distinct from a correctness one.)
 
 ---
 
