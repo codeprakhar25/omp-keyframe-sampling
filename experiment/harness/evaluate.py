@@ -232,13 +232,16 @@ def run_tests(workspace: str, repo_slug: str, test_files: list[str]) -> TestResu
         else:
             cmd.append(tok)
 
+    # 3600s (was 1200): opshin 605's full test suite + compiler is slow and
+    # tipped over 1200s, producing false "timed out" verdicts. Env-overridable.
+    eval_timeout = int(os.environ.get("EXP_EVAL_TIMEOUT", "3600"))
     try:
         r = subprocess.run(
             cmd, cwd=workspace, env=env,
-            capture_output=True, text=True, timeout=1200,
+            capture_output=True, text=True, timeout=eval_timeout,
         )
     except subprocess.TimeoutExpired:
-        return TestResult(passed=False, error="test run timed out (1200s)")
+        return TestResult(passed=False, error=f"test run timed out ({eval_timeout}s)")
 
     out = (r.stdout or "") + "\n" + (r.stderr or "")
     n_pass, n_fail, n_err = _parse_pytest(out)
