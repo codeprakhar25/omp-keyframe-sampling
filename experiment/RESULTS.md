@@ -76,15 +76,39 @@ mixed simple/medium complexity. 3 repeats each.
   That is **noise**, not signal. With n=3 there is no statistical power to call it
   an effect. Outcome is **task-determined, not strategy-determined.**
 
-### 3.2 Efficiency: small and **inconsistent**.
-- `cache_read`: selective (2878k) < none (3069k) < always_on (3379k). always_on
-  re-injecting AGENTS.md every turn costs the most cache — expected, real, but
-  small.
-- **But turns contradict:** selective has the **most** turns (56.6) and none the
-  fewest (50.4). So "selective is more efficient" is **not** clean — it reads less
-  cached context but takes more steps.
-- No strategy is a universal efficiency winner. The "it depends" both papers
-  half-saw is here, but **weakly**.
+### 3.2 Efficiency: one robust signal, the rest underpowered.
+
+**Stats done correctly** — unit of analysis = **task** (the 3 repeats of a task
+are correlated, so they are *averaged* within (task, strategy), giving one value
+per task). Paired Wilcoxon across **n=11 tasks**, **Holm-Bonferroni** corrected
+(family = 12 tests). Script: `efficiency_stats_correct.py`.
+
+> ⚠️ An earlier analysis treated the 3 repeats as independent (n=15) and reported
+> p=0.0001–0.0006. **Those were pseudoreplication artifacts and are discarded.**
+> At the correct unit (n=11) almost all of that significance disappears.
+
+| comparison | metric | direction | raw p | **Holm p** |
+|---|---|---|---|---|
+| none vs selective | cache_create | selective lower **11/11** | 0.0010 | **0.012 \*** |
+| always_on vs selective | cache_create | selective lower 9/11 | 0.042 | 0.46 ns |
+| always_on vs selective | duration | selective lower 8/11 | 0.054 | 0.54 ns |
+| none vs selective | cache_read | selective lower 9/11 | 0.067 | 0.61 ns |
+| none vs selective | turns | — | 0.15 | 1.0 ns |
+| (all 7 others) | turns/dur/cache | — | >0.27 | 1.0 ns |
+
+- **One result survives correction:** `selective` uses significantly less
+  **cache-creation** than `none` (p=0.001, unanimous 11/11; Holm p=0.012).
+- **Directional but ns after correction:** selective also has lower cache-read
+  (9/11, p=0.067) and the always_on/selective duration gap (8/11, p=0.054) — both
+  **right at the edge**, i.e. underpowered, not absent.
+- **No effect** on turns or (corrected) duration.
+- The "always_on is expensive" story is **mostly mechanical** (it re-injects the
+  whole AGENTS.md every turn → more cache by construction) and does not survive as
+  a clean scientific claim.
+
+**Honest read:** selective has a **leaner context footprint** — one metric
+significant, two more trending. Real, but thin (1 of 12 tests survives), and the
+*user-facing* meaning of a cache-creation reduction is not obvious.
 
 ### 3.3 The "3790 flip" is an anecdote, not evidence.
 One medium task where always_on passed 2/3 vs 1/3 for the others. n=1 task, 1-cell
@@ -129,39 +153,48 @@ verdict), not about the finding.
 
 ## 6. Relevance — is this publishable, honestly?
 
-**As a positive result: no.** The correctness finding is a **null** (context
-doesn't change pass/fail), and the efficiency finding is **small and
-inconsistent**. Neither is a clean "context helps / hurts" headline.
+**Not yet.** After correct stats the result is:
+- **Correctness:** clean **null** (even the one "flip", 3790, dissolves into
+  coin-flip noise across repeats).
+- **Efficiency:** **1 of 12 tests** survives correction (selective ↓ cache-create),
+  plus two edge-of-significance trends. That is **real but thin** — too thin to
+  hang a paper on, and the user-facing meaning of "fewer cache-creation tokens" is
+  not self-evident.
 
-**As a measurement/reconciliation paper: maybe, with reframing.** The defensible
-contribution is:
-> "We add a correctness axis to the AGENTS.md debate. Across 11 real tasks,
-> injection strategy does **not** affect correctness (replicating Paper 2's null),
-> and efficiency effects are **small, inconsistent, and complexity-dependent** —
-> reconciling Paper 1 (efficiency-only, found effects) and Paper 2 (found none) as
-> *measuring different things on different task difficulties*."
+A reviewer sees 1/12 survived + a null and asks "why this metric, and was the
+study powered?" — both fair, both currently lose.
 
-That is honest and real, but it is a **workshop-tier** result as it stands, not a
-main-conference claim.
+**Why thin ≠ wrong:** the efficiency signals are **underpowered, not absent**.
+selective is lower-footprint in 9–11 of 11 tasks on the cache metrics; with n=11
+that lands at p=0.001–0.07. The direction is consistent; the n is just small.
 
-**What it would take to be solid:**
-- **More tasks, chosen for dynamic range** — specifically *borderline* tasks (like
-  3790) where the agent sometimes passes. All-pass/all-fail tasks carry ~no signal
-  for the correctness question.
-- **A second agent** (Codex) to claim anything about "agents" broadly.
-- **Pre-registered single efficiency metric** + paired Wilcoxon (per-task means,
-  n=3) so the efficiency claim isn't post-hoc.
-- Bump n per cell (3 → 5+) on the borderline tasks for any power.
+**What would make it solid (and it's the SAME lever for both axes):**
+- **Add ~12–15 tasks.** For **efficiency**, *any* difficulty adds power — the
+  trending cache effects (9/11 @ p=0.067) would very likely cross into
+  significance at n~25. For **correctness**, add **borderline** tasks (~30–70%
+  baseline pass, like 3790) so the outcome can actually move. → one task-collection
+  effort buys progress on **both** axes.
+- **A second agent** (Codex) — needed for any claim about "coding agents" broadly,
+  but with a **portable** efficiency metric (turns/wall-time), since `cache_*` is
+  Claude-specific and won't transfer.
+- **Pre-register the primary efficiency metric** (none-vs-selective on cache,
+  per-task) so it isn't post-hoc.
+
+**Verdict:** a clean, safe, honest **pilot** with one real (thin) efficiency
+signal and a correctness null. **Workshop-tier only after ~12–15 more tasks**
+power the efficiency trend; main-conference needs that **plus** a second agent.
 
 ---
 
 ## 7. One-line summary
 
-A clean, safe, reproducible **pilot** that shows **context-injection strategy does
-not move correctness** (strong null, confirms Paper 2) and **moves efficiency only
-slightly and inconsistently**. Real and honest; **underpowered and
-single-agent**; needs borderline tasks + a second agent before it's more than a
-workshop note.
+A clean, safe, reproducible **pilot**: **context-injection strategy does not move
+correctness** (strong null, confirms Paper 2), and the only surviving efficiency
+effect is that **`selective` has a leaner context footprint** (cache-creation
+↓, p_Holm=0.012; cache-read trending) — **real but thin (1/12 tests), underpowered,
+single-agent**. ~12–15 more tasks would power the efficiency trend (and, if
+borderline, reopen the correctness axis); a second agent is needed for any general
+claim.
 
 ---
 
