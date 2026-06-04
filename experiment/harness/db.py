@@ -86,7 +86,14 @@ class ResultsDB:
         existing = {row[1] for row in self.conn.execute(f"PRAGMA table_info({table})")}
         for col, coltype in columns.items():
             if col not in existing:
-                self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {coltype}")
+                try:
+                    self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {coltype}")
+                except sqlite3.OperationalError as e:
+                    # Concurrent writers (3 repo procs open the same DB at once) can
+                    # race the check-then-ALTER: another proc added the column between
+                    # our PRAGMA and ALTER. "duplicate column name" → already done, fine.
+                    if "duplicate column name" not in str(e):
+                        raise
         self.conn.commit()
 
     def save_run(self, run_log: RunLog, run_config_dict: dict[str, Any] | None = None) -> None:
