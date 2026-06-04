@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash __CODEX_HOME__/deny_push.sh",
+            "statusMessage": "deny-push safety check",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

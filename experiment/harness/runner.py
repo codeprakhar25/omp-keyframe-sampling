@@ -19,7 +19,7 @@ import sys
 import uuid
 from pathlib import Path
 
-from .agent import ClaudeCodeAgent
+from .agent import ClaudeCodeAgent, CodexCLIAgent
 from .config import (
     AgentBackend,
     ContextStrategy,
@@ -347,9 +347,11 @@ def run_single_task(
         agent = ClaudeCodeAgent(run_config, workspace_dir)
         run_log = agent.run(task.prompt, append_system=append_system)
     else:
-        log.error("Codex backend not yet wired — use Paper 1 replication package")
-        run_log = RunLog(run_id=run_id, task_id=task.task_id, strategy=strategy.value, agent=agent_backend.value)
-        run_log.error = "Codex backend not implemented in this harness"
+        # Codex arm. Same per-strategy append_system + already-stripped workspace
+        # context (AGENTS.md/CLAUDE.md removed above) → injection strategy stays
+        # the sole IV. Safety: CODEX_HOME deny-hook + sandbox + egress lock.
+        codex = CodexCLIAgent(run_config, workspace_dir)
+        run_log = codex.run(task.prompt, append_system=append_system)
 
     # Capture the agent's source diff BEFORE injecting any gold tests.
     # Anchor on base_sha so agent commits (which move HEAD) are still captured.

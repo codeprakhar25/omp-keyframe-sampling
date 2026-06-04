@@ -5,13 +5,16 @@
 # Asserts the egress lock is correct in BOTH directions:
 #   GitHub      -> must be UNREACHABLE (push impossible)
 #   PyPI        -> must be REACHABLE   (per-cell eval installs deps)
-#   Anthropic   -> must be REACHABLE   (agent LLM calls)
-# Also confirms repos are cloned full and the API key is present.
+#   Anthropic   -> must be REACHABLE   (claude agent LLM calls)
+#   OpenAI/ChatGPT -> must be REACHABLE (codex agent, when AGENT=codex)
+# Also confirms repos are cloned full and the agent's auth + safety hook present.
 #
+# Usage: bash verify_lock.sh [claude|codex]   (default claude)
 # Exits NON-ZERO on any failure. Do NOT run the pilot if this fails.
 # =============================================================================
 set -uo pipefail
 
+AGENT="${1:-claude}"
 EXP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail=0
 ok()   { echo "  ok   $*"; }
@@ -32,13 +35,18 @@ curl_reachable() {    # host -> expect success
   fi
 }
 
-echo "== egress =="
+echo "== egress (agent=$AGENT) =="
 curl_unreachable github.com
 curl_unreachable codeload.github.com
 curl_unreachable raw.githubusercontent.com
 curl_reachable   pypi.org
 curl_reachable   files.pythonhosted.org
-curl_reachable   api.anthropic.com
+if [ "$AGENT" = "codex" ]; then
+  curl_reachable chatgpt.com
+  curl_reachable api.openai.com
+else
+  curl_reachable api.anthropic.com
+fi
 
 echo "== git push path =="
 # A dummy push must NOT resolve to a real GitHub endpoint.
@@ -62,8 +70,29 @@ for slug in firebase__firebase-admin-python pdm-project__pdm OpShin__opshin; do
   fi
 done
 
-echo "== api key =="
-if [ -n "${ANTHROPIC_API_KEY:-}" ]; then ok "ANTHROPIC_API_KEY set"; else bad "ANTHROPIC_API_KEY missing (source .env)"; fi
+echo "== auth =="
+if [ "$AGENT" = "codex" ]; then
+  CH="${CODEX_HOME:-$EXP_DIR/pod/codex_home}"
+  if [ -f "$CH/auth.json" ] || [ -f "$HOME/.codex/auth.json" ]; then
+    ok "codex auth.json present (CODEX_HOME=$CH)"
+  else
+    bad "codex NOT authed — run 'codex login' or copy auth.json into $CH (see codex_setup.sh)"
+  fi
+  command -v codex >/dev/null 2>&1 && ok "codex CLI installed ($(codex --version 2>/dev/null | head -1))" \
+    || bad "codex CLI not installed (run pod/codex_setup.sh)"
+else
+  if [ -n "${ANTHROPIC_API_KEY:-}" ]; then ok "ANTHROPIC_API_KEY set"; else bad "ANTHROPIC_API_KEY missing (source .env)"; fi
+fi
+
+echo "== codex safety hook =="
+if [ -f "$EXP_DIR/pod/codex_home/deny_push.sh" ] && [ -f "$EXP_DIR/pod/codex_home/hooks.json.template" ]; then
+  ok "deny_push.sh + hooks.json.template present (PreToolUse push-block)"
+else
+  [ "$AGENT" = "codex" ] && bad "codex deny-hook files missing under pod/codex_home/" \
+    || ok "deny-hook files n/a for claude arm"
+fi
+
+echo "== github creds =="
 if [ -n "${GH_TOKEN:-}${GITHUB_TOKEN:-}" ]; then bad "GH_TOKEN/GITHUB_TOKEN present in env — UNSET it (no GitHub creds on pod)"; else ok "no GitHub token in env"; fi
 
 echo

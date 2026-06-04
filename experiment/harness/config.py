@@ -58,8 +58,16 @@ class RunConfig:
     claude_max_turns: int = 50
     claude_max_tokens: int = 8192
 
-    # Codex-specific
-    codex_model: str = "gpt-5.2-codex"
+    # Codex-specific. gpt-5.5 = flagship (ChatGPT-auth only). Env-overridable so a
+    # tight-budget / API-key run can fall back to gpt-5.4 (API-capable). sandbox
+    # workspace-write confines writes to the workspace AND disables agent-command
+    # network (extra isolation the Claude arm lacked); approval 'never' = autonomous.
+    # codex_home = clean CODEX_HOME (= --bare analog: no global AGENTS.md/config leak)
+    # that also carries our PreToolUse deny-push hook.
+    codex_model: str = os.environ.get("EXP_CODEX_MODEL", "gpt-5.5")
+    codex_sandbox: str = os.environ.get("EXP_CODEX_SANDBOX", "workspace-write")
+    codex_approval: str = os.environ.get("EXP_CODEX_APPROVAL", "never")
+    codex_home: str | None = os.environ.get("EXP_CODEX_HOME") or None
 
     # Paths — set by ExperimentConfig
     workspace_dir: str = ""

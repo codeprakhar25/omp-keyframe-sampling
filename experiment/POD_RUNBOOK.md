@@ -195,3 +195,45 @@ the paired-Wilcoxon stats (turns + cache_read, per strategy) like Paper 1.
 | DB locked errors | harmless under concurrency (busy_timeout=60s); driver retries |
 
 **STOP everything:** `tmux kill-session -t pilot; pkill -9 -f run_pilot.py; pkill -9 -f 'claude --print'`
+
+---
+
+## 12. Codex arm (second agent — gap #1 fix)
+
+Replicates the **same 11 tasks × 3 strategies × 3 repeats = 99 cells** on OpenAI
+Codex (`gpt-5.5`), into the same `results/experiment.db` with `agent='codex'`
+(the `claude_code` rows are untouched). Auth = **ChatGPT-plan login** (free quota,
+no API key). GPT-5.5 needs ChatGPT-account auth — matches this path.
+
+**Safety = the claude layers AND more:**
+- `--sandbox workspace-write` (writes confined to the workspace, agent-command
+  network disabled) — extra isolation the claude arm lacked.
+- **PreToolUse deny-hook** (`pod/codex_home/deny_push.sh`) — the deny-side analog
+  of claude's `--disallowedTools`; blocks `git push/commit/remote`, `gh`,
+  `request-pull` and logs `🚨 …BLOCKED-BY-HOOK` to `/tmp/codex_deny.log`.
+- Clean `CODEX_HOME` + `--ephemeral` = `--bare` analog (no global AGENTS.md/config leak).
+- Reused: egress lock (`firewall.sh`), `scrub_git_remotes`/`strip_future_history`
+  (runner), env credential scrub, watchdog timers + `EXP_MAX_TURNS` (codex has no
+  native budget/turn flag).
+
+> **RUN (one-time):**
+> ```bash
+> bash pod/codex_setup.sh                 # install codex CLI + render deny-hook
+> CODEX_HOME=$PWD/pod/codex_home codex login   # device-code; or scp ~/.codex/auth.json into pod/codex_home/
+> bash pod/verify_lock.sh codex           # HARD GATE (GitHub blocked, OpenAI reachable, authed, hook present)
+> ```
+> **RUN (smoke first, scratch db):**
+> ```bash
+> bash pod/run_codex_smoke.sh             # 3 tasks × none → results/codex_smoke.db + planted-push deny test
+> ```
+> **RUN (full arm, after smoke looks right):**
+> ```bash
+> bash pod/run_codex_repeats.sh           # 99 cells → experiment.db (agent='codex'); tmux session 'codex'
+> ```
+
+**Analyze:** `python3 analyze.py --agent codex`; cross-agent compare uses the
+**portable** metric only (turns / wall-time / total tokens) — `cache_*` is
+Claude-specific and has no Codex analog (`cached_input_tokens` is read-only; no
+cache-creation concept).
+
+**STOP the codex arm:** `tmux kill-session -t codex; pkill -9 -f 'run_pilot.py --agent codex'; pkill -9 -f 'codex exec'`

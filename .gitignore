@@ -25,3 +25,10 @@ trained-info/**/tokenizer.json
 
 .vscode/
 new-v2/
+1_data-collection/
+*.zip
+
+# Codex CLI: rendered hook (from hooks.json.template) + scratch CODEX_HOME + auth secrets
+experiment/pod/codex_home/hooks.json
+experiment/results/_codex_home/
+**/.codex/auth.json
