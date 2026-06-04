@@ -76,6 +76,10 @@ class ResultsDB:
             "total_cache_creation_tokens": "INTEGER",
             "eval_method": "TEXT",
             "test_summary": "TEXT",
+            "total_reasoning_tokens": "INTEGER",
+        })
+        self._ensure_columns("turns", {
+            "reasoning_tokens": "INTEGER",
         })
 
     def _ensure_columns(self, table: str, columns: dict[str, str]) -> None:
@@ -100,8 +104,8 @@ class ResultsDB:
                 total_turns, total_duration_s, total_input_tokens, total_output_tokens,
                 total_cache_read_tokens, total_cache_creation_tokens, total_tool_calls,
                 unique_files_read, unique_files_written, task_passed, error, final_diff,
-                eval_method, test_summary)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                eval_method, test_summary, total_reasoning_tokens)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 run_log.run_id,
                 run_log.task_id,
@@ -124,6 +128,7 @@ class ResultsDB:
                 run_log.final_diff[:20000] if run_log.final_diff else None,
                 getattr(run_log, "eval_method", ""),
                 getattr(run_log, "test_summary", ""),
+                summary["total_reasoning_tokens"],
             ),
         )
 
@@ -136,8 +141,8 @@ class ResultsDB:
                    (run_id, turn_index, duration_s, input_tokens, output_tokens,
                     cache_read_tokens, cache_creation_tokens, tool_call_count,
                     tool_calls_json, files_read_json, files_written_json,
-                    stop_reason, agent_text_preview)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    stop_reason, agent_text_preview, reasoning_tokens)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     run_log.run_id,
                     td["turn_index"],
@@ -152,6 +157,7 @@ class ResultsDB:
                     json.dumps(td["files_written"]),
                     td["stop_reason"],
                     td["agent_text_preview"],
+                    td["reasoning_tokens"],
                 ),
             )
 

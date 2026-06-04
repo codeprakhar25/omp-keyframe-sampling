@@ -31,6 +31,13 @@ else
   echo "  FAIL deny-hook did NOT block a planted push — ABORT."; exit 1
 fi
 
+echo "== gh PATH-shim self-test =="
+if PATH="$CODEX_HOME/bin:$PATH" gh --version >/dev/null 2>&1; then
+  echo "  FAIL gh shim did NOT shadow the real gh — ABORT."; exit 1
+else
+  echo "  ok   gh shim blocks (real gh shadowed)"
+fi
+
 export EXP_LIVE="${EXP_LIVE:-1}"
 export EXP_CODEX_MODEL="${EXP_CODEX_MODEL:-gpt-5.5}"
 export EXP_ABSOLUTE_TIMEOUT="${EXP_ABSOLUTE_TIMEOUT:-7200}"
@@ -47,7 +54,7 @@ python3 run_pilot.py --agent codex --task-file tasks/codex_smoke.json \
 echo
 echo "== smoke verdicts =="
 sqlite3 results/codex_smoke.db \
-  "SELECT task_id, strategy, total_turns, total_tool_calls, total_input_tokens, total_output_tokens, task_passed, error \
+  "SELECT task_id, strategy, total_turns, total_tool_calls, total_input_tokens, total_output_tokens, total_reasoning_tokens, task_passed, error \
    FROM runs WHERE agent='codex' ORDER BY task_id;" 2>/dev/null || true
 echo
 echo "== any push attempts logged? (should be none from the agent) =="

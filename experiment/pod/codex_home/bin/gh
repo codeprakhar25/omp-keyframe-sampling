@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# PATH-shim: hard-block the GitHub CLI for the Codex agent. `gh` is never needed
+# by any experiment task, so shadowing it on PATH is a zero-fragility deny layer
+# (stronger + agent-agnostic vs codex's bypassable command rules). Layered with
+# the PreToolUse deny-hook, egress lock, scrubbed remotes, and credential scrub.
+ts="$(date -u +%FT%TZ)"
+echo "[$ts] 🚨 gh BLOCKED-BY-SHIM: gh $*" >> "${CODEX_DENY_LOG:-/tmp/codex_deny.log}"
+echo "gh is disabled in this sandboxed experiment (no GitHub operations)." >&2
+exit 1

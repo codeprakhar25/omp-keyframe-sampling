@@ -33,6 +33,10 @@ class TurnRecord:
     output_tokens: int = 0
     cache_read_tokens: int = 0
     cache_creation_tokens: int = 0
+    # Codex reasoning models emit reasoning_output_tokens separately from
+    # output_tokens; kept distinct (not folded) for clean cross-agent accounting.
+    # Claude arm leaves this 0.
+    reasoning_tokens: int = 0
 
     tool_calls: list[ToolCallRecord] = field(default_factory=list)
     files_read: set[str] = field(default_factory=set)
@@ -47,7 +51,8 @@ class TurnRecord:
 
     @property
     def total_tokens(self) -> int:
-        return self.input_tokens + self.output_tokens
+        # Portable cross-agent total = all generated + ingested work.
+        return self.input_tokens + self.output_tokens + self.reasoning_tokens
 
     @property
     def tool_call_count(self) -> int:
@@ -61,6 +66,7 @@ class TurnRecord:
             "output_tokens": self.output_tokens,
             "cache_read_tokens": self.cache_read_tokens,
             "cache_creation_tokens": self.cache_creation_tokens,
+            "reasoning_tokens": self.reasoning_tokens,
             "total_tokens": self.total_tokens,
             "tool_call_count": self.tool_call_count,
             "tool_calls": [
@@ -107,6 +113,10 @@ class RunLog:
         return sum(t.output_tokens for t in self.turns)
 
     @property
+    def total_reasoning_tokens(self) -> int:
+        return sum(t.reasoning_tokens for t in self.turns)
+
+    @property
     def total_cache_read_tokens(self) -> int:
         return sum(t.cache_read_tokens for t in self.turns)
 
@@ -143,6 +153,7 @@ class RunLog:
             "total_duration_s": round(self.total_duration_s, 2),
             "total_input_tokens": self.total_input_tokens,
             "total_output_tokens": self.total_output_tokens,
+            "total_reasoning_tokens": self.total_reasoning_tokens,
             "total_cache_read_tokens": self.total_cache_read_tokens,
             "total_cache_creation_tokens": self.total_cache_creation_tokens,
             "total_tool_calls": self.total_tool_calls,

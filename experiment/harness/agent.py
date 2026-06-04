@@ -411,8 +411,9 @@ def parse_codex_output(raw_output: str) -> RunLog:
     agent_message (→text), mcp_tool_call (→tool). reasoning is internal-only.
 
     Usage maps: cached_input_tokens→cache_read; there is NO cache-creation concept
-    in Codex (cache_creation_tokens stays 0). reasoning_output_tokens is folded
-    into output_tokens so the portable total (input+output) counts generated work.
+    in Codex (cache_creation_tokens stays 0). reasoning_output_tokens is kept in
+    its own reasoning_tokens field (not folded) — TurnRecord.total_tokens =
+    input+output+reasoning, so the portable cross-agent total still counts it.
     """
     run_log = RunLog(agent="codex")
     turn_index = 0
@@ -458,8 +459,8 @@ def parse_codex_output(raw_output: str) -> RunLog:
                 continue
             usage = event.get("usage", {})
             current_turn.input_tokens = usage.get("input_tokens", 0)
-            current_turn.output_tokens = (usage.get("output_tokens", 0)
-                                          + usage.get("reasoning_output_tokens", 0))
+            current_turn.output_tokens = usage.get("output_tokens", 0)
+            current_turn.reasoning_tokens = usage.get("reasoning_output_tokens", 0)
             current_turn.cache_read_tokens = usage.get("cached_input_tokens", 0)
             current_turn.stop_reason = "turn_completed"
             run_log.turns.append(current_turn)
@@ -534,9 +535,20 @@ class CodexCLIAgent:
         sandbox = getattr(self.config, "codex_sandbox", "workspace-write")
         approval = getattr(self.config, "codex_approval", "never")
 
-        # Codex has no --append-system-prompt; prepend injected context to the
-        # prompt (closest parity to the claude arm's system-prompt injection).
-        prompt = f"{append_system}\n\n{task_prompt}" if append_system else task_prompt
+        # Codex has no --append-system-prompt. Two options to inject context:
+        #  (a) prepend to the prompt (used here) — robust, no escaping issues with a
+        #      ~169-line markdown AGENTS.md;
+        #  (b) -c developer_instructions='"..."' — injected before AGENTS.md, a
+        #      semantically closer analog to claude's *system* channel, BUT passing
+        #      large multi-line markdown through a -c TOML override on argv is
+        #      fragile (quoting/newlines).
+        # Default to (a). The injected/user-turn channel asymmetry vs the claude arm
+        # (system channel) is a noted cross-agent confound — validate on the pod and
+        # switch to (b) if it parses cleanly. Env hook: EXP_CODEX_DEV_INSTRUCTIONS=1.
+        prompt = task_prompt
+        dev_instr = append_system if os.environ.get("EXP_CODEX_DEV_INSTRUCTIONS") == "1" else None
+        if append_system and not dev_instr:
+            prompt = f"{append_system}\n\n{task_prompt}"
 
         cmd = [
             "codex", "exec", "--json",
@@ -546,8 +558,12 @@ class CodexCLIAgent:
             "--ephemeral",
             "--skip-git-repo-check",
             "-C", self.workspace_dir,
-            prompt,
         ]
+        if dev_instr:
+            # TOML-encode the value (json.dumps gives a valid TOML basic string for
+            # our content); passed as one literal argv element → no shell escaping.
+            cmd += ["-c", f"developer_instructions={json.dumps(dev_instr)}"]
+        cmd.append(prompt)
 
         env = os.environ.copy()
         # SAFETY: strip GitHub creds so any push that slipped through has none,
@@ -557,7 +573,13 @@ class CodexCLIAgent:
         env["GIT_TERMINAL_PROMPT"] = "0"
         # Clean CODEX_HOME = --bare analog (no global AGENTS.md/config) + carries
         # the PreToolUse deny-push hook.
-        env["CODEX_HOME"] = self._codex_home()
+        codex_home = self._codex_home()
+        env["CODEX_HOME"] = codex_home
+        # PATH-shim layer: prepend CODEX_HOME/bin so our `gh` stub shadows the real
+        # GitHub CLI (zero-fragility deny — gh is never needed by any task).
+        shim_bin = os.path.join(codex_home, "bin")
+        if os.path.isdir(shim_bin):
+            env["PATH"] = shim_bin + os.pathsep + env.get("PATH", "")
 
         live = _live_enabled()
         log.info("Running CodexCLIAgent: cwd=%s model=%s sandbox=%s approval=%s strategy=%s live=%s home=%s",

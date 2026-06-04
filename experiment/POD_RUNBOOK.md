@@ -210,8 +210,14 @@ no API key). GPT-5.5 needs ChatGPT-account auth — matches this path.
   network disabled) — extra isolation the claude arm lacked.
 - **PreToolUse deny-hook** (`pod/codex_home/deny_push.sh`) — the deny-side analog
   of claude's `--disallowedTools`; blocks `git push/commit/remote`, `gh`,
-  `request-pull` and logs `🚨 …BLOCKED-BY-HOOK` to `/tmp/codex_deny.log`.
-- Clean `CODEX_HOME` + `--ephemeral` = `--bare` analog (no global AGENTS.md/config leak).
+  `request-pull` and logs `🚨 …BLOCKED-BY-HOOK` to `/tmp/codex_deny.log`. (Codex's
+  own command-rules are bypassable via `--ignore-rules`; a hook is not.)
+- **gh PATH-shim** (`pod/codex_home/bin/gh`) — prepended to the agent's PATH so the
+  real GitHub CLI is shadowed by a stub that exits 1 + logs. Zero-fragility,
+  agent-agnostic belt-and-suspenders on top of the hook.
+- Clean `CODEX_HOME` + `--ephemeral` = `--bare` analog (no global AGENTS.md/config
+  leak; `--ephemeral` alone only skips session persistence — the clean home is what
+  stops AGENTS.md/config auto-load).
 - Reused: egress lock (`firewall.sh`), `scrub_git_remotes`/`strip_future_history`
   (runner), env credential scrub, watchdog timers + `EXP_MAX_TURNS` (codex has no
   native budget/turn flag).

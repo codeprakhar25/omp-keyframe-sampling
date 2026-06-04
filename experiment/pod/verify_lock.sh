@@ -84,12 +84,18 @@ else
   if [ -n "${ANTHROPIC_API_KEY:-}" ]; then ok "ANTHROPIC_API_KEY set"; else bad "ANTHROPIC_API_KEY missing (source .env)"; fi
 fi
 
-echo "== codex safety hook =="
+echo "== codex safety layers =="
 if [ -f "$EXP_DIR/pod/codex_home/deny_push.sh" ] && [ -f "$EXP_DIR/pod/codex_home/hooks.json.template" ]; then
   ok "deny_push.sh + hooks.json.template present (PreToolUse push-block)"
 else
   [ "$AGENT" = "codex" ] && bad "codex deny-hook files missing under pod/codex_home/" \
     || ok "deny-hook files n/a for claude arm"
+fi
+if [ -x "$EXP_DIR/pod/codex_home/bin/gh" ]; then
+  ok "gh PATH-shim present + executable"
+else
+  [ "$AGENT" = "codex" ] && bad "gh shim missing/not-exec at pod/codex_home/bin/gh (chmod +x)" \
+    || ok "gh shim n/a for claude arm"
 fi
 
 echo "== github creds =="
