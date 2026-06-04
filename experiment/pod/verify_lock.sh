@@ -88,7 +88,10 @@ echo "== codex safety layers =="
 # Primary push/commit block (codex 0.137 doesn't load the hooks.json): PATH-shims.
 if [ -x "$EXP_DIR/pod/codex_home/bin/git" ] && [ -x "$EXP_DIR/pod/codex_home/bin/gh" ]; then
   ok "git + gh PATH-shims present + executable"
-  if PATH="$EXP_DIR/pod/codex_home/bin:$PATH" git push origin x 2>&1 | grep -q "disabled in this sandboxed"; then
+  # capture-then-grep: under `set -o pipefail`, `git push(exit1) | grep` returns 1
+  # even on a match, so a piped `if` would misread. Grab output first.
+  shim_out="$(PATH="$EXP_DIR/pod/codex_home/bin:$PATH" git push origin x 2>&1 || true)"
+  if printf '%s' "$shim_out" | grep -q "disabled in this sandboxed"; then
     ok "git shim blocks push (live check)"
   else
     [ "$AGENT" = "codex" ] && bad "git shim did NOT block a push — fix before running" \

@@ -27,7 +27,8 @@ echo "==> lock verified (codex)."
 # is enforced by the gh/git PATH-shims (verified to survive codex's bash -lc) plus
 # the PATH-independent egress lock + scrub_git_remotes. Self-test the shims:
 echo "== git PATH-shim self-test =="
-if PATH="$CODEX_HOME/bin:$PATH" git push origin main 2>&1 | grep -q "disabled in this sandboxed"; then
+gitshim_out="$(PATH="$CODEX_HOME/bin:$PATH" git push origin main 2>&1 || true)"
+if printf '%s' "$gitshim_out" | grep -q "disabled in this sandboxed"; then
   echo "  ok   git shim blocks push"
 else
   echo "  FAIL git shim did NOT block push — ABORT."; exit 1
