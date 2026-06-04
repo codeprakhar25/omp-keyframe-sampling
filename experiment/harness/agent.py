@@ -103,6 +103,9 @@ def stream_subprocess(cmd, env, cwd, stream_log_path, live, pretty_fn, run_log,
     lines: list[str] = []
     proc = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        # stdin=DEVNULL: codex exec reads stdin for an extra <stdin> block and would
+        # block on an inherited tty/pipe; give it immediate EOF. (claude ignores stdin.)
+        stdin=subprocess.DEVNULL,
         text=True, cwd=cwd, env=env, bufsize=1,
     )
     killed = {"reason": ""}
@@ -479,7 +482,7 @@ class CodexCLIAgent:
         and NO global AGENTS.md/config (= --bare analog: zero context leak).
       - --sandbox workspace-write confines writes to the workspace AND disables
         agent-command network (extra isolation the claude arm did not have).
-      - --ask-for-approval never = autonomous; --ephemeral = no session files.
+      - exec is non-interactive (no approval prompts); --ephemeral = no session files.
       - env credential scrub (GH_TOKEN/GITHUB_TOKEN/GIT_TERMINAL_PROMPT) reused.
     Layered with the pod-wide egress lock + scrub_git_remotes (runner) for the
     same defense-in-depth as the claude arm.
@@ -533,7 +536,6 @@ class CodexCLIAgent:
     def run(self, task_prompt: str, append_system: str | None = None) -> RunLog:
         model = getattr(self.config, "codex_model", "gpt-5.5")
         sandbox = getattr(self.config, "codex_sandbox", "workspace-write")
-        approval = getattr(self.config, "codex_approval", "never")
 
         # Codex has no --append-system-prompt. Two options to inject context:
         #  (a) prepend to the prompt (used here) — robust, no escaping issues with a
@@ -550,11 +552,16 @@ class CodexCLIAgent:
         if append_system and not dev_instr:
             prompt = f"{append_system}\n\n{task_prompt}"
 
+        # codex exec is non-interactive → no approval prompts (no --ask-for-approval
+        # flag exists on exec). NOTE: codex 0.137's hooks.json schema does not load
+        # our Claude-style PreToolUse deny-hook (verified: even a catch-all matcher
+        # never fires), so the push/commit block is enforced by the gh/git PATH-shims
+        # (CODEX_HOME/bin, prepended below) + the PATH-independent egress lock and
+        # scrub_git_remotes. Those are the real guarantees; the hook is not relied on.
         cmd = [
             "codex", "exec", "--json",
             "--model", model,
             "--sandbox", sandbox,
-            "--ask-for-approval", approval,
             "--ephemeral",
             "--skip-git-repo-check",
             "-C", self.workspace_dir,
@@ -582,8 +589,8 @@ class CodexCLIAgent:
             env["PATH"] = shim_bin + os.pathsep + env.get("PATH", "")
 
         live = _live_enabled()
-        log.info("Running CodexCLIAgent: cwd=%s model=%s sandbox=%s approval=%s strategy=%s live=%s home=%s",
-                 self.workspace_dir, model, sandbox, approval, self.config.strategy.value,
+        log.info("Running CodexCLIAgent: cwd=%s model=%s sandbox=%s strategy=%s live=%s home=%s",
+                 self.workspace_dir, model, sandbox, self.config.strategy.value,
                  live, env["CODEX_HOME"])
 
         stream_log_path = self._stream_log_path()

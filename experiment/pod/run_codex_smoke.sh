@@ -23,19 +23,26 @@ if ! bash pod/verify_lock.sh codex >/tmp/verify_lock_codex.out 2>&1; then
 fi
 echo "==> lock verified (codex)."
 
-echo "== deny-hook self-test (planted push) =="
-PLANT='{"tool_name":"Bash","tool_input":{"command":"git push origin main"}}'
-if echo "$PLANT" | bash "$CODEX_HOME/deny_push.sh" | grep -q '"permissionDecision":"deny"'; then
-  echo "  ok   deny-hook blocks git push"
+# NOTE: codex 0.137 does not load the PreToolUse hooks.json; the push/commit block
+# is enforced by the gh/git PATH-shims (verified to survive codex's bash -lc) plus
+# the PATH-independent egress lock + scrub_git_remotes. Self-test the shims:
+echo "== git PATH-shim self-test =="
+if PATH="$CODEX_HOME/bin:$PATH" git push origin main 2>&1 | grep -q "disabled in this sandboxed"; then
+  echo "  ok   git shim blocks push"
 else
-  echo "  FAIL deny-hook did NOT block a planted push — ABORT."; exit 1
+  echo "  FAIL git shim did NOT block push — ABORT."; exit 1
+fi
+if ! PATH="$CODEX_HOME/bin:$PATH" git --version >/dev/null 2>&1; then
+  echo "  FAIL git shim broke normal git (--version) — ABORT."; exit 1
+else
+  echo "  ok   git shim passes normal git through"
 fi
 
 echo "== gh PATH-shim self-test =="
 if PATH="$CODEX_HOME/bin:$PATH" gh --version >/dev/null 2>&1; then
-  echo "  FAIL gh shim did NOT shadow the real gh — ABORT."; exit 1
+  echo "  FAIL gh shim did NOT shadow gh — ABORT."; exit 1
 else
-  echo "  ok   gh shim blocks (real gh shadowed)"
+  echo "  ok   gh blocked (shim or not-installed)"
 fi
 
 export EXP_LIVE="${EXP_LIVE:-1}"

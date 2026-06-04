@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# PATH-shim: block git push/commit/remote/request-pull; pass every other git
+# subcommand through to the real binary. Proven PATH mechanism (codex 0.137
+# hooks.json does not load our deny-hook). Mirrors claude _DENY_TOOLS. Layered
+# with the egress blackhole + scrubbed remotes + blanked GH tokens, which are the
+# PATH-INDEPENDENT guarantees that make push/PR physically impossible regardless.
+sub="${1:-}"
+case "$sub" in
+  push|remote|request-pull|commit)
+    ts="$(date -u +%FT%TZ)"
+    echo "[$ts] 🚨 git ${sub} BLOCKED-BY-SHIM: git $*" >> "${CODEX_DENY_LOG:-/tmp/codex_deny.log}"
+    echo "git ${sub} is disabled in this sandboxed experiment (no external pushes)." >&2
+    exit 1
+    ;;
+esac
+# Resolve the REAL git: first git on PATH whose dir is not this shim's dir.
+shimdir="$(cd "$(dirname "$0")" && pwd)"
+real=""
+IFS=':'
+for d in $PATH; do
+  [ -n "$d" ] || continue
+  if [ -x "$d/git" ] && [ "$(cd "$d" 2>/dev/null && pwd)" != "$shimdir" ]; then
+    real="$d/git"; break
+  fi
+done
+[ -z "$real" ] && real="/usr/bin/git"
+exec "$real" "$@"

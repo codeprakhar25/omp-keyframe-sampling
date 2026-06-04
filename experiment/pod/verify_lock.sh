@@ -85,17 +85,18 @@ else
 fi
 
 echo "== codex safety layers =="
-if [ -f "$EXP_DIR/pod/codex_home/deny_push.sh" ] && [ -f "$EXP_DIR/pod/codex_home/hooks.json.template" ]; then
-  ok "deny_push.sh + hooks.json.template present (PreToolUse push-block)"
+# Primary push/commit block (codex 0.137 doesn't load the hooks.json): PATH-shims.
+if [ -x "$EXP_DIR/pod/codex_home/bin/git" ] && [ -x "$EXP_DIR/pod/codex_home/bin/gh" ]; then
+  ok "git + gh PATH-shims present + executable"
+  if PATH="$EXP_DIR/pod/codex_home/bin:$PATH" git push origin x 2>&1 | grep -q "disabled in this sandboxed"; then
+    ok "git shim blocks push (live check)"
+  else
+    [ "$AGENT" = "codex" ] && bad "git shim did NOT block a push — fix before running" \
+      || ok "git shim live-check n/a for claude arm"
+  fi
 else
-  [ "$AGENT" = "codex" ] && bad "codex deny-hook files missing under pod/codex_home/" \
-    || ok "deny-hook files n/a for claude arm"
-fi
-if [ -x "$EXP_DIR/pod/codex_home/bin/gh" ]; then
-  ok "gh PATH-shim present + executable"
-else
-  [ "$AGENT" = "codex" ] && bad "gh shim missing/not-exec at pod/codex_home/bin/gh (chmod +x)" \
-    || ok "gh shim n/a for claude arm"
+  [ "$AGENT" = "codex" ] && bad "git/gh PATH-shims missing/not-exec at pod/codex_home/bin/ (chmod +x)" \
+    || ok "PATH-shims n/a for claude arm"
 fi
 
 echo "== github creds =="

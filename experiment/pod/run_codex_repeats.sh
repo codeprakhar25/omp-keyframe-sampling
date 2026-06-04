@@ -37,7 +37,7 @@ tmux new-session -d -s "$SESS" -n firebase
 
 launch() {  # repo  window
   local repo="$1" win="$2"
-  local cmd="cd '$EXP_DIR'; export CODEX_HOME='$CODEX_HOME' \
+  local cmd="cd '$EXP_DIR'; export PATH=\$HOME/.local/bin:\$PATH CODEX_HOME='$CODEX_HOME' \
 EXP_LIVE=$EXP_LIVE EXP_CODEX_MODEL=$EXP_CODEX_MODEL \
 EXP_ABSOLUTE_TIMEOUT=$EXP_ABSOLUTE_TIMEOUT EXP_INACTIVITY_TIMEOUT=$EXP_INACTIVITY_TIMEOUT \
 EXP_MAX_TURNS=$EXP_MAX_TURNS XDG_CACHE_HOME='$XDG_CACHE_HOME' UV_CACHE_DIR='$UV_CACHE_DIR'; \
