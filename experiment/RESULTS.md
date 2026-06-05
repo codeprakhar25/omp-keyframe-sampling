@@ -221,21 +221,86 @@ keepers: **598** (opshin), **906 / 926 / 932** (firebase).
 keeps the $150 pool intact) → **pilot grows 11 → 15** (firebase 6 / opshin 5 / pdm 4).
 The 8 recovered effort-tasks were deferred (running both arms on them ≈ $130 Claude).
 
+### 4D. Codex run on the expanded tasks — null REPLICATES *with* dynamic range (2026-06-05)
+
+Ran the 4 new borderline tasks + 2 high-effort tasks (609/614) on **Codex** across all
+3 strategies × 3 repeats (54 new cells, 2 pods in parallel, 0 failures). Merged into the
+codex arm → **17 tasks / 153 codex cells** (`experiment_merged.db`). none reused from the
+screen (same machine, same eval); always_on/selective fresh. `selective` verified genuinely
+injecting the wiki split + retrieval hint (agent log: *"inspect the wiki context first"* →
+reads `wiki/overview.md`), so the result is **not** a silent-empty-context artifact.
+
+| scope | none | always_on | selective | avg tools |
+|---|---|---|---|---|
+| 4 borderline (range present) | **58%** (7/12) | 42% (5/12) | 42% (5/12) | ~31 |
+| full codex arm (17 tasks) | **59%** (30/51) | 57% (29/51) | 53% (27/51) | ~32 |
+
+**This is the key upgrade to the null.** On tasks *with* real dynamic range (17–67% band),
+context injection still does **not** help correctness — if anything `none ≥ always_on ≈
+selective` (within noise at n=12/cell). The pilot's weak "always_on numerically best" hint
+(§4B) **dissolves** once range is added; for Codex `none` is now top. avg tool-calls are
+flat (~32) across strategies → strategy moves neither correctness nor efficiency on Codex.
+The pilot null was not merely a floor/ceiling artifact: **it holds where the design can
+detect an effect.**
+
+> **Caveat (n):** still n=3/cell. Direction (no help) is robust across 17 tasks but
+> per-task swings are large (e.g. 926 always 3/3 vs sel 1/3 — noise at this n). Claim is
+> "no detectable correctness effect with much-improved power", not a tight CI.
+
+**Gate decision (pre-registered):** because Codex shows **no correctness move even with
+range**, the null is robust on the agent we could afford to expand. Running these tasks on
+**Claude** (~$65) would test cross-agent replication of the null-with-range — a generality
+nice-to-have, not required for the core claim. **Deferred; $150 pool intact.**
+
+### 4E. Power & equivalence analysis (Codex, 17 tasks / 153 cells) — `power_analysis.py`
+
+Within-task design (each task under all 3 strategies, n=3), task-clustered. Methods:
+Wilson CIs, task-bootstrap (10k) on paired diffs, sign-flip permutation, within-task
+omnibus permutation, TOST equivalence, Monte-Carlo power.
+
+**Correctness.** Marginal: none 58.8% / always 56.9% / selective 52.9% (Wilson CIs all
+~45–71%, fully overlapping). Omnibus permutation **p=0.66** — no detectable strategy
+effect. Paired diffs ≤6pp, all CIs cross 0.
+- **TOST:** can claim "no effect > **15pp**" (always−none, selective−none pass); "no
+  effect > **10pp**" is **inconclusive**. A practically-important 10pp effect cannot be
+  ruled out at this n.
+- **Power is the binding constraint:** MDE at n=17/reps=3 ≈ **>30pp** (Δ=30pp → 57%
+  power). Detecting Δ=10pp @80% needs **~120–200 tasks**. Adding *repeats* barely helps
+  (n=17, reps 3→10: 13%→58% power) — **task-level variance dominates; scale tasks, not
+  repeats.**
+
+**Efficiency (Codex) is also null.** Per-task paired (Wilcoxon): tool_calls 32→32
+(dz≈0.01), output_tokens −3.8% (dz=−0.17), duration −3.8% (dz=−0.14). All |dz|<0.2
+(negligible) → ~350 tasks to detect at 80%. The *only* live efficiency signal in the
+study remains **Claude cache-creation** (selective leaner, p_Holm=0.012) — one metric,
+one agent.
+
+> **Honest implication.** The design is null nearly everywhere on Codex (correctness AND
+> efficiency). Either context files don't affect outcomes, **or the manipulation is inert**
+> — the 3 repos' AGENTS.md are generic style guides, not *load-bearing* info the agent
+> can't infer. Current data can't separate these. Scaling to 200 tasks would buy a more
+> confident null on a possibly-inert IV. **Next step is a manipulation-validity probe**
+> (~6 tasks with genuinely load-bearing context, with-vs-without) to test whether the IV
+> moves anything at all *before* any scale-up.
+
 ---
 
 ## 5. Threats to validity (what a reviewer will kill — grill yourself here)
 
-1. **n is tiny.** 11 tasks, n=3. No correctness effect could be detected even if
-   it existed. This is a **pilot**, not a powered study. Do not report p-values as
-   if this were confirmatory.
+1. **n is tiny.** 11 tasks (codex 17), n=3. **Quantified (§4E):** MDE ≈ >30pp; a 10pp
+   correctness effect is undetectable; TOST only bounds the effect to <15pp. This is a
+   **pilot**, not a powered study. Do not report p-values as if confirmatory. A powered
+   null needs ~120–200 tasks (repeats don't help — task variance dominates).
 2. **Floor/ceiling problem.** 9/11 tasks are all-pass or all-fail → almost no
    **dynamic range** to detect a context effect on correctness. The tasks are
    either trivial (context irrelevant) or too hard (context can't save them). The
    informative middle (borderline tasks like 3790) is **1 task**. The design is
-   underpowered *by construction* for the correctness question. **Partially addressed
-   (§4C):** the Codex screen added **4 borderline** tasks → pilot now **15** (more
-   dynamic range), but the powered claim still needs the deferred effort-tasks and a
-   Claude re-screen of the pdm wipeout set.
+   underpowered *by construction* for the correctness question. **Addressed for Codex
+   (§4D):** added 6 tasks incl. **4 with real dynamic range** → codex arm now **17 tasks
+   / 153 cells**, and the null **replicates even where range exists** (none 58% ≥ always
+   42% ≈ sel 42% on the borderline set). The floor/ceiling escape no longer explains the
+   null. Remaining: same expansion on the **Claude** arm (deferred, §4D gate) + the pdm
+   wipeout set (codex-floored; likely claude-borderline).
 3. ~~**Single agent, single model.**~~ **CLOSED (§4B).** Added a **Codex / `gpt-5.5`**
    arm (99 cells). Correctness null **replicates**; always_on direction is
    agent-robust; Codex is uniformly leaner on portable efficiency. Two agents now,
