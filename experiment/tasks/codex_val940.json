@@ -1,0 +1,35 @@
+[
+  {
+    "task_id": "firebase__firebase-admin-python__940",
+    "repo_full_name": "firebase/firebase-admin-python",
+    "repo_url": "https://github.com/firebase/firebase-admin-python.git",
+    "base_sha": "581ef26c3ea0964d44bbd77dfbae1940985c1300",
+    "pr_number": 940,
+    "complexity": "simple",
+    "prompt": "This change adds the `bandwidth_constrained_ok` and `restricted_satellite_ok` options to the `AndroidConfig` object. This gives developers granular control over message delivery when an Android device is operating under restricted network conditions, such as Data Saver mode or an active satellite network connection.",
+    "prompt_source": "pr_body",
+    "gold_diff": "diff --git a/firebase_admin/_messaging_encoder.py b/firebase_admin/_messaging_encoder.py\nindex 960a6d74..4c0c6daa 100644\n--- a/firebase_admin/_messaging_encoder.py\n+++ b/firebase_admin/_messaging_encoder.py\n@@ -207,6 +207,10 @@ def encode_android(cls, android):\n             'fcm_options': cls.encode_android_fcm_options(android.fcm_options),\n             'direct_boot_ok': _Validators.check_boolean(\n                 'AndroidConfig.direct_boot_ok', android.direct_boot_ok),\n+            'bandwidth_constrained_ok': _Validators.check_boolean(\n+                'AndroidConfig.bandwidth_constrained_ok', android.bandwidth_constrained_ok),\n+            'restricted_satellite_ok': _Validators.check_boolean(\n+                'AndroidConfig.restricted_satellite_ok', android.restricted_satellite_ok),\n         }\n         result = cls.remove_null_values(result)\n         priority = result.get('priority')\ndiff --git a/firebase_admin/_messaging_utils.py b/firebase_admin/_messaging_utils.py\nindex 8fd72070..773ed605 100644\n--- a/firebase_admin/_messaging_utils.py\n+++ b/firebase_admin/_messaging_utils.py\n@@ -13,6 +13,9 @@\n # limitations under the License.\n \n \"\"\"Types and utilities used by the messaging (FCM) module.\"\"\"\n+from __future__ import annotations\n+import datetime\n+from typing import Dict, Optional, Union\n \n from firebase_admin import exceptions\n \n@@ -51,10 +54,25 @@ class AndroidConfig:\n         fcm_options: A ``messaging.AndroidFCMOptions`` to be included in the message (optional).\n         direct_boot_ok: A boolean indicating whether messages will be allowed to be delivered to\n             the app while the device is in direct boot mode (optional).\n+        bandwidth_constrained_ok: A boolean indicating whether messages will be allowed to be\n+            delivered to the app while the device is on a bandwidth constrained network (optional).\n+        restricted_satellite_ok: A boolean indicating whether messages will be allowed to be\n+            delivered to the app while the device is on a restricted satellite network (optional).\n     \"\"\"\n \n-    def __init__(self, collapse_key=None, priority=None, ttl=None, restricted_package_name=None,\n-                 data=None, notification=None, fcm_options=None, direct_boot_ok=None):\n+    def __init__(\n+        self,\n+        collapse_key: Optional[str] = None,\n+        priority: Optional[str] = None,\n+        ttl: Optional[Union[int, float, datetime.timedelta]] = None,\n+        restricted_package_name: Optional[str] = None,\n+        data: Optional[Dict[str, str]] = None,\n+        notification: Optional[AndroidNotification] = None,\n+        fcm_options: Optional[AndroidFCMOptions] = None,\n+        direct_boot_ok: Optional[bool] = None,\n+        bandwidth_constrained_ok: Optional[bool] = None,\n+        restricted_satellite_ok: Optional[bool] = None\n+    ):\n         self.collapse_key = collapse_key\n         self.priority = priority\n         self.ttl = ttl\n@@ -63,6 +81,8 @@ def __init__(self, collapse_key=None, priority=None, ttl=None, restricted_packag\n         self.notification = notification\n         self.fcm_options = fcm_options\n         self.direct_boot_ok = direct_boot_ok\n+        self.bandwidth_constrained_ok = bandwidth_constrained_ok\n+        self.restricted_satellite_ok = restricted_satellite_ok\n \n \n class AndroidNotification:\ndiff --git a/tests/test_messaging.py b/tests/test_messaging.py\nindex 9fa30fef..b30790f1 100644\n--- a/tests/test_messaging.py\n+++ b/tests/test_messaging.py\n@@ -335,6 +335,18 @@ def test_invalid_direct_boot_ok(self, data):\n             check_encoding(messaging.Message(\n                 topic='topic', android=messaging.AndroidConfig(direct_boot_ok=data)))\n \n+    @pytest.mark.parametrize('data', NON_BOOL_ARGS)\n+    def test_invalid_bandwidth_constrained_ok(self, data):\n+        with pytest.raises(ValueError):\n+            check_encoding(messaging.Message(\n+                topic='topic', android=messaging.AndroidConfig(bandwidth_constrained_ok=data)))\n+\n+    @pytest.mark.parametrize('data', NON_BOOL_ARGS)\n+    def test_invalid_restricted_satellite_ok(self, data):\n+        with pytest.raises(ValueError):\n+            check_encoding(messaging.Message(\n+                topic='topic', android=messaging.AndroidConfig(restricted_satellite_ok=data)))\n+\n \n     def test_android_config(self):\n         msg = messaging.Message(\n@@ -347,6 +359,8 @@ def test_android_config(self):\n                 data={'k1': 'v1', 'k2': 'v2'},\n                 fcm_options=messaging.AndroidFCMOptions('analytics_label_v1'),\n                 direct_boot_ok=True,\n+                bandwidth_constrained_ok=True,\n+                restricted_satellite_ok=True,\n             )\n         )\n         expected = {\n@@ -364,6 +378,8 @@ def test_android_config(self):\n                     'analytics_label': 'analytics_label_v1',\n                 },\n                 'direct_boot_ok': True,\n+                'bandwidth_constrained_ok': True,\n+                'restricted_satellite_ok': True,\n             },\n         }\n         check_encoding(msg, expected)\n",
+    "pr_title": "feat(fcm): Add support for bandwidth constrained and restricted satellite APIs",
+    "linked_issue_number": null,
+    "metadata": {
+      "head_sha": "9ec61e50a742f2232637f96fa35a14f6c8fa8eff",
+      "merge_commit_sha": "d62a15e7da70e2d1829aadf034ad34546d7433cb",
+      "labels": [
+        "release-note",
+        "release:stage"
+      ],
+      "files_changed": 3,
+      "non_test_files_changed": 2,
+      "lines_added": 42,
+      "lines_removed": 2,
+      "total_lines": 44,
+      "non_test_files": [
+        "firebase_admin/_messaging_encoder.py",
+        "firebase_admin/_messaging_utils.py"
+      ],
+      "test_files": [
+        "tests/test_messaging.py"
+      ]
+    }
+  }
+]

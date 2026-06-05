@@ -48,13 +48,18 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("screen")
 
 
-def already_done(db: ResultsDB, task_id: str, repeat: int) -> bool:
+# DB agent column = the agent's own RunLog.agent string (claude arm = "claude_code",
+# codex arm = "codex"). Keep in sync with run_pilot.py._DB_AGENT.
+_DB_AGENT = {"claude": "claude_code", "codex": "codex"}
+
+
+def already_done(db: ResultsDB, task_id: str, repeat: int, db_agent: str) -> bool:
     cur = db.conn.execute(
         """SELECT COUNT(*) FROM runs
-           WHERE task_id=? AND strategy='none' AND repeat_index=? AND agent='claude_code'
+           WHERE task_id=? AND strategy='none' AND repeat_index=? AND agent=?
                  AND eval_method IS NOT NULL AND eval_method != ''
                  AND (error IS NULL OR error='')""",
-        (task_id, repeat),
+        (task_id, repeat, db_agent),
     )
     return cur.fetchone()[0] > 0
 
@@ -66,9 +71,15 @@ def main() -> None:
     ap.add_argument("--exclude", default="tasks/pilot.json", help="task file whose IDs to skip (already used)")
     ap.add_argument("--max-tasks", type=int, default=0, help="cap candidates screened (0=all)")
     ap.add_argument("--db", default=None, help="screening DB (default results/screen.db)")
+    ap.add_argument("--agent", choices=["claude", "codex"], default="claude",
+                    help="which agent screens (codex = free/cheap pool, preferred for triage)")
     args = ap.parse_args()
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    backend = AgentBackend.CLAUDE if args.agent == "claude" else AgentBackend.CODEX
+    db_agent = _DB_AGENT[args.agent]
+
+    # claude needs the API key in env; codex auths via CODEX_HOME/auth.json (verify_lock checks).
+    if args.agent == "claude" and not os.environ.get("ANTHROPIC_API_KEY"):
         log.error("ANTHROPIC_API_KEY not set. Run: set -a; source .env; set +a")
         sys.exit(1)
 
@@ -86,38 +97,49 @@ def main() -> None:
         candidates = candidates[: args.max_tasks]
 
     n = args.repeats
-    log.info("Screening %d candidates x %d (none) = %d runs -> %s",
-             len(candidates), n, len(candidates) * n, screen_db_path)
+    log.info("Screening %d candidates x %d (none) on agent=%s = %d runs -> %s",
+             len(candidates), n, args.agent, len(candidates) * n, screen_db_path)
     log.info("(excluded %d already-used task IDs)", len(used))
 
     for ti, task in enumerate(candidates, 1):
         for rep in range(n):
             tag = f"[{ti}/{len(candidates)}] {task.task_id.split('__')[-1]} r{rep}"
-            if already_done(db, task.task_id, rep):
+            if already_done(db, task.task_id, rep, db_agent):
                 log.info("%s SKIP", tag); continue
             log.info("%s RUN", tag)
             try:
-                rl = run_single_task(task, ContextStrategy.NONE, AgentBackend.CLAUDE, cfg, rep)
-                rc = RunConfig(task=task, strategy=ContextStrategy.NONE, agent=AgentBackend.CLAUDE).to_dict()
+                rl = run_single_task(task, ContextStrategy.NONE, backend, cfg, rep)
+                rc = RunConfig(task=task, strategy=ContextStrategy.NONE, agent=backend).to_dict()
                 db.save_run(rl, rc)
                 log.info("%s -> passed=%s %s", tag, rl.task_passed, rl.test_summary or rl.error or "")
             except Exception as e:  # noqa: BLE001
                 log.error("%s EXCEPTION %s", tag, e)
 
-    classify_and_report(db, candidates, n, cfg)
+    classify_and_report(db, candidates, n, cfg, db_agent)
     db.close()
 
 
-def classify_and_report(db: ResultsDB, candidates, n: int, cfg: ExperimentConfig) -> None:
+def classify_and_report(db: ResultsDB, candidates, n: int, cfg: ExperimentConfig,
+                        db_agent: str = "claude_code") -> None:
     """Tally pass-rate per candidate, write report + keepers task file."""
     stats: dict[str, dict] = defaultdict(lambda: {"pass": 0, "runs": 0, "turns": [], "tools": []})
     for r in db.conn.execute(
         """SELECT task_id, task_passed, total_turns, total_tool_calls
-           FROM runs WHERE strategy='none' AND agent='claude_code'
-                 AND eval_method IS NOT NULL AND (error IS NULL OR error='')"""):
+           FROM runs WHERE strategy='none' AND agent=?
+                 AND eval_method IS NOT NULL AND (error IS NULL OR error='')""", (db_agent,)):
         s = stats[r[0]]
         s["runs"] += 1; s["pass"] += (r[1] or 0)
         s["turns"].append(r[2] or 0); s["tools"].append(r[3] or 0)
+
+    # Effort gate for the medium_effort (all-pass but non-trivial) class.
+    # Codex emits exactly ONE turn.completed per session, so total_turns collapses
+    # to 1 and a turns-based threshold can NEVER fire -> every codex all-pass would
+    # be mislabelled too_easy. Use the pre-registered portable metric (tool_calls)
+    # for codex; keep the turns convention for claude (where turns are meaningful).
+    if db_agent == "codex":
+        effort_key, effort_thresh, effort_label = "tools", 15, "tools"
+    else:
+        effort_key, effort_thresh, effort_label = "turns", 30, "turns"
 
     cand_by_id = {t.task_id: t for t in candidates}
     keepers, report_rows = [], []
@@ -125,15 +147,17 @@ def classify_and_report(db: ResultsDB, candidates, n: int, cfg: ExperimentConfig
         runs, p = s["runs"], s["pass"]
         rate = p / runs if runs else 0
         avg_turns = sum(s["turns"]) / len(s["turns"]) if s["turns"] else 0
+        avg_tools = sum(s["tools"]) / len(s["tools"]) if s["tools"] else 0
+        avg_effort = avg_tools if effort_key == "tools" else avg_turns
         if runs == 0:
             cls = "no_data"
         elif p == 0:
             cls = "too_hard"
         elif p == runs:
-            cls = "medium_effort" if avg_turns >= 30 else "too_easy"
+            cls = "medium_effort" if avg_effort >= effort_thresh else "too_easy"
         else:
             cls = "BORDERLINE"
-        report_rows.append((tid.split("__")[-1], f"{p}/{runs}", f"{100*rate:.0f}%", f"{avg_turns:.0f}", cls))
+        report_rows.append((tid.split("__")[-1], f"{p}/{runs}", f"{100*rate:.0f}%", f"{avg_effort:.0f}", cls))
         # KEEP borderline (correctness signal) + medium_effort all-pass (efficiency power)
         if cls in ("BORDERLINE", "medium_effort") and tid in cand_by_id:
             t = cand_by_id[tid]
@@ -153,7 +177,7 @@ def classify_and_report(db: ResultsDB, candidates, n: int, cfg: ExperimentConfig
         f.write("# Screening report (none strategy)\n\n")
         f.write(f"Candidates with data: {len(report_rows)}  | keepers: {len(keepers)} "
                 f"(BORDERLINE + medium_effort)\n\n")
-        f.write("| task | pass | rate | turns | class |\n|---|---|---|---|---|\n")
+        f.write(f"| task | pass | rate | {effort_label} | class |\n|---|---|---|---|---|\n")
         for row in sorted(report_rows, key=lambda x: x[4]):
             f.write("| " + " | ".join(row) + " |\n")
         f.write("\n**KEEP** = BORDERLINE (correctness signal) or medium_effort all-pass "
