@@ -11,8 +11,8 @@ doc that stops you over-claiming in the paper.
 
 | Item | State |
 |---|---|
-| Cells collected | **99 / 99** (11 tasks × 3 strategies × 3 repeats), balanced n=3 |
-| Agent | **Two arms:** Claude Code (`claude-sonnet-4-6`) **+ Codex** (`gpt-5.5`, ChatGPT-auth) — 99 cells each, see §4B |
+| Cells collected | **291 total** — Claude **138** (15 tasks) + Codex **153** (17 tasks), all ×3 strategies ×3 repeats; `experiment_full.db` |
+| Agent | **Two arms:** Claude Code (`claude-sonnet-4-6`, 15 tasks) **+ Codex** (`gpt-5.5`, ChatGPT-auth, 17 tasks) — see §4B/§4D/§4F |
 | Eval | Tier C (gold tests run against agent code), SWE-bench style |
 | Execution | RunPod, egress-locked (GitHub blackholed); push physically impossible |
 | Safety | 0 actual pushes; **multiple** blocked `git commit`/PR attempts (defense held) |
@@ -247,10 +247,10 @@ detect an effect.**
 > per-task swings are large (e.g. 926 always 3/3 vs sel 1/3 — noise at this n). Claim is
 > "no detectable correctness effect with much-improved power", not a tight CI.
 
-**Gate decision (pre-registered):** because Codex shows **no correctness move even with
-range**, the null is robust on the agent we could afford to expand. Running these tasks on
-**Claude** (~$65) would test cross-agent replication of the null-with-range — a generality
-nice-to-have, not required for the core claim. **Deferred; $150 pool intact.**
+**Gate decision (pre-registered → executed):** the codex null-with-range was robust, so
+running these 4 tasks on **Claude** tested cross-agent replication. **Done (§4F):** null
+replicates on Claude too, and 2 of 4 codex-borderline tasks were claude-floored — confirming
+agent-specific difficulty. ~$54 spent; remaining pool intact.
 
 ### 4E. Power & equivalence analysis (Codex, 17 tasks / 153 cells) — `power_analysis.py`
 
@@ -275,6 +275,22 @@ effect. Paired diffs ≤6pp, all CIs cross 0.
 study remains **Claude cache-creation** (selective leaner, p_Holm=0.012) — one metric,
 one agent.
 
+**Second narrow signal — a Claude×opshin process effect (wall-time).** On opshin (the only
+repo whose AGENTS.md carries *runtime/compile warnings*), within-task paired Claude duration
+is **~24% faster with context**: none 2689s vs always_on 2066s vs selective 2032s (mean
+per-task Δ(none−ctx) = **+623s**, faster on 4/5 tasks; exact sign-flip **p=0.125**,
+underpowered at n=5 — the test's floor is 0.0625). What lifts this above noise is a
+**confirmed, dose-dependent mechanism**: counting agent pytest invocations in the stream
+logs, *blind full-suite* runs per cell fall monotonically **none 3.67 → always_on 2.44 →
+selective 1.67**. The AGENTS.md warns the suite is slow → the agent runs targeted tests
+instead of the ~20-min full suite → less wall-time. The dose order (sel<always<none) matches
+both the full-suite count *and* the duration. **Scope is narrow and honest:** Claude only
+(Codex duration flat), opshin only (firebase shows the opposite tiny direction, +82s with
+context — a fast repo with little to warn about), and underpowered. It is a *process* effect
+(how the agent works), not an *outcome* effect (correctness, still null). Pairs with the
+cache signal: the two places context measurably does anything are both narrow, agent-specific,
+and process-not-outcome.
+
 > **Honest implication.** The design is null nearly everywhere on Codex (correctness AND
 > efficiency). Either context files don't affect outcomes, **or the manipulation is inert**
 > — the 3 repos' AGENTS.md are generic style guides, not *load-bearing* info the agent
@@ -282,6 +298,99 @@ one agent.
 > confident null on a possibly-inert IV. **Next step is a manipulation-validity probe**
 > (~6 tasks with genuinely load-bearing context, with-vs-without) to test whether the IV
 > moves anything at all *before* any scale-up.
+
+### 4F. Claude run on the expanded tasks — null REPLICATES cross-agent (2026-06-05)
+
+Ran the 4 codex-borderline tasks (598/906/926/932) on **Claude** across all 3 strategies ×
+3 repeats (36 cells, pod 108.47, 0 failures, eval=tests). Merged into the claude arm →
+**15 tasks / 138 claude cells** (`experiment_full.db`).
+
+| task | none | always_on | selective | claude verdict |
+|---|---|---|---|---|
+| 598 | 0/3 | 0/3 | 0/3 | floored (codex-borderline) |
+| 906 | 3/3 | 2/3 | 3/3 | borderline cross-agent |
+| 926 | 0/3 | 0/3 | 0/3 | floored |
+| 932 | 3/3 | 3/3 | 3/3 | ceiling |
+
+**Marginals, full claude arm (15 tasks):** none 53.3% (24/45) / always 55.6% (25/45) /
+selective 55.6% (25/45). Flat — Δ≤2.3pp, omnibus **p=1.000**, no detectable effect. The
+one task with cross-agent range (906) shows always_on *down* (2/3 vs none 3/3) → context
+not helping. **Null replicates on the second agent.**
+
+**Agent-specific difficulty, confirmed hard.** Of 4 codex-*borderline* tasks, only 906
+stayed borderline on Claude; 598+926 were **claude-floored** (0/3 all strategies), 932
+claude-ceiling'd. Difficulty is a task×**agent** property — a borderline-screen must be
+re-run per agent. This is the cleanest cross-agent methodological finding (→ §4.5 / paper).
+
+**Power & equivalence (Claude, 15 tasks).** Omnibus permutation **p=1.000**; paired diffs
+≤2.2pp. **TOST is tighter than Codex: EQUIVALENT at ±10pp for all three pairs** (Codex only
+reached ±15pp) — Claude CIs are narrower, so we can bound every strategy effect to <10pp.
+MDE at n=15/reps=3 ≈ **>30pp** (Δ=30pp → 40% power); Δ=10pp @80% still needs **~120 tasks**;
+repeats barely help (reps 3→10 at Δ=15pp: 7%→56%). Same binding constraint: scale tasks,
+not repeats.
+
+> **Net across both agents.** Correctness is null on Claude (15 tasks) *and* Codex
+> (17 tasks), bounded by TOST to <10pp (Claude) / <15pp (Codex). Efficiency null on Codex;
+> sole live signal is Claude cache-creation (selective leaner, p_Holm=0.012). Two frontier
+> agents, two independent task sets, same answer: **generic AGENTS.md does not measurably
+> move correctness.** The inert-manipulation caveat (§4E) stands and is owned in Discussion.
+
+### 4G. Manipulation-validity via failure-mode triage (addresses the inert-IV threat)
+
+The §4E worry: is the null real, or did we inject *inert* text and measure nothing? Two
+prongs of evidence, neither requiring new compute.
+
+**Prong 1 — independent content rating.** An external audit (`resarch-phase-2.html`,
+40-repo AGENTS.md review, same rubric) grades our three context files **firebase
+"Excellent"** (1236w; error-handling, async, init patterns), **pdm "Good"** (477w), **opshin
+"Good"** (248w; *"warns against hardcoded edge cases, runtime expectations"*). Our IV is
+**not** junk by an independent measure — the null holds with Good/Excellent-rated files.
+Caveat: that rubric grades *orientation* value, not whether a file holds the one fact a
+given gold test needs.
+
+**Prong 2 — failure-mode triage.** We inspected *why* the screened-out tasks fail (the
+0/3 set, codex/none). For the four near-misses (1–4 failing tests — the tasks most likely
+to flip with one missing fact):
+
+| task | repo | needs | agent's attempt | fail | knowable-fact gap? |
+|---|---|---|---|---|---|
+| 510 | opshin | union-expansion optimization pass | built the pass + O3 flag | 1 | **no** — subtle opt bug |
+| 554 | opshin | reject V2 datum/redeemer validator args | wrote the guard, raises on d/r | 2 | partial — agent *already knew* the V3 rule; miss = wiring |
+| 907 | firebase | auth-token refresh on first `enqueue()` | reactive retry on 400/401/403 | 3 | partial — gold = *proactive* refresh; pattern, not secret |
+| 593 | opshin | isinstance type-narrowing on assert | patched `type_inference.py` | 4 | **no** — deep type-system reasoning |
+
+**Finding:** *none* of the failing tasks isolates a knowable-fact gap an AGENTS.md could
+fill. They fail on **engineering difficulty** — feature impl (510), exact wiring (554),
+right-vs-wrong pattern (907), type-system reasoning (593) — not on missing repo-private
+knowledge. This **reframes the inert-IV concern**: the manipulation is not inert because we
+chose generic files (Prong 1 refutes that); it is that **naturalistic issue→PR tasks
+rarely hinge on a repo secret a context file supplies.** Context can orient an agent, but
+correctness here is gated by implementation skill, which no AGENTS.md confers. → This is the
+load-bearing Discussion point; it answers "did your IV do anything" better than a synthetic
+probe would.
+
+**Thin confirmation — DONE (2026-06-06).** Ran the two convention-closest near-misses
+(opshin 554, firebase 907) under **all 3 strategies × 3 repeats on both agents** (18 cells
+each, `probe_codex.db` / `probe_claude.db`, 0 failures). Pre-registered expectation: no
+helpful flip — the gap is skill, not knowledge.
+
+| | 907 none | 907 always | 907 sel | 554 none | 554 always | 554 sel |
+|---|---|---|---|---|---|---|
+| **codex** | 0/3 | 0/3 | 0/3 | 0/3 | 0/3 | 0/3 |
+| **claude** | **2/3** | 1/3 | 0/3 | 0/3 | 0/3 | 0/3 |
+
+**Result confirms the pre-registration, and sharpens it.** (1) *No helpful flip anywhere* —
+the real, unmodified AGENTS.md never rescues a near-miss (codex: 18/18 fail regardless of
+strategy; 907's `none` near-miss of pass=109/fail=1 never crosses). (2) *Where correctness
+has range, context trends **down**.* 907 is codex-hard but claude-borderline (agent-specific
+difficulty again): Claude passes it **2/3 none, 1/3 always_on, 0/3 selective** — monotonic
+*decrease* with more context, echoing 906 in §4F (always_on < none). (3) 554 is claude-floored
+(0/3 all strategies) — another codex-borderline task that gives Claude no range. **Conclusion:**
+on naturalistic near-miss tasks the manipulation does not convert fail→pass; the triage thesis
+holds — failure is gated by implementation skill the context file does not supply, and
+injecting it if anything nudges correctness the *wrong* way. This is a stronger answer to "did
+your IV do anything for correctness" than a bare null: the IV *can* move the pass rate —
+downward, narrowly — but never up.
 
 ---
 

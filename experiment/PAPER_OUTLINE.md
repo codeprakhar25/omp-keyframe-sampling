@@ -91,16 +91,21 @@ practitioner-relevant takeaway. ~150 words.
 - Fig 3 (optional): power curve (power vs n_tasks for Δ=10pp).
 
 ## Writing TODO (6-week)
-- [ ] Wk1: finish Claude borderline run (in flight) → fold into Tab 1/2. Outline → prose.
-- [ ] Wk1: regenerate Tab 1-3 + Fig 2-3 from experiment_merged.db + claude_borderline.db.
+- [x] Wk1: Claude borderline run DONE → merged into `experiment_full.db` (claude 138/15 tasks).
+- [ ] Wk1: regenerate Tab 1-3 + Fig 2-3 from `experiment_full.db` (single merged db; decided).
 - [ ] Wk2-3: draft Method + Results (RESULTS.md is ~80% raw material).
 - [ ] Wk2-3: Intro + Related Work (the hard, load-bearing 20%).
 - [ ] Wk4: Discussion + Limitations (own the inert-manipulation point), polish, figures.
 - [ ] Wk5: internal review pass; tighten claims to match power bounds.
 - [ ] Wk6: format for REALM, submit.
 
+## Decided
+- Analysis db = **`experiment_full.db`** (master + claude_borderline merged; claude 138/15,
+  codex 153/17, 0 run_id collisions, 0 task overlap).
+- Claude arm reported as **15 tasks** (pilot 11 + 4 borderline) vs Codex 17 — own the gap (§6).
+- **Key numbers locked:** correctness null both agents (claude none/always/sel =
+  53.3/55.6/55.6%, omnibus p=1.000; codex 58.8/56.9/52.9%, p=0.66). **TOST: claude
+  equivalent ≤10pp, codex ≤15pp.** MDE >30pp both; ~120 tasks for 10pp.
+
 ## Open decisions
-- Merge Claude borderline (4) into the master? → analysis db = experiment_merged.db +
-  claude_borderline.db (or merge into one). Decide before Tab 1.
-- Report Claude arm as 15 tasks (pilot 11 + 4 borderline) vs Codex 17 — own the gap.
 - Include pdm-codex-floored as a finding (agent-specific saturation) or footnote.
