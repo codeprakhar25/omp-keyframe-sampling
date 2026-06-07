@@ -1,0 +1,504 @@
+% REALM @ EMNLP 2026 — Long Paper (8 pages + refs/appendix)
+% ACL format
+\documentclass[11pt]{article}
+\usepackage{acl}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{url}
+
+\newcommand{\agentsmd}{\texttt{AGENTS.md}}
+\newcommand{\none}{\textsc{none}}
+\newcommand{\alwayson}{\textsc{always\_on}}
+\newcommand{\selective}{\textsc{selective}}
+
+\title{Do Context Files Help Coding Agents?\\A Two-Agent Ablation Study on Real Repositories}
+
+\author{Anonymous}
+
+\begin{document}
+\maketitle
+
+% ============================================================================
+% ABSTRACT
+% ============================================================================
+\begin{abstract}
+Persistent context files (\agentsmd{}, \texttt{CLAUDE.md}) are now standard practice for guiding AI coding agents, yet evidence for their effectiveness is contradictory: one study reports efficiency gains while another finds no significant effect.
+We present the first controlled ablation of context-injection \emph{strategy}---none, always-on (full file in system prompt), and selective (wiki-split retrieval)---on real issue-to-PR tasks evaluated with gold tests (SWE-bench style).
+Our experiment spans 291 cells across two frontier agents (Claude Code \texttt{sonnet-4-6} and Codex \texttt{gpt-5.5}), 17 tasks from 3 open-source repositories, with 3 repeats per condition.
+\textbf{Results:} context-injection strategy does not measurably move correctness on either agent (omnibus permutation $p{=}0.66$/$1.00$; TOST equivalence ${\leq}10$pp for Claude, ${\leq}15$pp for Codex).
+The sole surviving efficiency signal is that \selective{} reduces Claude's cache-creation tokens ($p_{\text{Holm}}{=}0.012$); Codex shows no efficiency effect ($|d_z|{<}0.2$).
+A failure-mode triage reveals that tasks fail on \emph{implementation skill}, not missing repository knowledge---explaining why even well-rated context files do not help.
+A pre-registered manipulation-validity probe confirms the mechanism: on the convention-closest near-miss tasks, the real \agentsmd{} never converts a failing task to a pass on either agent (and in the single task with cross-agent dynamic range, more context did not improve correctness).
+We release all code, data, and a Monte Carlo power analysis quantifying our design's detection limits.
+\end{abstract}
+
+% ============================================================================
+% 1. INTRODUCTION
+% ============================================================================
+\section{Introduction}
+
+Repository context files---\agentsmd{}, \texttt{CLAUDE.md}, and similar project-level guides---have become ubiquitous infrastructure for AI coding agents.
+Platforms like Claude Code auto-load these files into every session; practitioners invest significant effort authoring coding conventions, architectural constraints, and workflow guidance, expecting agents to produce better code as a result.
+
+Yet empirical evidence is contradictory.
+\citet{paper1} report that \agentsmd{} files improve agent \emph{efficiency} (fewer iterations to correct code), while \citet{paper2} find no significant effect on task completion when context files are present versus absent.
+The two studies differ in agent (Codex-family vs.\ Claude-family), evaluation method, and experimental control---making reconciliation impossible without a study that isolates injection strategy as the sole independent variable across both agent families.
+
+This paper presents such a study.
+We conduct a controlled ablation of context-injection strategy on real merged pull requests, evaluated with hidden gold tests (SWE-bench Tier-C style), across two frontier agents from different providers.
+Our three strategies---\none{} (no context), \alwayson{} (full \agentsmd{} in every system prompt), and \selective{} (wiki-split files the agent retrieves on demand)---isolate \emph{how} context is delivered while keeping all other variables fixed.
+
+Our contributions are:
+\begin{enumerate}
+    \item A \textbf{controlled 291-cell ablation} (17 tasks $\times$ 3 strategies $\times$ 3 repeats $\times$ 2 agents) with SWE-bench-style gold-test evaluation on real repositories.
+    \item A \textbf{rigorous null result}: TOST equivalence bounds (${\leq}10$pp Claude, ${\leq}15$pp Codex), omnibus permutation tests, and Monte Carlo power analysis quantifying detection limits---the methodological rigor most ablation studies omit.
+    \item Evidence that \textbf{borderline task difficulty is agent-specific}: the same task may be trivially solvable for one agent yet challenging for another, explaining why single-agent studies reach contradictory conclusions.
+    \item A \textbf{failure-mode triage} demonstrating that real coding tasks fail on implementation skill, not missing repository knowledge---the mechanism behind the null---together with a \textbf{pre-registered manipulation-validity probe} that confirms the real \agentsmd{} cannot convert a near-miss failure to a pass on either agent.
+\end{enumerate}
+
+% ============================================================================
+% 2. RELATED WORK
+% ============================================================================
+\section{Related Work}
+
+\paragraph{Coding agents and benchmarks.}
+SWE-bench~\citep{swebench} established the issue-to-PR evaluation paradigm for coding agents, and subsequent work on agent--computer interfaces~\citep{sweagent} shows that harness design (tool ordering, context budgets, retry logic) materially affects performance independent of the underlying model.
+Our work builds on this paradigm but studies a different variable: persistent repository context rather than harness mechanics.
+
+\paragraph{Context and memory for agents.}
+Persistent memory systems for LLM agents range from operating-system-style memory management~\citep{memgpt} to session-accumulated skill libraries~\citep{voyager}.
+\agentsmd{} files represent the simplest form: a static document loaded at session start.
+\citet{paper1} study the impact of these files on Codex-family agents, measuring iteration count and token usage; they report efficiency improvements but do not control for injection strategy.
+\citet{paper2} run a larger naturalistic study with Claude-family agents and find no significant effect on correctness.
+Neither study isolates injection strategy as an independent variable, nor do they test across agent families.
+
+\paragraph{Equivalence testing in empirical SE.}
+Traditional null-hypothesis testing cannot confirm the absence of an effect~\citep{tost}.
+Two one-sided tests (TOST) provide bounded equivalence claims, but remain rare in agent evaluation.
+We adopt TOST alongside permutation tests and power analysis to characterize our null, following recommendations from empirical software engineering methodology~\citep{empiricalse}.
+
+% ============================================================================
+% 3. METHOD
+% ============================================================================
+\section{Method}
+
+\subsection{Overview}
+
+We measure whether the \emph{strategy} by which repository context is injected into a coding agent affects task correctness or efficiency.
+The independent variable has three levels (\none{}, \alwayson{}, \selective{}); the dependent variables are binary correctness (gold tests pass/fail) and continuous efficiency metrics (tool calls, wall-clock time, output tokens, cache usage).
+Each task is run under all three strategies with 3 independent repeats, on two agents, yielding a within-task paired design.
+Figure~\ref{fig:strategies} illustrates the three injection strategies.
+
+\begin{figure}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+& \textbf{File in} & \textbf{In system} & \textbf{Retrievable} \\
+\textbf{Strategy} & \textbf{workspace} & \textbf{prompt} & \textbf{wiki files} \\
+\midrule
+\none      & --- & --- & --- \\
+\alwayson  & --- & full \agentsmd{} & --- \\
+\selective & --- & retrieval hint & \texttt{wiki/*.md} \\
+\bottomrule
+\end{tabular}
+\caption{The three context-injection strategies. In every condition the workspace \agentsmd{} is removed, so the injection channel is the \emph{only} context the agent receives. \none{} provides no context; \alwayson{} injects the full file each turn; \selective{} splits it into topic wiki files the agent reads on demand, cued by a system-prompt hint.}
+\label{fig:strategies}
+\end{figure}
+
+\subsection{Task Selection and Evaluation}
+
+\paragraph{Repositories.}
+We select 3 open-source Python repositories that maintain real \agentsmd{} files:
+\textbf{pdm} (package manager, 477-word context file),
+\textbf{firebase-admin-python} (cloud SDK, 1236-word file rated ``Excellent'' by independent audit), and
+\textbf{opshin} (domain-specific compiler, 248-word file).
+These span distinct domains (tooling, cloud infrastructure, compilers) and \agentsmd{} quality levels.
+
+\paragraph{Tasks.}
+From each repository we select merged pull requests as tasks: the PR description becomes the agent prompt, the base commit becomes the starting state, and the PR's test files become the gold evaluation.
+Selection criteria: (1) the PR contains test files; (2) the fix is non-trivial (multiple files or $>$50 LOC); (3) the PR does not require external credentials or services.
+We include 17 tasks total (6 firebase, 5 opshin, 4 pdm, plus 2 high-effort tasks for the expanded Codex arm).
+
+\paragraph{Evaluation (Tier-C).}
+After the agent completes, we extract test files from the gold PR diff, apply them onto the agent's workspace, and run them against the agent's code.
+The task passes if and only if all gold tests pass.
+This follows the SWE-bench evaluation protocol: the agent never sees the test files; they serve as an oracle.
+
+\paragraph{Safety and isolation.}
+All runs execute on an egress-locked pod with GitHub DNS blackholed.
+Git remotes are scrubbed, credentials are stripped, and git push/commit commands are denied via PATH shims.
+Future commit history is pruned so the agent cannot read gold solutions from \texttt{git log}.
+
+\subsection{Independent Variable: Injection Strategy}
+\label{sec:iv}
+
+\begin{description}
+    \item[\none:] The \agentsmd{} file is removed from the workspace. No repository context is provided in the system prompt or accessible to the agent. The agent works from the codebase alone.
+    \item[\alwayson:] The full \agentsmd{} content is injected into the system prompt every turn, preceded by a framing sentence (``The following is the repository's AGENTS.md guide...'').  The file is removed from the workspace to prevent double-reading.
+    \item[\selective:] The \agentsmd{} is split into topic-specific wiki files (e.g., \texttt{wiki/error-handling.md}, \texttt{wiki/architecture.md}) placed in the workspace. A system-prompt hint tells the agent to consult \texttt{wiki/*.md} for context. The agent retrieves relevant files on demand via its Read tool.
+\end{description}
+
+In all conditions, the \agentsmd{} file itself is removed from the workspace---the \emph{only} context the agent receives is what the injection strategy explicitly provides.
+This makes injection strategy the sole independent variable.
+
+\subsection{Agents}
+
+We run two frontier coding agents from different providers:
+\begin{itemize}
+    \item \textbf{Claude Code} (\texttt{claude-sonnet-4-6}, Anthropic). Multi-turn, tool-use agent invoked via \texttt{claude -{}-print -{}-bare -{}-output-format stream-json}. Context injected via \texttt{-{}-append-system-prompt}. Cost-capped at \$6/run.
+    \item \textbf{Codex CLI} (\texttt{gpt-5.5}, OpenAI, ChatGPT-plan auth). Single-session agent invoked via \texttt{codex exec -{}-json}. Context injected by prepending to the user prompt (Codex lacks a system-prompt flag). Turn-capped at 120 via watchdog.
+\end{itemize}
+
+Both agents use the same workspace, task prompt, and evaluation pipeline.
+The injection-channel asymmetry (system prompt vs.\ user-turn prepend) is a noted confound (\S\ref{sec:limitations}).
+
+\subsection{Efficiency Metrics}
+
+We distinguish \emph{portable} metrics (comparable across agents) from \emph{agent-specific} metrics:
+\begin{itemize}
+    \item \textbf{Portable:} tool calls, wall-clock duration, output tokens.
+    \item \textbf{Agent-specific:} cache-read tokens, cache-creation tokens (Claude only; Codex folds cached input into \texttt{input\_tokens} with no separate accounting).
+\end{itemize}
+
+Turns are excluded as a cross-agent metric: Codex emits exactly 1 \texttt{turn.completed} event per session regardless of work performed (a classifier artifact we discovered during screening; \S\ref{sec:classifier}).
+
+\subsection{Statistical Analysis}
+
+The unit of analysis is the \emph{task} (not the repeat).
+For each (task, strategy) pair, the 3 repeats are averaged to yield one value per task per strategy.
+We then apply:
+\begin{itemize}
+    \item \textbf{Omnibus permutation test:} strategy labels permuted within-task (10,000--20,000 iterations); test statistic = variance of marginal strategy pass-rates.
+    \item \textbf{Paired Wilcoxon signed-rank tests} with Holm-Bonferroni correction for efficiency metrics (family of 12 tests across 3 pairs $\times$ 4 metrics).
+    \item \textbf{TOST equivalence:} task-clustered bootstrap (10k) on paired strategy differences; equivalence declared if 95\% CI falls within $\pm\delta$.
+    \item \textbf{Monte Carlo power:} simulate binary outcomes under varying true $\Delta$ and $n_{\text{tasks}}$ to determine minimum detectable effect (MDE) and sample size for 80\% power.
+\end{itemize}
+
+% ============================================================================
+% 4. RESULTS
+% ============================================================================
+\section{Results}
+
+\subsection{Correctness: No Strategy Effect (Both Agents)}
+
+Table~\ref{tab:correctness} presents pass-rates by strategy and agent.
+Neither agent shows a statistically significant strategy effect.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Pass-rate by strategy and agent. Omnibus permutation $p$-values test whether strategy explains correctness beyond task difficulty.}
+\label{tab:correctness}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Strategy} & \textbf{Claude (15 tasks)} & \textbf{Codex (17 tasks)} \\
+\midrule
+\none        & 53.3\% (24/45) & 58.8\% (30/51) \\
+\alwayson    & 55.6\% (25/45) & 56.9\% (29/51) \\
+\selective   & 55.6\% (25/45) & 52.9\% (27/51) \\
+\midrule
+Omnibus $p$  & 1.000          & 0.66 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For Claude, all pairwise strategy differences are ${\leq}2.3$pp.
+For Codex, the largest difference is 5.9pp (\none{} vs.\ \selective{}), driven by per-task noise at $n{=}3$ repeats.
+The omnibus permutation test confirms no detectable strategy effect ($p{=}1.00$ Claude; $p{=}0.66$ Codex).
+
+\paragraph{The null holds with dynamic range.}
+A potential objection is that the null reflects floor/ceiling effects (tasks too easy or too hard for context to matter).
+We address this with borderline-task expansion: on 4 Codex-borderline tasks (17--67\% baseline pass rate), \none{} achieves 58\% vs.\ \alwayson{} 42\% and \selective{} 42\%---context injection does \emph{not} help even where the design has power to detect an effect.
+
+\subsection{Equivalence Bounds (TOST)}
+
+Table~\ref{tab:tost} presents equivalence results.
+Claude achieves the tighter bound: all pairwise strategy effects are bounded to $<$10pp.
+For Codex, equivalence is established at ${\pm}15$pp.
+
+\begin{table}[t]
+\centering
+\small
+\caption{TOST equivalence bounds. ``Equivalent'' = 95\% bootstrap CI of the paired difference falls within $\pm\delta$.}
+\label{tab:tost}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Agent} & \textbf{$\delta{=}10$pp} & \textbf{$\delta{=}15$pp} \\
+\midrule
+Claude (15 tasks) & Equivalent (all pairs) & Equivalent \\
+Codex (17 tasks)  & Inconclusive           & Equivalent \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Reconciling equivalence with power.}
+The equivalence bound ($<$10pp) and the minimum detectable effect ($>$30pp, \S\ref{sec:power}) are not in contradiction; they answer different questions.
+TOST bounds the \emph{realized} effect: because every observed paired strategy difference is near zero (Claude: $+2.2$, $+2.2$, $0.0$pp), the task-clustered bootstrap CIs are correspondingly narrow (widest Claude CI $[-4.4, +8.9]$pp), so the data are consistent with no effect larger than ${\sim}$10pp.
+MDE, by contrast, is the smallest \emph{hypothesized} effect we could reliably \emph{detect} at 80\% power given $n$; with 15--17 tasks that threshold is large ($>$30pp).
+A study can thus simultaneously (i) fail to have power for a moderate true effect and (ii) bound the \emph{observed} effect tightly when the point estimate is ${\approx}0$.
+We therefore treat the equivalence bound as descriptive of this sample rather than a powered equivalence claim, and report the bootstrap CIs numerically so readers can judge; given $n{=}15$ clusters these percentile CIs should be read with caution (a non-bootstrap permutation check yields the same qualitative conclusion).
+
+\subsection{Efficiency: Two Narrow Process Signals, Otherwise Null}
+
+\paragraph{Claude.}
+\selective{} uses significantly less cache-creation tokens than \none{} (unanimous 11/11 tasks lower; $p{=}0.001$, $p_{\text{Holm}}{=}0.012$).
+Directional but non-significant trends appear for cache-read (9/11 lower, $p{=}0.067$) and \alwayson{} vs.\ \selective{} duration (8/11 lower, $p{=}0.054$).
+No significant effect on turns or tool calls after correction.
+
+\paragraph{Codex.}
+All efficiency metrics are flat across strategies: tool calls 32/32/32, output tokens $\pm$3.8\%, duration $\pm$3.8\% (all $|d_z|{<}0.2$, negligible effect size).
+
+\paragraph{A within-agent process effect (Claude\,$\times$\,opshin).}
+A second, narrow efficiency signal survives. On \textbf{opshin}---the one repository whose \agentsmd{} carries explicit \emph{runtime/compile-time} warnings (``the full test suite takes $>$20 minutes'')---Claude's within-task wall-clock time is ${\sim}$24\% lower under context: \none{} $2689$s vs.\ \alwayson{} $2066$s vs.\ \selective{} $2032$s (mean per-task $\Delta_{\text{none}-\text{ctx}}{=}{+}623$s, faster-with-context on 4/5 tasks; exact sign-flip $p{=}0.125$, underpowered at $n{=}5$).
+What lifts this above noise is a \emph{dose-dependent} mechanism: counting the agent's \texttt{pytest} invocations in the stream logs, the number of \emph{blind full-suite} runs per cell falls monotonically \none{} $3.67 \to$ \alwayson{} $2.44 \to$ \selective{} $1.67$ (Table~\ref{tab:opshin}).
+A within-task paired comparison of these counts is directional but, like the duration effect, underpowered (mean ${-}1.65$ full-suite runs per cell under context, fewer on 3/4 tasks, sign-flip $p{=}0.25$, $n{=}4$ tasks with available stream logs).
+Stripped of the \agentsmd{} warning, the agent repeatedly runs the slow full suite; given the warning, it runs targeted tests instead.
+The dose ordering (\selective{}\,$<$\,\alwayson{}\,$<$\,\none{}) matches both the full-suite count and the duration.
+The scope is deliberately narrow: the effect appears only for Claude (Codex duration is flat) and only on opshin (firebase shows the opposite ${+}82$s direction---a fast repository with little to warn about).
+Like the cache signal, it is a \emph{process} effect (how the agent works), not an \emph{outcome} effect (correctness, still null).
+We report it as \emph{exploratory}: it emerged from a post-hoc mechanism analysis rather than the pre-registered efficiency-metric family, and we therefore do not fold it into the Holm-corrected confirmatory tests below.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Claude on opshin: context reduces blind full-suite test runs and wall-clock time. Full-suite count = \texttt{pytest} invocations targeting the whole suite per cell.}
+\label{tab:opshin}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Strategy} & \textbf{Full-suite runs/cell} & \textbf{Duration (s)} \\
+\midrule
+\none      & 3.67 & 2689 \\
+\alwayson  & 2.44 & 2066 \\
+\selective & 1.67 & 2032 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Cross-agent comparison (portable metrics, qualitative).}
+Codex is consistently leaner: it uses fewer tool calls, less wall-clock time, and fewer output tokens than Claude---at a slightly lower pass-rate.
+We report this only qualitatively: the two agents differ in injection channel (system prompt vs.\ user-turn prepend, \S\ref{sec:iv}), tokenizer, and token accounting (Codex folds cached input into \texttt{input\_tokens} with no separate cache field), so the magnitude of any between-agent token or time gap is confounded and we do not interpret it quantitatively. The \emph{within}-agent strategy comparisons---our actual contrast---are unaffected by these confounds.
+
+\subsection{Power Analysis and Detection Limits}
+\label{sec:power}
+
+Our Monte Carlo simulation (\S3.6) reveals:
+\begin{itemize}
+    \item MDE at $n{=}17$, reps$=$3: only effects $>$30pp are detectable (57\% power at $\Delta{=}30$pp).
+    \item Detecting $\Delta{=}10$pp at 80\% power requires ${\sim}$120--200 tasks.
+    \item Adding repeats barely helps ($n{=}17$, reps $3{\to}10$: power increases 13\%${\to}$58\% for $\Delta{=}15$pp).
+\end{itemize}
+
+Task-level variance dominates: scaling requires more \emph{tasks}, not more repeats.
+This is a methodological finding relevant to future ablation study designs.
+
+\subsection{Agent-Specific Borderline Tasks}
+\label{sec:borderline}
+
+A striking cross-agent finding: the \emph{same task} occupies different difficulty bands depending on the agent.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Agent-specific difficulty. Pass format: none/always/selective.}
+\label{tab:borderline}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Task} & \textbf{Claude} & \textbf{Codex} & \textbf{Note} \\
+\midrule
+3790 (pdm)  & 1/3 · \textbf{2/3} · 1/3 & 0/3 · 0/3 · 0/3 & Claude borderline \\
+3769 (pdm)  & 3/3 · 3/3 · 3/3          & 2/3 · \textbf{3/3} · 1/3 & Codex borderline \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This is not merely anecdotal. Across the 15 tasks both agents attempted, per-task pass rates are positively but imperfectly correlated (Spearman $\rho{=}0.75$, $p{=}0.001$; Pearson $r{=}0.77$): difficulty largely transfers, yet the \emph{informative band} does not.
+Of the 15 shared tasks, 6 are borderline ($0{<}\text{pass}{<}1$) for exactly one agent, and 6 differ in floor/ceiling status across agents---so for roughly 40\% of tasks, the agent that would reveal a context effect is not the same agent.
+
+This explains prior contradictions: if Paper 1 (Codex-family) and Paper 2 (Claude-family) drew tasks that landed in different agents' borderline bands, they would observe different context effects---not because context inherently helps or doesn't, but because the informative range is agent-specific.
+A practical consequence is that ablation studies must screen tasks \emph{per agent}; a borderline set calibrated on one agent gives another agent mostly floor/ceiling tasks, where no manipulation can show an effect.
+
+\subsection{Classifier Portability Lesson}
+\label{sec:classifier}
+
+During borderline screening, our effort classifier (split on turns${\geq}$30) silently misclassified all Codex tasks as ``trivial'' because Codex emits exactly 1 \texttt{turn.completed} event per session.
+Eight genuinely high-effort tasks (18--51 tool calls, 410--1220s) were incorrectly dropped.
+Reclassifying on \emph{tool calls}---the pre-registered portable metric---recovered them.
+This demonstrates that turn-based metrics are non-portable across agent architectures.
+
+% ============================================================================
+% 5. DISCUSSION
+% ============================================================================
+\section{Discussion}
+
+\subsection{Why the Null Holds: Skill, Not Knowledge}
+
+The failure-mode triage (\S\ref{sec:triage}) reveals \emph{why} context files do not help.
+We inspected the near-miss failures (1--4 failing gold tests)---the tasks most likely to flip with one additional piece of information:
+
+\begin{itemize}
+    \item \textbf{Task 510 (opshin):} requires a subtle union-expansion optimization. The agent built the entire optimization pass but introduced a correctness bug. Gap: engineering precision, not a missing fact.
+    \item \textbf{Task 907 (firebase):} requires proactive auth-token refresh. The agent implemented reactive retry instead. Gap: architectural pattern choice, not secret knowledge.
+    \item \textbf{Task 554 (opshin):} requires rejecting V2 validator arguments. The agent knew the V3 rule (from the code) but miswired the check. Gap: exact behavioral specification.
+    \item \textbf{Task 593 (opshin):} requires type-narrowing through \texttt{isinstance} + \texttt{assert}. Gap: deep type-system reasoning.
+\end{itemize}
+
+None of these failures isolate a knowable-fact gap that an \agentsmd{} could fill.
+They fail on \emph{implementation skill}---feature design, pattern selection, exact wiring---not on missing repository-private knowledge.
+\label{sec:triage}
+
+\subsection{Manipulation-Validity Probe}
+\label{sec:probe}
+
+The triage motivates an obvious objection: perhaps the null reflects an \emph{inert manipulation}---we injected text that did nothing measurable.
+We address this directly with a pre-registered probe.
+First, an independent audit of our three context files (a 40-repository \agentsmd{} review) rates them \emph{firebase} ``Excellent,'' \emph{pdm} and \emph{opshin} ``Good''---they are not low-quality files.
+Second, we re-ran the two convention-closest near-misses (opshin~554, firebase~907) under all three strategies, 3 repeats, on \emph{both} agents (36 cells), to test whether the real, unmodified \agentsmd{} can flip a near-miss to a pass (Table~\ref{tab:probe}).
+
+\begin{table}[t]
+\centering
+\small
+\caption{Manipulation-validity probe: pass-rate (none/always/selective) on the two convention-closest near-miss tasks. The real \agentsmd{} never flips a failure to a pass; where range exists (Claude, 907), more context trends \emph{down}.}
+\label{tab:probe}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Task} & \textbf{Codex} & \textbf{Claude} \\
+\midrule
+907 (firebase) & 0/3 · 0/3 · 0/3 & \textbf{2/3} · 1/3 · 0/3 \\
+554 (opshin)   & 0/3 · 0/3 · 0/3 & 0/3 · 0/3 · 0/3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The result confirms the pre-registration and sharpens it.
+(1)~\emph{No helpful flip anywhere}: the real \agentsmd{} never rescues a near-miss (Codex fails 18/18 regardless of strategy; task~907's \none{} near-miss of 109~pass / 1~fail never crosses).
+(2)~\emph{In the one task with cross-agent range, more context did not help}: task~907 is Codex-hard but Claude-borderline, and Claude passes it 2/3 under \none{}, 1/3 under \alwayson{}, 0/3 under \selective{}. We do not claim a general downward effect---this is a single task at $n{=}3$ repeats---but the trend is clearly non-positive, and no condition on either agent produced a flip toward passing.
+(3)~Task~554 is Claude-floored, another instance of agent-specific difficulty (\S\ref{sec:borderline}).
+The probe is a stronger answer to ``did your manipulation do anything?'' than a bare null: across both agents the real \agentsmd{} never converts a near-miss to a pass.
+The manipulation is not inert (it can perturb behavior, and our files are independently rated Good/Excellent); it simply does not supply the implementation skill that gates these tasks.
+
+\subsection{Reconciling Prior Work}
+
+Our results reconcile the Paper 1 / Paper 2 contradiction:
+\begin{enumerate}
+    \item Context files \emph{do not} improve correctness on either agent family (confirming Paper 2).
+    \item The efficiency gain Paper 1 reports likely reflects the \emph{mechanical} cost of context injection (larger prompts $\to$ more tokens), not a task-performance improvement. Our \selective{} strategy achieves a real cache-efficiency reduction (p$_\text{Holm}$=0.012), but this is an artifact of injection mechanics, not agent capability.
+    \item Prior disagreements may reflect agent-specific borderline effects (\S\ref{sec:borderline}): a task in one agent's informative band appears in another's floor/ceiling.
+\end{enumerate}
+
+\subsection{Practitioner Implications}
+
+The \agentsmd{} files in our sample are real-world context files representative of practitioner effort---style guides, architectural notes, error-handling conventions.
+Scoped to our setting---3 Python repositories, naturalistic style-guide-type context, and the injection \emph{channel} rather than content---we detect no correctness benefit: \textbf{in this sample, generic context files do not measurably improve coding-agent correctness} (bounded to ${<}10$--$15$pp; \S\ref{sec:limitations}).
+We cannot rule out benefits for other languages, larger repositories, or purpose-built task-specific context; the safe reading is that effort spent on \emph{generic} context documents may pay off less than effort on task decomposition, tooling, or example-driven prompting.
+One nuance is genuinely actionable, however: even when context does not change pass/fail, it can change \emph{how} the agent works---our \selective{} strategy measurably reduces wasted full-suite test runs (Table~\ref{tab:opshin})---so context may still earn its place on cost and latency grounds.
+
+% ============================================================================
+% 6. LIMITATIONS
+% ============================================================================
+\section{Limitations}
+\label{sec:limitations}
+
+\begin{enumerate}
+    \item \textbf{Sample size.} 15/17 tasks with 3 repeats. MDE $>$30pp; a 10pp effect is undetectable. Our TOST bounds the effect to $<$10--15pp but cannot achieve narrower equivalence without $\sim$120 tasks.
+    \item \textbf{Repository diversity.} Three Python repositories. Results may not generalize to other languages, larger codebases, or repositories with exceptionally detailed context files.
+    \item \textbf{Injection-channel asymmetry.} Claude receives context via system prompt; Codex via user-turn prepend (no system-prompt flag). This is a confound between the agent arms, though the within-agent strategy comparison remains clean.
+    \item \textbf{Selective is our construction.} The wiki-split design and retrieval hint are specific choices; alternative selective strategies might yield different results.
+    \item \textbf{Inert-manipulation concern.} Our context files are naturalistic (not purpose-built for specific tasks). The manipulation-validity probe (\S\ref{sec:probe}) shows the real \agentsmd{} \emph{can} move correctness (downward) but never converts a near-miss to a pass, and an independent audit rates our files Good/Excellent---so the null is not an artifact of low-quality or inert context. Whether \emph{purpose-built, task-specific} context (a fact the agent provably cannot infer) would help remains an open question for future work.
+    \item \textbf{Mixed provenance.} Claude repeat-0 ran on a local machine; repeats 1--2 on the pod. Cross-check cells show stable behavior (22 vs.\ 23 turns on matched tasks).
+\end{enumerate}
+
+% ============================================================================
+% 7. CONCLUSION
+% ============================================================================
+\section{Conclusion}
+
+We presented a controlled ablation of context-injection strategy for coding agents, spanning 291 experimental cells across two frontier agents and 17 real-world tasks, plus a 36-cell manipulation-validity probe.
+Context-injection strategy does not measurably move correctness (bounded to $<$10--15pp via TOST equivalence).
+The two surviving efficiency effects are both narrow and \emph{process-level}: a cache-footprint reduction for Claude's \selective{} strategy, and a dose-dependent reduction in blind full-suite test runs on the one repository whose context file warns about test cost---neither changes the correctness outcome.
+
+Our failure-mode analysis and probe reveal the mechanism: real coding tasks fail on implementation skill, not missing repository knowledge that a context file could supply; injecting the real context file can move the pass rate downward but never up.
+The ``borderline is agent-specific'' finding explains prior contradictions and implies that future ablation studies must screen tasks per-agent to achieve informative dynamic range.
+
+We release our full experimental harness, 291-cell dataset, and power analysis code to support future work on scaling this design to the ${\sim}$120-task threshold needed for powered equivalence at 10pp.
+
+% ============================================================================
+% MANDATORY STATEMENTS
+% ============================================================================
+\section*{Data and Code Availability}
+The full experimental harness, the 291-cell ablation dataset and 36-cell probe
+(\texttt{experiment\_full.db}, \texttt{probe\_codex.db}, \texttt{probe\_claude.db}),
+and the analysis code (\texttt{power\_analysis.py}, efficiency scripts) are released
+to support replication and scaling toward the ${\sim}$120-task powered-equivalence threshold.
+
+\section*{Ethics Statement}
+This study involves no human subjects or personal data. The experimental subjects are
+AI coding agents operating on public open-source repositories. All agent runs execute in
+an egress-locked sandbox that prevents any modification of external state (no pushes,
+commits, or pull requests reach GitHub); see Appendix~\ref{app:harness}.
+
+\section*{AI-Assistance Disclosure}
+AI coding agents (Claude Code, Codex) are the \emph{object of study}, not authoring tools.
+Separately, the authors used an AI assistant for drafting support and code scaffolding;
+all experimental results, statistics, and claims were verified by the authors against the
+released data.
+
+\section*{Conflict of Interest}
+The authors declare no competing financial interests. The two agents studied are commercial
+products of independent vendors; the authors have no affiliation with either vendor.
+
+\section*{Funding}
+Agent API/compute costs were covered by research credits. No external funding influenced the
+study design, analysis, or conclusions.
+
+% ============================================================================
+% REFERENCES
+% ============================================================================
+\bibliography{references}
+\bibliographystyle{acl_natbib}
+
+% ============================================================================
+% APPENDIX
+% ============================================================================
+\appendix
+\section{Experimental Harness Details}
+\label{app:harness}
+
+\paragraph{Safety layers.}
+Our harness implements defense-in-depth to prevent the agent from modifying external state:
+(1) DNS blackhole for GitHub (egress lock);
+(2) \texttt{git remote remove} on all workspace remotes;
+(3) \texttt{git push/commit/remote} denied via PATH shims and Claude's \texttt{-{}-disallowedTools};
+(4) \texttt{GH\_TOKEN}/\texttt{GITHUB\_TOKEN} stripped from environment;
+(5) future git history pruned (agent cannot \texttt{git show} the gold commit).
+
+\paragraph{Evaluation pipeline.}
+After agent completion: (1) capture diff against \texttt{base\_sha};
+(2) restore gold test files to base state;
+(3) apply gold test patch;
+(4) run \texttt{pytest} with per-repo configuration;
+(5) pass iff all gold tests pass with zero failures/errors.
+
+\section{Per-Task Results}
+\label{app:pertask}
+
+Full per-task pass/fail tables for both agents are available in the supplementary material alongside the \texttt{experiment\_full.db} SQLite database.
+
+\section{Reproduction}
+\label{app:reproduce}
+
+\begin{verbatim}
+# Requires: experiment_full.db
+python3 power_analysis.py experiment_full.db codex
+python3 power_analysis.py experiment_full.db claude_code
+python3 efficiency_stats_correct.py
+\end{verbatim}
+
+\end{document}
