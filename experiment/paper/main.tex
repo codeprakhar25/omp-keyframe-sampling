@@ -501,4 +501,22 @@ python3 power_analysis.py experiment_full.db claude_code
 python3 efficiency_stats_correct.py
 \end{verbatim}
 
+\section{Code and Data Availability}
+\label{app:availability}
+
+To support replication, we release the full experimental harness, the
+context-injection strategy implementations (\none{}/\alwayson{}/\selective{}),
+the defense-in-depth safety layer (egress lock, push-deny hooks, history
+pruning), the task specifications for all benchmark tasks, the statistical
+analysis scripts, and an aggregated per-cell results table
+(\texttt{results\_summary.csv}: task, repository, agent, strategy, repeat,
+outcome, and the portable efficiency metrics --- tool calls, wall-clock
+duration, and token counts). Raw agent transcripts are available from the
+authors on request.
+
+% Anonymized for double-blind review. Replace with the public repository URL at
+% camera-ready: https://github.com/<author>/context-files-coding-agents
+The repository is anonymized for review; a public link will be provided in the
+camera-ready version.
+
 \end{document}
