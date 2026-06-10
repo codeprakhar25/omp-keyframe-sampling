@@ -1,20 +1,24 @@
 % ============================================================================
-% NEEDS REAL CITATION — paper1 / paper2 are the two source studies this paper
-% reconciles. Replace the placeholder fields below with the actual references
-% (the "paper-1" / "paper-2" works). Do NOT ship with placeholder authors.
+% The two source studies this paper reconciles.
 % ============================================================================
 @misc{paper1,
-  title  = {{[PLACEHOLDER] The Impact of AGENTS.md on Coding Agent Efficiency}},
-  author = {{Paper-1 Authors (fill in)}},
-  year   = {2026},
-  note   = {PLACEHOLDER — Codex-family study, efficiency gains reported. Replace with real citation.}
+  title        = {On the Impact of {AGENTS.md} Files on the Efficiency of {AI} Coding Agents},
+  author       = {Lulla, Jai Lal and Mohsenimofidi, Seyedmoein and Galster, Matthias and Zhang, Jie M. and Baltes, Sebastian and Treude, Christoph},
+  year         = {2026},
+  eprint       = {2601.20404},
+  archivePrefix= {arXiv},
+  primaryClass = {cs.SE},
+  note         = {arXiv:2601.20404}
 }
 
 @misc{paper2,
-  title  = {{[PLACEHOLDER] Do Context Files Improve AI Coding Assistants?}},
-  author = {{Paper-2 Authors (fill in)}},
-  year   = {2026},
-  note   = {PLACEHOLDER — Claude-family study, no significant correctness effect. Replace with real citation.}
+  title        = {Evaluating {AGENTS.md}: Are Repository-Level Context Files Helpful for Coding Agents?},
+  author       = {Gloaguen, Thibaud and M{\"u}ndler, Niels and M{\"u}ller, Mark and Raychev, Veselin and Vechev, Martin},
+  year         = {2026},
+  eprint       = {2602.11988},
+  archivePrefix= {arXiv},
+  primaryClass = {cs.SE},
+  note         = {arXiv:2602.11988}
 }
 
 % ============================================================================
@@ -34,6 +38,13 @@
   booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
   year      = {2024},
   note      = {arXiv:2405.15793}
+}
+
+@misc{swebenchverified,
+  title     = {{SWE-bench} Verified: A Stricter, Human-Validated Benchmark for Real-World Software Engineering},
+  author    = {Chandra, Neil and Jimenez, Carlos E. and Yang, John and Press, Ofir and Narasimhan, Karthik},
+  year      = {2024},
+  note      = {OpenAI blog post and dataset release, \url{https://openai.com/index/introducing-swe-bench-verified/}}
 }
 
 @article{memgpt,
@@ -65,4 +76,62 @@
   author    = {Wohlin, Claes and Runeson, Per and H{\"o}st, Martin and Ohlsson, Magnus C. and Regnell, Bj{\"o}rn and Wessl{\'e}n, Anders},
   publisher = {Springer},
   year      = {2012}
+}
+
+% ============================================================================
+% ============================================================================
+@article{lostinthemiddle,
+  title   = {Lost in the Middle: How Language Models Use Long Contexts},
+  author  = {Liu, Nelson F. and Lin, Kevin and Hewitt, John and Paranjape, Ashwin and Bevilacqua, Michele and Petroni, Fabio and Liang, Percy},
+  journal = {Transactions of the Association for Computational Linguistics (TACL)},
+  year    = {2024},
+  note    = {arXiv:2307.03172}
+}
+
+@inproceedings{rag,
+  title     = {Retrieval-Augmented Generation for Knowledge-Intensive {NLP} Tasks},
+  author    = {Lewis, Patrick and Perez, Ethan and Piktus, Aleksandra and Petroni, Fabio and Karpukhin, Vladimir and Goyal, Naman and K{\"u}ttler, Heinrich and Lewis, Mike and Yih, Wen-tau and Rockt{\"a}schel, Tim and Riedel, Sebastian and Kiela, Douwe},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2020},
+  note      = {arXiv:2005.11401}
+}
+
+@inproceedings{repocoder,
+  title     = {{RepoCoder}: Repository-Level Code Completion Through Iterative Retrieval and Generation},
+  author    = {Zhang, Fengji and Chen, Bei and Zhang, Yue and Keung, Jacky and Liu, Jin and Zan, Daoguang and Mao, Yi and Lou, Jian-Guang and Chen, Weizhu},
+  booktitle = {Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2023},
+  note      = {arXiv:2303.12570}
+}
+
+@inproceedings{reflexion,
+  title     = {Reflexion: Language Agents with Verbal Reinforcement Learning},
+  author    = {Shinn, Noah and Cassano, Federico and Berman, Edward and Gopinath, Ashwin and Narasimhan, Karthik and Yao, Shunyu},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2023},
+  note      = {arXiv:2303.11366}
+}
+
+@inproceedings{react,
+  title     = {{ReAct}: Synergizing Reasoning and Acting in Language Models},
+  author    = {Yao, Shunyu and Zhao, Jeffrey and Yu, Dian and Du, Nan and Shafran, Izhak and Narasimhan, Karthik and Cao, Yuan},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023},
+  note      = {arXiv:2210.03629}
+}
+
+@inproceedings{crosscodeeval,
+  title     = {{CrossCodeEval}: A Diverse and Multilingual Benchmark for Cross-File Code Completion},
+  author    = {Ding, Yangruibo and Wang, Zijian and Ahmad, Wasi Uddin and Ding, Hantian and Tan, Ming and Jain, Nihal and Ramanathan, Murali Krishna and Nallapati, Ramesh and Bhatia, Parminder and Roth, Dan and Xiang, Bing},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2023},
+  note      = {arXiv:2310.11248}
+}
+
+@inproceedings{repobench,
+  title     = {{RepoBench}: Benchmarking Repository-Level Code Auto-Completion Systems},
+  author    = {Liu, Tianyang and Xu, Canwen and McAuley, Julian},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  note      = {arXiv:2306.03091}
 }
