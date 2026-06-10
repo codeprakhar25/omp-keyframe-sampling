@@ -13,6 +13,7 @@ __pycache__/
 *.sqlite3
 *.db
 *.bak
+*.bak-*
 *.swp
 
 # Training / experiment telemetry (not needed for reproducibility in-repo)
@@ -32,3 +33,11 @@ new-v2/
 experiment/pod/codex_home/hooks.json
 experiment/results/_codex_home/
 **/.codex/auth.json
+
+# Editor / memory tooling (auto-generated, not source)
+.cursor/
+experiment/.cursor/
+experiment/AGENTS.md
+
+# Pod raw run artifacts: heavy logs/snapshots/dbs (out of git by design; dbs already ignored)
+experiment/results_from_pod*/
