@@ -53,8 +53,9 @@ class RunConfig:
     run_id: str = ""
     repeat_index: int = 0
 
-    # Claude-specific
-    claude_model: str = "claude-sonnet-4-6"
+    # Claude-specific. Env-overridable (EXP_CLAUDE_MODEL) so a budget arm can swap
+    # Sonnet -> Haiku without code edits (mirrors codex_model).
+    claude_model: str = os.environ.get("EXP_CLAUDE_MODEL", "claude-sonnet-4-6")
     claude_max_turns: int = 50
     claude_max_tokens: int = 8192
 

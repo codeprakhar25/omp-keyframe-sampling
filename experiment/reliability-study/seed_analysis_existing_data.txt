@@ -1,0 +1,68 @@
+# SEED ANALYSIS — existing data (context-files study, experiment_full.db, 291 runs)
+# Generated 2026-06-14T12:34Z. This is PRIOR data, not the reliability study's own runs.
+
+############ CLEAN (eval_method=tests, 219 runs) — the honest seed ############
+# Reliability metrics — db=results_from_pod_codex/experiment_full.db eval=tests agents=['codex', 'claude_code']
+
+## codex  (13 tasks, ~9 runs/task)
+  [M1] nondeterministic tasks: 2/13 (15%) | mean Bernoulli var=0.034
+  [M2] flip rate (P two runs disagree): 6.8%
+  [M3] benchmark score SD / 95%-CI-width by K:
+        K= 1: score= 53.8%  SD= 5.1pp  CIwidth=15.4pp
+        K= 3: score= 53.9%  SD= 3.0pp  CIwidth=10.3pp
+        K= 5: score= 53.9%  SD= 2.3pp  CIwidth= 9.2pp
+        K=10: score= 53.8%  SD= 1.6pp  CIwidth= 6.2pp
+        K=25: score= 53.9%  SD= 1.0pp  CIwidth= 4.0pp
+  [M4] repeats needed: CI<=5pp -> K=25 | CI<=2pp -> K=None
+
+## claude_code  (11 tasks, ~9 runs/task)
+  [M1] nondeterministic tasks: 2/11 (18%) | mean Bernoulli var=0.031
+  [M2] flip rate (P two runs disagree): 6.3%
+  [M3] benchmark score SD / 95%-CI-width by K:
+        K= 1: score= 48.6%  SD= 5.3pp  CIwidth=18.2pp
+        K= 3: score= 48.5%  SD= 3.1pp  CIwidth=12.1pp
+        K= 5: score= 48.5%  SD= 2.4pp  CIwidth= 9.1pp
+        K=10: score= 48.5%  SD= 1.7pp  CIwidth= 6.4pp
+        K=25: score= 48.5%  SD= 1.1pp  CIwidth= 4.0pp
+  [M4] repeats needed: CI<=5pp -> K=25 | CI<=2pp -> K=None
+
+## Cross-agent (codex vs claude_code, shared tasks)
+  [M5] shared=11 | truth codex=45.5% claude_code=48.5% | P(ranking flip):
+        K= 1: 18%
+        K= 3: 17%
+        K= 5: 14%
+        K=10: 8%
+  [M6] flip codex=6.8% vs claude_code=6.3% | diff=+0.6pp 95%CI[-11.8,+12.6]
+
+############ CONTAMINATED (all eval methods incl. line_overlap, 291 runs) — for contrast ############
+# Reliability metrics — db=results_from_pod_codex/experiment_full.db eval=ALL agents=['codex', 'claude_code']
+
+## codex  (17 tasks, ~9 runs/task)
+  [M1] nondeterministic tasks: 5/17 (29%) | mean Bernoulli var=0.067
+  [M2] flip rate (P two runs disagree): 13.4%
+  [M3] benchmark score SD / 95%-CI-width by K:
+        K= 1: score= 56.1%  SD= 6.2pp  CIwidth=23.5pp
+        K= 3: score= 56.2%  SD= 3.6pp  CIwidth=13.7pp
+        K= 5: score= 56.2%  SD= 2.8pp  CIwidth=10.6pp
+        K=10: score= 56.2%  SD= 2.0pp  CIwidth= 7.6pp
+        K=25: score= 56.2%  SD= 1.3pp  CIwidth= 4.7pp
+  [M4] repeats needed: CI<=5pp -> K=25 | CI<=2pp -> K=None
+
+## claude_code  (15 tasks, ~9 runs/task)
+  [M1] nondeterministic tasks: 3/15 (20%) | mean Bernoulli var=0.030
+  [M2] flip rate (P two runs disagree): 5.9%
+  [M3] benchmark score SD / 95%-CI-width by K:
+        K= 1: score= 54.9%  SD= 4.4pp  CIwidth=13.3pp
+        K= 3: score= 54.8%  SD= 2.6pp  CIwidth=11.1pp
+        K= 5: score= 54.8%  SD= 2.0pp  CIwidth= 8.0pp
+        K=10: score= 54.8%  SD= 1.4pp  CIwidth= 5.3pp
+        K=25: score= 54.8%  SD= 0.9pp  CIwidth= 3.5pp
+  [M4] repeats needed: CI<=5pp -> K=25 | CI<=2pp -> K=None
+
+## Cross-agent (codex vs claude_code, shared tasks)
+  [M5] shared=15 | truth codex=50.4% claude_code=54.8% | P(ranking flip):
+        K= 1: 17%
+        K= 3: 13%
+        K= 5: 9%
+        K=10: 4%
+  [M6] flip codex=13.4% vs claude_code=5.9% | diff=+7.4pp 95%CI[-4.4,+19.5]
