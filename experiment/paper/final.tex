@@ -28,12 +28,11 @@
 % ============================================================================
 \begin{abstract}
 Persistent context files (\agentsmd{}, \texttt{CLAUDE.md}) are standard practice for guiding AI coding agents, yet evidence for their effectiveness is contradictory.
-We present a controlled ablation of context-injection \emph{strategy}---none, always-on, and selective---across two frontier agents (Claude Code and Codex), 17 real tasks from 3 repositories, evaluated with gold tests (SWE-bench style); 288 evaluated runs total.
-Context-injection strategy does not measurably move correctness on either agent (omnibus permutation $p{=}0.66$/$1.00$; descriptive TOST bounds ${\leq}10$pp Claude, ${\leq}15$pp Codex).
-The sole surviving efficiency signal is mechanical (cache-footprint reduction from shorter prompts, $p_{\text{Holm}}{=}0.012$), not a capability gain.
-We show that borderline task difficulty is \emph{agent-specific} (Spearman $\rho{=}0.75$), explaining prior contradictions.
-A failure-mode triage reveals tasks fail on \emph{implementation skill}, not missing repository knowledge; a manipulation-validity probe confirms the real \agentsmd{} never converts a near-miss failure to a pass on either agent.
-We release all code, data, and power analysis.
+We present a controlled ablation of context-injection strategy across two frontier agents (Claude Code and Codex), 17 real tasks from 3 repositories, and 288 evaluated runs with gold-test evaluation.
+Context strategy does not measurably move correctness on either agent (bounded to ${\leq}10$--$15$pp via equivalence testing).
+A failure-mode triage reveals why: agents fail on \emph{implementation skill}---feature design, pattern selection, exact wiring---not missing repository knowledge that a context file could supply; a manipulation probe confirms the real \agentsmd{} never converts a near-miss to a pass on either agent.
+We further show that borderline task difficulty is \emph{agent-specific} (Spearman $\rho{=}0.75$), offering a candidate explanation for prior contradictions: single-agent studies draw tasks from different agents' informative bands.
+We release all code, data, and analysis.
 \end{abstract}
 
 % ============================================================================
@@ -54,10 +53,9 @@ Our three strategies---\none{} (no context), \alwayson{} (full \agentsmd{} in ev
 
 Our contributions are:
 \begin{enumerate}
-    \item A \textbf{controlled, two-agent ablation} (288 evaluated runs: 15 Claude tasks + 17 Codex tasks, each $\times$ 3 strategies $\times$ 3 repeats) with SWE-bench-style gold-test evaluation on real repositories.
-    \item A \textbf{rigorous null result}: descriptive TOST equivalence bounds (${\leq}10$pp Claude, ${\leq}15$pp Codex), omnibus permutation tests, and Monte Carlo power analysis quantifying detection limits (\S\ref{sec:power}).
+    \item A \textbf{controlled, two-agent ablation} (288 evaluated runs: 15 Claude tasks + 17 Codex tasks, each $\times$ 3 strategies $\times$ 3 repeats) with SWE-bench-style gold-test evaluation on real repositories, yielding a \textbf{bounded null}: the correctness effect is ${\leq}10$pp (Claude) / ${\leq}15$pp (Codex).
+    \item A \textbf{failure-mode triage and manipulation probe} demonstrating that real tasks fail on implementation skill, not missing repository knowledge---the mechanism behind the null---and that the real \agentsmd{} cannot convert a near-miss failure to a pass on either agent.
     \item Evidence that \textbf{borderline task difficulty is agent-specific}: the same task may be trivially solvable for one agent yet challenging for another, explaining why single-agent studies reach contradictory conclusions.
-    \item A \textbf{failure-mode triage} demonstrating that real coding tasks fail on implementation skill, not missing repository knowledge---the mechanism behind the null---together with a \textbf{pre-registered manipulation-validity probe} that confirms the real \agentsmd{} cannot convert a near-miss failure to a pass on either agent.
 \end{enumerate}
 
 % ============================================================================
@@ -122,16 +120,22 @@ Figure~\ref{fig:strategies} illustrates the three injection strategies.
 \subsection{Task Selection and Evaluation}
 
 \paragraph{Repositories.}
-We select 3 open-source Python repositories that maintain real \agentsmd{} files:
+We surveyed ${\sim}$40 repositories drawn from three sources: our own manual scan, and the repository sets of \citet{paper1} and \citet{paper2}.
+We excluded SWE-bench repositories (none maintain \agentsmd{} files) and filtered candidates on four criteria: (1)~exactly one root \agentsmd{} with no competing instruction stack; (2)~file quality rated Good or Excellent on a structured rubric (coverage of build/test/style conventions, architectural guidance, specificity); (3)~feasible pilot setup (no oversized monorepos); (4)~Python-only, to avoid confounding context effects with build-system or language differences.
+Six repositories survived; we narrowed to three for budget feasibility:
 \textbf{pdm} (package manager, 477-word context file),
-\textbf{firebase-admin-python} (cloud SDK, 1236-word file rated ``Excellent'' by independent audit), and
+\textbf{firebase-admin-python} (cloud SDK, 1236-word file rated ``Excellent''), and
 \textbf{opshin} (domain-specific compiler, 248-word file).
-These span distinct domains (tooling, cloud infrastructure, compilers) and \agentsmd{} quality levels.
+These span distinct domains (tooling, cloud infrastructure, compilers) and \agentsmd{} quality levels (248--1236 words).
 
 \paragraph{Tasks.}
-From each repository we select merged pull requests as tasks: the PR description becomes the agent prompt, the base commit becomes the starting state, and the PR's test files become the gold evaluation.
-Selection criteria: (1) the PR contains test files; (2) the fix is non-trivial (multiple files or $>$50 LOC); (3) the PR does not require external credentials or services.
-We include 17 tasks total (6 firebase, 5 opshin, 4 pdm, plus 2 high-effort tasks for the expanded Codex arm).
+We mine tasks from merged pull requests via the GitHub API: the PR description becomes the agent prompt, the base commit the starting state, and the PR's own test files the gold evaluation.
+We keep PRs that (1) add or modify test files (required for gold-test scoring; without tests one falls back to fuzzy diff-overlap, which inflates apparent variance), (2) are non-trivial (multiple files or $>$50 LOC), and (3) need no external credentials or services (for the egress-locked pod).
+This yields an initial batch of 12 tasks (4 per repository, spanning medium and complex difficulty).
+To avoid a floor/ceiling design---where every task is too easy or too hard for any manipulation to register---we ran a Codex screening sweep over 84 candidate tasks (3 strategies $\times$ 1 repeat) to locate the \emph{borderline} band ($0{<}\text{pass}{<}1$), adding 4 borderline tasks.
+Screening also surfaced a portability bug in our effort classifier (\S\ref{sec:classifier}).
+The final set is 17 tasks for Codex and 15 for Claude; two high-effort tasks are Codex-only, dropped from the Claude arm under an Anthropic budget cap.
+Because the borderline band was calibrated on Codex, the screened tasks need not be borderline for Claude---an instance of the agent-specific difficulty we analyze in \S\ref{sec:borderline}.
 
 \paragraph{Evaluation (Tier-C).}
 After the agent completes, we extract test files from the gold PR diff, apply them onto the agent's workspace, and run them against the agent's code.
@@ -235,31 +239,8 @@ Figure~\ref{fig:pertask} makes the null visible at the task level: for almost ev
 A potential objection is that the null reflects floor/ceiling effects (tasks too easy or too hard for context to matter).
 We address this with borderline-task expansion: on 4 Codex-borderline tasks (17--67\% baseline pass rate), \none{} achieves 58\% vs.\ \alwayson{} 42\% and \selective{} 42\%---context injection does \emph{not} help even where the design has power to detect an effect.
 
-\subsection{Equivalence Bounds (TOST)}
-
-Table~\ref{tab:tost} presents equivalence results.
-Claude achieves the tighter bound: all pairwise strategy effects are bounded to $<$10pp.
-For Codex, equivalence is established at ${\pm}15$pp.
-
-\begin{table}[t]
-\centering
-\small
-\caption{TOST equivalence bounds. ``Equivalent'' = 95\% bootstrap CI of the paired difference falls within $\pm\delta$.}
-\label{tab:tost}
-\begin{tabular}{lcc}
-\toprule
-\textbf{Agent} & \textbf{$\delta{=}10$pp} & \textbf{$\delta{=}15$pp} \\
-\midrule
-Claude (15 tasks) & Equivalent (all pairs) & Equivalent \\
-Codex (17 tasks)  & Inconclusive           & Equivalent \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\paragraph{Reconciling equivalence with power.}
-The equivalence bound ($<$10pp) and the minimum detectable effect ($>$30pp, \S\ref{sec:power}) are not in contradiction: TOST bounds the \emph{realized} effect (every observed paired difference is near zero---Claude $+2.2$, $+2.2$, $0.0$pp---so the task-clustered bootstrap CIs are narrow, widest $[-4.4, +8.9]$pp), whereas MDE is the smallest \emph{hypothesized} effect detectable at 80\% power given $n$ ($>$30pp at 15--17 tasks).
-A study can thus simultaneously lack power for a moderate true effect yet bound the \emph{observed} effect tightly when the point estimate is ${\approx}0$.
-We treat the equivalence bound as descriptive of this sample, not a powered claim; given $n{=}15$ clusters these percentile CIs should be read with caution (a permutation check yields the same conclusion).
+\paragraph{Equivalence bounds.}
+Descriptive equivalence testing (TOST on the task-clustered bootstrap) bounds every pairwise strategy difference to $<$10pp for Claude and $<$15pp for Codex---compatible with the $>$30pp MDE (\S\ref{sec:power}) because the observed point estimates are ${\approx}0$, not a powered equivalence claim given $n{=}15$--$17$ clusters.
 
 \subsection{Efficiency: Two Narrow Process Signals, Otherwise Null}
 
@@ -301,19 +282,6 @@ We report it as \emph{exploratory}: it emerged from a post-hoc mechanism analysi
 Codex is consistently leaner (fewer tool calls, less wall-clock time, fewer output tokens) at a slightly lower pass-rate.
 We report this only qualitatively: the agents differ in injection channel (\S\ref{sec:iv}), tokenizer, and token accounting (Codex folds cached input into \texttt{input\_tokens}), so any between-agent gap is confounded. Our actual contrast---the \emph{within}-agent strategy comparison---is unaffected.
 
-\subsection{Power Analysis and Detection Limits}
-\label{sec:power}
-
-Our Monte Carlo simulation (\S3.6) reveals:
-\begin{itemize}
-    \item MDE at $n{=}17$, reps$=$3: only effects $>$30pp are detectable (57\% power at $\Delta{=}30$pp).
-    \item Detecting $\Delta{=}10$pp at 80\% power requires ${\sim}$120--200 tasks.
-    \item Adding repeats barely helps ($n{=}17$, reps $3{\to}10$: power increases 13\%${\to}$58\% for $\Delta{=}15$pp).
-\end{itemize}
-
-Task-level variance dominates: scaling requires more \emph{tasks}, not more repeats.
-This is a methodological finding relevant to future ablation study designs.
-
 \subsection{Agent-Specific Borderline Tasks}
 \label{sec:borderline}
 
@@ -322,14 +290,15 @@ A striking cross-agent finding: the \emph{same task} occupies different difficul
 \begin{table}[t]
 \centering
 \small
-\caption{Agent-specific difficulty. Pass format: none/always/selective.}
+\setlength{\tabcolsep}{5pt}
+\caption{Agent-specific difficulty. Pass counts none/always/selective; \textbf{bold} marks the borderline outcome. pdm\#3790 is borderline for Claude only; pdm\#3769 for Codex only.}
 \label{tab:borderline}
-\begin{tabular}{lccc}
+\begin{tabular}{@{}lcc@{}}
 \toprule
-\textbf{Task} & \textbf{Claude} & \textbf{Codex} & \textbf{Note} \\
+\textbf{Task} & \textbf{Claude} & \textbf{Codex} \\
 \midrule
-3790 (pdm)  & 1/3 · \textbf{2/3} · 1/3 & 0/3 · 0/3 · 0/3 & Claude borderline \\
-3769 (pdm)  & 3/3 · 3/3 · 3/3          & 2/3 · \textbf{3/3} · 1/3 & Codex borderline \\
+pdm\#3790 & 1/3 · \textbf{2/3} · 1/3 & 0/3 · 0/3 · 0/3 \\
+pdm\#3769 & 3/3 · 3/3 · 3/3 & 2/3 · \textbf{3/3} · 1/3 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -347,6 +316,19 @@ During borderline screening, our effort classifier (split on turns${\geq}$30) si
 Eight genuinely high-effort tasks (18--51 tool calls, 410--1220s) were incorrectly dropped.
 Reclassifying on \emph{tool calls}---the pre-registered portable metric---recovered them.
 This demonstrates that turn-based metrics are non-portable across agent architectures.
+
+\subsection{Power Analysis and Detection Limits}
+\label{sec:power}
+
+Our Monte Carlo simulation (\S3.6) reveals:
+\begin{itemize}
+    \item MDE at $n{=}17$, reps$=$3: only effects $>$30pp are detectable (57\% power at $\Delta{=}30$pp).
+    \item Detecting $\Delta{=}10$pp at 80\% power requires ${\sim}$120--200 tasks.
+    \item Adding repeats barely helps ($n{=}17$, reps $3{\to}10$: power increases 13\%${\to}$58\% for $\Delta{=}15$pp).
+\end{itemize}
+
+Task-level variance dominates: scaling requires more \emph{tasks}, not more repeats.
+This is a methodological finding relevant to future ablation study designs.
 
 % ============================================================================
 % 5. DISCUSSION
@@ -461,8 +443,9 @@ released data.
 % ============================================================================
 % REFERENCES
 % ============================================================================
+% Note: the acl class already sets \bibliographystyle{acl_natbib};
+% do NOT add another \bibliographystyle (causes "Illegal, another \bibstyle command").
 \bibliography{references}
-\bibliographystyle{acl_natbib}
 
 % ============================================================================
 % APPENDIX
@@ -507,11 +490,15 @@ Raw agent transcripts are available from the authors on request.
 The repository is anonymized for review; a public link will be provided in the
 camera-ready version.
 
+{\footnotesize
 \begin{verbatim}
 # Requires: experiment_full.db
-python3 power_analysis.py experiment_full.db codex
-python3 power_analysis.py experiment_full.db claude_code
+python3 power_analysis.py \
+        experiment_full.db codex
+python3 power_analysis.py \
+        experiment_full.db claude_code
 python3 efficiency_stats_correct.py
 \end{verbatim}
+}
 
 \end{document}
