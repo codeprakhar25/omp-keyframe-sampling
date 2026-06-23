@@ -1,0 +1,16 @@
+# heavy / PII — out of git by design
+data/photos/
+data/voice/
+out/
+envs/
+models/
+*.safetensors
+*.ckpt
+*.pth
+*.mp4
+*.wav
+*.png
+*.jpg
+__pycache__/
+.uv-cache/
+tools/

@@ -1,0 +1,60 @@
+## FLUX.1-dev LoRA training config (ai-toolkit / ostris)
+## run:  python ai-toolkit/run.py prakhar_lora.yaml
+## requires:  export HF_TOKEN=<your token>   (gated FLUX.1-dev)
+job: extension
+config:
+  name: prakhar_flux_lora
+  process:
+    - type: sd_trainer
+      training_folder: /workspace/avatar/lora_out
+      device: cuda:0
+      network:
+        type: lora
+        linear: 32          # rank
+        linear_alpha: 32
+      save:
+        dtype: float16
+        save_every: 500
+        max_step_saves_to_keep: 4
+      datasets:
+        - folder_path: /workspace/avatar/lora_set   # img + same-name .txt captions
+          caption_ext: txt
+          caption_dropout_rate: 0.05
+          shuffle_tokens: false
+          cache_latents_to_disk: true
+          resolution: [768, 1024]
+      train:
+        batch_size: 1
+        steps: 2000
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false      # freeze text encoders
+        gradient_checkpointing: true
+        noise_scheduler: flowmatch
+        optimizer: adamw8bit
+        lr: 1e-4
+        ema_config:
+          use_ema: true
+          ema_decay: 0.99
+        dtype: bf16
+      model:
+        name_or_path: black-forest-labs/FLUX.1-dev
+        is_flux: true
+        quantize: true                 # 8-bit so 12B fits 32GB for training
+      sample:
+        sampler: flowmatch
+        sample_every: 500
+        width: 768
+        height: 1024
+        guidance_scale: 4
+        sample_steps: 20
+        seed: 42
+        neg: ""                        # required: newer transformers rejects None
+        walk_seed: true
+        prompts:
+          - "prakhar man playing a tennis forehand on a grass court, full body, athletic wear, daytime, photorealistic"
+          - "prakhar man wearing glasses, close-up portrait, plain background, photorealistic"
+          - "prakhar man standing on a beach at sunset, casual clothes, full body"
+meta:
+  name: prakhar_flux_lora
+  version: "1.0"
