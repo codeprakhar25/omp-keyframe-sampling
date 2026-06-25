@@ -76,4 +76,23 @@ on a **non-Blackwell** GPU (cu121).
 - I2V: identity locked to frame 1, motion muted.
 - VACE: pose-control = real swing + identity from keyframe (glasses can drop).
 - LivePortrait: clean stitched head/expr motion (needs a driving clip).
-- SadTalker: clean still→talk (audio-driven), the working talking-head route.
+- SadTalker: clean still→talk (audio-driven), stiff (`--still`).
+- **HuMo-1.7B** (`humo_flash_sdpa_patch.py`): Wan2.1 text+image+audio → best
+  lip-sync + lively, **no box**, but regenerates a *generic* face (weak identity).
+
+## Wan-ecosystem accel hunt (2026-06-25) — verdicts for a 32GB Blackwell
+- **HuMo** = only repo that added a capability (talking-head; weak identity).
+- **cache-dit** = FAIL: no speedup (VACE-14B is *compute*-bound, not offload-bound)
+  + green-block corruption.
+- **LightX2V** = no VACE (T2V/I2V only) → can't accel the swing.
+- **DiffSynth-Studio fp8 VACE** (`ds_vace_fp8.py`) = works, but fp8 is *storage*
+  (bf16 matmul) → memory win only, **no speed** (18min vs 15min baseline).
+- Real swing speedup needs **step-distillation** (40→4 steps) — only in LightX2V,
+  which lacks VACE. No current tool = fast *identity-locked* swing.
+
+## Status / open gaps
+- Solid: echo voice, FLUX-LoRA identity stills, VACE tennis swing (glasses-drop aside).
+- **Talking-head unsolved combo:** identity-locked + audio-synced + lively — no tool
+  delivers all three on Blackwell (HuMo loses identity; relips box/stiff).
+- Blackwell sm_120 (cu128/torch2.7) breaks cu121/torch2.5-era tools (LatentSync relip,
+  flash_attn, mmcv) → per-tool patching required.
