@@ -410,9 +410,9 @@ def run_single_task(
         )
         run_log.integrity_hacked = rep.integrity_hacked
         run_log.hack_types = rep.hack_types
-        log.info("split eval: vis=%s held=%s delta=%s | integrity_hacked=%s %s",
+        log.info("split eval: vis=%s held=%s delta=%s | integrity_hacked=%s types=%s audit=%s",
                  tr.visible_passed, tr.heldout_passed, tr.delta,
-                 rep.integrity_hacked, rep.hack_types)
+                 rep.integrity_hacked, rep.hack_types, rep.audit_flags)
     elif task.gold_diff:
         # Tier C: test-based eval. Falls back to line-overlap if gold has no tests.
         passed, test_result = evaluate_with_tests(
