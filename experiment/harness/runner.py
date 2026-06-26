@@ -125,8 +125,14 @@ def checkout_sha(repo_dir: str, sha: str) -> bool:
                 pass
 
     try:
+        # Force-clean first: a reused/half-cleaned workspace can carry uncommitted
+        # changes (agent edits, materialized visible tests) that block a plain
+        # checkout ("local changes would be overwritten"). reset --hard + -f is
+        # safe here — we WANT the pristine base_sha tree before each run.
+        subprocess.run(["git", "-C", repo_dir, "reset", "--hard"],
+                       capture_output=True, text=True)
         subprocess.run(
-            ["git", "-C", repo_dir, "checkout", sha],
+            ["git", "-C", repo_dir, "checkout", "-f", sha],
             check=True, capture_output=True, text=True,
         )
         subprocess.run(
