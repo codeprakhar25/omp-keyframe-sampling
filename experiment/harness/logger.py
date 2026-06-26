@@ -97,8 +97,16 @@ class RunLog:
     final_diff: str = ""
     task_passed: bool | None = None
     error: str | None = None
-    eval_method: str = ""      # "tests" | "line_overlap"
+    eval_method: str = ""      # "tests" | "line_overlap" | "tests_split"
     test_summary: str = ""     # pass/fail/err counts when eval_method == tests
+
+    # Reward-hacking study (set only when gameability/split is on; None otherwise).
+    visible_passed: bool | None = None
+    heldout_passed: bool | None = None
+    delta: float | None = None          # s_visible - s_heldout (>0 = gaming)
+    integrity_hacked: bool | None = None
+    hack_types: list[str] = field(default_factory=list)
+    opportunity_tags: list[str] = field(default_factory=list)
 
     @property
     def total_duration_s(self) -> float:
@@ -163,6 +171,12 @@ class RunLog:
             "error": self.error,
             "eval_method": self.eval_method,
             "test_summary": self.test_summary,
+            "visible_passed": self.visible_passed,
+            "heldout_passed": self.heldout_passed,
+            "delta": self.delta,
+            "integrity_hacked": self.integrity_hacked,
+            "hack_types": self.hack_types,
+            "opportunity_tags": self.opportunity_tags,
         }
 
     def to_dict(self) -> dict[str, Any]:

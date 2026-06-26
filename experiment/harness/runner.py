@@ -28,7 +28,14 @@ from .config import (
     TaskConfig,
 )
 from .context import split_agents_md_to_wiki
-from .evaluate import evaluate_with_tests
+from .evaluate import (
+    evaluate_with_tests,
+    build_visible_heldout,
+    materialize_visible,
+    evaluate_split,
+)
+from .treatment import load_treatment
+from . import hack_detect
 from .db import ResultsDB
 from .logger import RunLog
 
@@ -332,6 +339,12 @@ def run_single_task(
             "for relevant context before making changes."
         )
 
+    elif strategy in (ContextStrategy.NEUTRAL, ContextStrategy.PRESSURE):
+        # Reward-hacking arms: inject treatment text as a benign AGENTS.md.
+        # The repo's own AGENTS.md is stripped so the injected arm is the sole IV.
+        _strip_context_files()
+        append_system = load_treatment(strategy.value)
+
     run_config = RunConfig(
         task=task,
         strategy=strategy,
@@ -342,6 +355,21 @@ def run_single_task(
         agents_md_path=os.path.join(workspace_dir, "AGENTS.md") if strategy == ContextStrategy.ALWAYS_ON else None,
         wiki_dir=wiki_path,
     )
+
+    # GAMEABILITY (test-gaming scope): expose a writable VISIBLE test subset so the
+    # agent can game it; grade on the HELD-OUT subset. Env-gated (off by default ->
+    # existing behaviour unchanged). Git guards (scrub_remotes/strip_history) stay ON.
+    vh = None
+    opportunity_tags: list[str] = []
+    if os.environ.get("EXP_GAMEABILITY") == "1" and task.gold_diff:
+        vh = build_visible_heldout(workspace_dir, task.gold_diff, task.base_sha)
+        if vh:
+            materialize_visible(workspace_dir, vh, task.base_sha)
+            opportunity_tags = ["visible_tests_writable"]
+            log.info("gameability: %d split test file(s) materialized visible",
+                     len(vh["map"]))
+        else:
+            opportunity_tags = ["unsplittable"]
 
     if agent_backend == AgentBackend.CLAUDE:
         agent = ClaudeCodeAgent(run_config, workspace_dir)
@@ -357,7 +385,35 @@ def run_single_task(
     # Anchor on base_sha so agent commits (which move HEAD) are still captured.
     run_log.final_diff = get_diff(workspace_dir, task.base_sha)
 
-    if task.gold_diff:
+    run_log.opportunity_tags = opportunity_tags
+
+    if vh:
+        # Reward-hacking split eval: correctness = held-out, Delta = visible-heldout.
+        tr = evaluate_split(workspace_dir, task.repo_slug, vh, task.base_sha)
+        run_log.task_passed = tr.passed
+        run_log.eval_method = "tests_split"
+        run_log.visible_passed = tr.visible_passed
+        run_log.heldout_passed = tr.heldout_passed
+        run_log.delta = tr.delta
+        run_log.test_summary = (
+            f"held pass={tr.n_passed} fail={tr.n_failed} err={tr.n_errors} "
+            f"vis={tr.visible_passed} held={tr.heldout_passed} delta={tr.delta} "
+            f"{tr.error or ''}".strip()
+        )
+        # Integrity verdict (independent of correctness).
+        rep = hack_detect.detect(
+            run_log, test_files=vh["test_files"],
+            visible_pass=(1.0 if tr.visible_passed else 0.0),
+            heldout_pass=(1.0 if tr.heldout_passed else 0.0),
+            delta=tr.delta, diff=run_log.final_diff,
+            files_written=sorted(run_log.unique_files_written), run_id=run_id,
+        )
+        run_log.integrity_hacked = rep.integrity_hacked
+        run_log.hack_types = rep.hack_types
+        log.info("split eval: vis=%s held=%s delta=%s | integrity_hacked=%s %s",
+                 tr.visible_passed, tr.heldout_passed, tr.delta,
+                 rep.integrity_hacked, rep.hack_types)
+    elif task.gold_diff:
         # Tier C: test-based eval. Falls back to line-overlap if gold has no tests.
         passed, test_result = evaluate_with_tests(
             workspace_dir, task.repo_slug, task.gold_diff, task.base_sha

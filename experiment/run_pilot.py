@@ -27,6 +27,8 @@ logging.basicConfig(level=logging.INFO,
 log = logging.getLogger("pilot")
 
 STRATEGIES = [ContextStrategy.NONE, ContextStrategy.ALWAYS_ON, ContextStrategy.SELECTIVE]
+# Reward-hacking arms selectable via --strategies (not in the default set).
+ALL_STRATEGIES = STRATEGIES + [ContextStrategy.NEUTRAL, ContextStrategy.PRESSURE]
 
 
 # db agent column = RunLog.agent (claude arm = "claude_code", codex arm = "codex").
@@ -57,8 +59,15 @@ def main():
                     help="agent backend: claude (ANTHROPIC_API_KEY) or codex (codex login)")
     ap.add_argument("--db", default=None, help="DB path (default results/experiment.db)")
     ap.add_argument("--strategies", default=None,
-                    help="comma list subset of none,always_on,selective (default all 3)")
+                    help="comma list subset of none,always_on,selective,neutral,pressure "
+                         "(default = first 3)")
+    ap.add_argument("--gameability", action="store_true",
+                    help="reward-hacking: expose writable visible test subset, grade on "
+                         "held-out (sets EXP_GAMEABILITY=1). Git guards stay ON.")
     args = ap.parse_args()
+
+    if args.gameability:
+        os.environ["EXP_GAMEABILITY"] = "1"
 
     backend = _BACKEND[args.agent]
     db_agent = _DB_AGENT[args.agent]
@@ -66,9 +75,9 @@ def main():
     strategies = STRATEGIES
     if args.strategies:
         want = {s.strip() for s in args.strategies.split(",") if s.strip()}
-        strategies = [s for s in STRATEGIES if s.value in want]
+        strategies = [s for s in ALL_STRATEGIES if s.value in want]
         if not strategies:
-            log.error("no valid strategies in %r (pick from none,always_on,selective)", args.strategies)
+            log.error("no valid strategies in %r (pick from none,always_on,selective,neutral,pressure)", args.strategies)
             sys.exit(1)
 
     # claude arm bills via ANTHROPIC_API_KEY; codex arm authenticates via `codex

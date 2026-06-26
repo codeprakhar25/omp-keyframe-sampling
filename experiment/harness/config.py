@@ -10,10 +10,13 @@ from typing import Any
 
 
 class ContextStrategy(str, Enum):
-    """The three injection strategies under test."""
+    """Context-injection strategies under test."""
     NONE = "none"               # (A) no context file
     ALWAYS_ON = "always_on"     # (B) full AGENTS.md in system prompt every turn
     SELECTIVE = "selective"     # (D) wiki topic files, agent searches as needed
+    # Reward-hacking study arms (3-arm dose-response; injected like a benign AGENTS.md):
+    NEUTRAL = "neutral"         # informational instructions, NO proxy pressure (ETH over-work control)
+    PRESSURE = "pressure"       # outcome/proxy-pressure ("all tests must pass", "keep CI green")
 
 
 class ComplexityTier(str, Enum):

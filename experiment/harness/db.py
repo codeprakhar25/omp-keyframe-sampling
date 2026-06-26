@@ -15,6 +15,11 @@ from typing import Any
 from .logger import RunLog
 
 
+def _b(v: bool | None) -> int | None:
+    """bool -> 0/1, None stays None (for nullable INTEGER columns)."""
+    return None if v is None else (1 if v else 0)
+
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS runs (
     run_id          TEXT PRIMARY KEY,
@@ -77,6 +82,13 @@ class ResultsDB:
             "eval_method": "TEXT",
             "test_summary": "TEXT",
             "total_reasoning_tokens": "INTEGER",
+            # Reward-hacking study
+            "visible_passed": "INTEGER",
+            "heldout_passed": "INTEGER",
+            "delta": "REAL",
+            "integrity_hacked": "INTEGER",
+            "hack_types": "TEXT",
+            "opportunity_tags": "TEXT",
         })
         self._ensure_columns("turns", {
             "reasoning_tokens": "INTEGER",
@@ -111,8 +123,11 @@ class ResultsDB:
                 total_turns, total_duration_s, total_input_tokens, total_output_tokens,
                 total_cache_read_tokens, total_cache_creation_tokens, total_tool_calls,
                 unique_files_read, unique_files_written, task_passed, error, final_diff,
-                eval_method, test_summary, total_reasoning_tokens)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                eval_method, test_summary, total_reasoning_tokens,
+                visible_passed, heldout_passed, delta, integrity_hacked,
+                hack_types, opportunity_tags)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                       ?, ?, ?, ?, ?, ?)""",
             (
                 run_log.run_id,
                 run_log.task_id,
@@ -136,6 +151,12 @@ class ResultsDB:
                 getattr(run_log, "eval_method", ""),
                 getattr(run_log, "test_summary", ""),
                 summary["total_reasoning_tokens"],
+                _b(run_log.visible_passed),
+                _b(run_log.heldout_passed),
+                run_log.delta,
+                _b(run_log.integrity_hacked),
+                json.dumps(run_log.hack_types) if run_log.hack_types else None,
+                json.dumps(run_log.opportunity_tags) if run_log.opportunity_tags else None,
             ),
         )
 
