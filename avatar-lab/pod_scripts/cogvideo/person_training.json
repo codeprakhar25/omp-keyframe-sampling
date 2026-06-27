@@ -1,0 +1,1 @@
+{ "datasets":[ { "data_root":"/workspace/avatar/person_train","dataset_type":"video","video_resolution_buckets":[[49,480,848]],"reshape_mode":"bicubic","remove_common_llm_caption_prefixes":true } ] }
