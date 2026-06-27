@@ -1,0 +1,14 @@
+{
+  "topic": "video diffusion internals -> cross-modal LoRA transfer (FLUX->Wan/CogVideoX)",
+  "plan": [
+    "3D VAE: spatial+temporal compression (vs per-frame 2D VAE)",
+    "temporal attention: cross-frame consistency mechanism (q/k/v over time)",
+    "DiT 2D->3D: patchify, 3D RoPE posenc, MMDiT text; why 988 vs 240 tensors",
+    "LoRA mechanics: dW=BA, rank/alpha scaling, low-rank intuition; set up transfer projection",
+    "train a video LoRA on pod (finetrainers/CogVideoX) -- DONE (60-step + long run)",
+    "cross-modal transfer: FLUX->CogVideoX shape map (1920 vs 3072) + ProLoRA projection"
+  ],
+  "checkpoint": 3,
+  "passed": ["3D VAE (confirmed on real encode)", "temporal attention (full-3D entangled)", "DiT 2D->3D (posenc=coordinates)"],
+  "created": "2026-06-26"
+}
