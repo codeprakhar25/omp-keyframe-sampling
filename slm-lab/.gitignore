@@ -1,0 +1,14 @@
+# raw media + generated artifacts stay out of git (repo convention)
+data/media/
+data/synthetic/
+data/synthetic_hard/
+data/manifest.synthetic.json
+data/manifest.synthetic_hard.json
+results/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/

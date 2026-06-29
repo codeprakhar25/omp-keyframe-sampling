@@ -1,0 +1,15 @@
+# Core (always needed)
+pillow>=10.0
+numpy>=1.24
+
+# Video frame extraction (needed only for media_type: "video")
+opencv-python>=4.8
+
+# Condition C semantic selector (SigLIP / small VLM). Heavy; install when running C with a real model.
+# torch>=2.2
+# transformers>=4.46
+# accelerate>=0.34
+
+# Frontier answerer clients (install whichever provider you use)
+# anthropic>=0.39
+# openai>=1.50
