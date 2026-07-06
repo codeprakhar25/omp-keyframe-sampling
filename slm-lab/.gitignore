@@ -6,6 +6,14 @@ data/manifest.synthetic.json
 data/manifest.synthetic_hard.json
 results/
 
+# generated contact-sheet PNGs (heavy; regenerate via scripts/make_contact_sheets.py)
+guiworld_sheets/*.png
+stitch_sheets/*.png
+real_sheet/*.png
+
+# tooling session state
+.study/
+
 # python
 __pycache__/
 *.pyc

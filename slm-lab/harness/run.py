@@ -23,15 +23,41 @@ from typing import Dict, List, Optional
 
 from .answerers import build_answerer, make_text_judge
 from .media import load_frames
-from .metrics import exact_match, llm_judge, recall_at_k
+from .metrics import exact_match, hit_at_k, llm_judge, recall_at_k
 from .selectors import EmbeddingSelector, FullDumpSelector, Selector, UniformSelector
 
 
-def build_selector(name: str) -> Selector:
+def build_selector(name: str, model_id: str | None = None, longest_edge: int | None = None) -> Selector:
     if name == "uniform":
         return UniformSelector()
     if name == "embedding":
-        return EmbeddingSelector()
+        kwargs = {"model_id": model_id} if model_id else {}
+        return EmbeddingSelector(**kwargs)
+    if name == "hier":
+        from .selectors import HierarchicalSelector
+        kwargs = {"model_id": model_id} if model_id else {}
+        return HierarchicalSelector(**kwargs)
+    if name == "transcript":
+        from .selectors import TranscriptGatedSelector
+        kwargs = {"model_id": model_id} if model_id else {}
+        return TranscriptGatedSelector(**kwargs)
+    if name == "videoret":
+        from .selectors import VideoRetSelector
+        kwargs = {"model_id": model_id} if model_id else {}
+        return VideoRetSelector(**kwargs)
+    if name == "smolvlm":
+        from .selectors import SmolVLMSelector
+        kwargs = {}
+        if model_id:
+            kwargs["model_id"] = model_id
+        if longest_edge:
+            kwargs["longest_edge"] = longest_edge
+        return SmolVLMSelector(**kwargs)
+    if name == "pe":
+        from .selectors import PESelector
+        # for PE the selector "model_id" is the PE-Core config (default = fair-peer L14-336)
+        kwargs = {"config": model_id} if model_id else {}
+        return PESelector(**kwargs)
     raise ValueError(f"unknown selector: {name!r}")
 
 
@@ -52,10 +78,12 @@ def run_condition(
     dump_fps: float,
     max_dump_frames: int,
     judge_fn,
+    arm: str | None = None,
 ) -> List[dict]:
     rows: List[dict] = []
     for item in items:
         frames = load_frames(item, dump_fps=dump_fps, max_frames=max_dump_frames)
+        selector._item = item  # transcript-gated selector reads subtitle path here; others ignore
         selected = selector.select(frames, item["question"], k)
 
         t0 = time.time()
@@ -70,7 +98,13 @@ def run_condition(
         rows.append(
             {
                 "condition": cond,
+                # arm = fine-grained label for Fork-A analysis (e.g. "A","knob","U","C-so400m");
+                # `condition` stays A/C so the go/no-go gate still works.
+                "arm": arm or cond,
                 "item_id": item.get("id"),
+                # video length is the Fork-A independent variable (for length-bin crossover plot)
+                "video_seconds": item.get("video_seconds"),
+                "length_bin": item.get("length_bin"),
                 "selector": selector.name,
                 "n_candidate_frames": len(frames),
                 "n_selected_frames": len(selected),
@@ -78,6 +112,7 @@ def run_condition(
                 "output_tokens": ans.output_tokens,
                 "latency_s": round(latency, 3),
                 "recall_at_k": recall_at_k(selected, item),
+                "hit_at_k": hit_at_k(selected, item),
                 "accuracy": accuracy,
                 "accuracy_exact": acc_exact,
                 "accuracy_judge": acc_judge,
@@ -105,6 +140,7 @@ def summarize(rows: List[dict]) -> Dict[str, dict]:
             "accuracy": _mean_or_none([r["accuracy"] for r in rs]),
             "mean_input_tokens": _mean_or_none([r["input_tokens"] for r in rs]),
             "mean_recall_at_k": _mean_or_none([r["recall_at_k"] for r in rs]),
+            "mean_hit_at_k": _mean_or_none([r["hit_at_k"] for r in rs]),
             "mean_selected_frames": _mean_or_none([r["n_selected_frames"] for r in rs]),
             "mean_latency_s": _mean_or_none([r["latency_s"] for r in rs]),
         }
@@ -117,41 +153,77 @@ def summarize(rows: List[dict]) -> Dict[str, dict]:
     return summary
 
 
+def summarize_by_bin(rows: List[dict]) -> Dict[str, dict]:
+    """Fork-A view: accuracy / hit@k / tokens per (length_bin, arm).
+
+    length_bin comes from the manifest; falls back to 'all' when absent so this is
+    harmless on non-binned manifests.
+    """
+    by_bin: Dict[str, Dict[str, List[dict]]] = defaultdict(lambda: defaultdict(list))
+    for r in rows:
+        by_bin[r.get("length_bin") or "all"][r.get("arm") or r["condition"]].append(r)
+
+    out: Dict[str, dict] = {}
+    for b in sorted(by_bin):
+        out[b] = {}
+        for arm, rs in by_bin[b].items():
+            out[b][arm] = {
+                "n": len(rs),
+                "accuracy": _mean_or_none([r["accuracy"] for r in rs]),
+                "hit_at_k": _mean_or_none([r["hit_at_k"] for r in rs]),
+                "mean_input_tokens": _mean_or_none([r["input_tokens"] for r in rs]),
+                "mean_latency_s": _mean_or_none([r["latency_s"] for r in rs]),
+            }
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="S0 visual-evidence-compression harness")
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--conditions", nargs="+", default=["A", "C"], choices=["A", "C"])
     ap.add_argument("--answerer", default="echo", choices=["echo", "anthropic", "openai"])
     ap.add_argument("--model", default=None, help="answerer model id (provider-specific)")
-    ap.add_argument("--selector", default="uniform", choices=["uniform", "embedding"],
+    ap.add_argument("--selector", default="uniform", choices=["uniform", "embedding", "hier", "transcript", "videoret", "smolvlm", "pe"],
                     help="selector used for condition C")
+    ap.add_argument("--selector-model", default=None,
+                    help="override the selector's model id (e.g. HuggingFaceTB/SmolVLM2-2.2B-Instruct)")
+    ap.add_argument("--selector-res", type=int, default=None,
+                    help="smolvlm only: processor longest_edge (raise to read fine UI detail)")
     ap.add_argument("--k", type=int, default=6, help="frames to select in condition C")
     ap.add_argument("--dump-fps", type=float, default=1.0, help="candidate-frame sampling rate for video")
     ap.add_argument("--max-dump-frames", type=int, default=64, help="cap on condition A frames")
     ap.add_argument("--max-side", type=int, default=768, help="downscale long image side before sending")
     ap.add_argument("--judge", action="store_true", help="use LLM judge for accuracy (else exact match)")
     ap.add_argument("--judge-provider", default=None, help="defaults to --answerer provider")
+    ap.add_argument("--judge-model", default="gpt-4.1",
+                    help="judge model (cheap non-reasoning; decoupled from answerer --model)")
+    ap.add_argument("--detail", default=None, choices=["low", "high", "auto"],
+                    help="openai image detail: low=~85 tok/frame (full-dump), high=fine-grained (top-k)")
+    ap.add_argument("--label", default=None,
+                    help="arm label for Fork-A analysis (e.g. knob / U / C-so400m); condition stays A/C")
     ap.add_argument("--out", default="results")
     args = ap.parse_args()
 
     items = load_manifest(args.manifest)
-    answerer = build_answerer(args.answerer, args.model, max_side=args.max_side)
+    answerer = build_answerer(args.answerer, args.model, max_side=args.max_side, detail=args.detail)
     judge_fn = None
     if args.judge:
-        judge_fn = make_text_judge(args.judge_provider or args.answerer, args.model)
+        judge_fn = make_text_judge(args.judge_provider or args.answerer, args.judge_model)
 
-    c_selector = build_selector(args.selector)
+    c_selector = build_selector(args.selector, args.selector_model, args.selector_res)
 
     all_rows: List[dict] = []
     for cond in args.conditions:
         selector: Selector = FullDumpSelector() if cond == "A" else c_selector
         print(f"== condition {cond} (selector={selector.name}, answerer={answerer.name}) ==")
         rows = run_condition(
-            cond, selector, answerer, items, args.k, args.dump_fps, args.max_dump_frames, judge_fn
+            cond, selector, answerer, items, args.k, args.dump_fps, args.max_dump_frames, judge_fn,
+            arm=args.label,
         )
         all_rows.extend(rows)
 
     summary = summarize(all_rows)
+    by_bin = summarize_by_bin(all_rows)
 
     os.makedirs(args.out, exist_ok=True)
     runs_path = os.path.join(args.out, "runs.jsonl")
@@ -161,6 +233,9 @@ def main() -> None:
     summary_path = os.path.join(args.out, "summary.json")
     with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
+    bin_path = os.path.join(args.out, "summary_by_bin.json")
+    with open(bin_path, "w", encoding="utf-8") as f:
+        json.dump(by_bin, f, indent=2)
 
     print(json.dumps(summary, indent=2))
     print(f"\nwrote {runs_path} and {summary_path}")

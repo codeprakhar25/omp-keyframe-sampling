@@ -63,3 +63,29 @@ def recall_at_k(selected: List[Frame], item: dict) -> Optional[float]:
     sel_idx = {f.index for f in selected}
     covered = sum(1 for gi in gold_idx if gi in sel_idx)
     return covered / len(gold_idx)
+
+
+def hit_at_k(selected: List[Frame], item: dict) -> Optional[float]:
+    """1.0 if the selected frames contain AT LEAST ONE gold-evidence frame, else 0.0.
+
+    The right diagnostic when the answer *persists* across a gold span (stitched needle):
+    any single target frame suffices to answer, so coverage-fraction (recall_at_k) under-
+    counts. hit@k asks the question that actually predicts accuracy: "is the answer in the
+    payload at all?". Returns None when the item has no gold annotation.
+    """
+    mtype = item.get("media_type", "video")
+    if mtype == "video":
+        spans = item.get("gold_evidence_seconds")
+        if not spans:
+            return None
+        hit = any(
+            f.seconds is not None and lo <= f.seconds <= hi
+            for (lo, hi) in spans
+            for f in selected
+        )
+        return 1.0 if hit else 0.0
+    gold_idx = item.get("gold_evidence_frames")
+    if not gold_idx:
+        return None
+    sel_idx = {f.index for f in selected}
+    return 1.0 if any(gi in sel_idx for gi in gold_idx) else 0.0

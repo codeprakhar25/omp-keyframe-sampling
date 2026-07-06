@@ -92,24 +92,66 @@ class AnthropicAnswerer(Answerer):
 class OpenAIAnswerer(Answerer):
     name = "openai"
 
-    def __init__(self, model: str = "gpt-4o", max_tokens: int = 512, max_side: int = 768):
+    def __init__(self, model: str = "gpt-4o", max_tokens: int = 512, max_side: int = 768,
+                 detail: Optional[str] = None, max_retries: int = 6,
+                 reasoning_effort: str = "low"):
         from openai import OpenAI
 
         self.client = OpenAI()
         self.model = model
-        self.max_tokens = max_tokens
+        # gpt-5* are reasoning models: they reject `max_tokens` (need `max_completion_tokens`)
+        # and spend part of the budget on hidden reasoning tokens -> give a bigger ceiling.
+        self.is_reasoning = "gpt-5" in model
+        self.max_tokens = 2048 if (self.is_reasoning and max_tokens < 2048) else max_tokens
+        self.reasoning_effort = reasoning_effort
         self.max_side = max_side
+        # detail=low ~85 tok/frame (full-dump); high = fine-grained (top-k); None -> provider default
+        self.detail = detail
+        self.max_retries = max_retries
+
+    def _image_part(self, f: Frame) -> dict:
+        b64 = frame_to_base64(f, max_side=self.max_side)
+        img = {"url": f"data:image/jpeg;base64,{b64}"}
+        if self.detail:
+            img["detail"] = self.detail
+        return {"type": "image_url", "image_url": img}
+
+    def _create_with_backoff(self, messages: list):
+        import random
+        import time as _time
+
+        from openai import APIConnectionError, APIStatusError, RateLimitError
+
+        if self.is_reasoning:
+            kw = {"max_completion_tokens": self.max_tokens, "reasoning_effort": self.reasoning_effort}
+        else:
+            kw = {"max_tokens": self.max_tokens}
+
+        last_exc = None
+        for attempt in range(self.max_retries):
+            try:
+                return self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    **kw,
+                )
+            except RateLimitError as e:  # 429
+                last_exc = e
+            except APIConnectionError as e:  # transient network
+                last_exc = e
+            except APIStatusError as e:  # retry only 5xx; 4xx (e.g. 400 too-many-images) is fatal
+                if e.status_code < 500:
+                    raise
+                last_exc = e
+            sleep = min(60.0, (2 ** attempt) + random.random())
+            print(f"  [openai retry {attempt+1}/{self.max_retries} after {type(last_exc).__name__}] sleeping {sleep:.1f}s")
+            _time.sleep(sleep)
+        raise last_exc  # exhausted retries
 
     def answer(self, question: str, frames: List[Frame]) -> AnswerResult:
         content: list = [{"type": "text", "text": question}]
-        for f in frames:
-            b64 = frame_to_base64(f, max_side=self.max_side)
-            content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}})
-        resp = self.client.chat.completions.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            messages=[{"role": "user", "content": content}],
-        )
+        content.extend(self._image_part(f) for f in frames)
+        resp = self._create_with_backoff([{"role": "user", "content": content}])
         return AnswerResult(
             text=resp.choices[0].message.content or "",
             input_tokens=resp.usage.prompt_tokens,
@@ -118,13 +160,14 @@ class OpenAIAnswerer(Answerer):
         )
 
 
-def build_answerer(provider: str, model: Optional[str], max_side: int = 768) -> Answerer:
+def build_answerer(provider: str, model: Optional[str], max_side: int = 768,
+                   detail: Optional[str] = None) -> Answerer:
     if provider == "echo":
         return EchoAnswerer(max_side=max_side)
     if provider == "anthropic":
         return AnthropicAnswerer(model=model or "claude-sonnet-4-5", max_side=max_side)
     if provider == "openai":
-        return OpenAIAnswerer(model=model or "gpt-4o", max_side=max_side)
+        return OpenAIAnswerer(model=model or "gpt-4o", max_side=max_side, detail=detail)
     raise ValueError(f"unknown answerer provider: {provider!r}")
 
 
@@ -148,11 +191,17 @@ def make_text_judge(provider: str, model: Optional[str]) -> Callable[[str], str]
         from openai import OpenAI
 
         client = OpenAI()
-        mdl = model or "gpt-4o"
+        # judge should be cheap + deterministic; never a reasoning model (8-tok budget would be
+        # eaten by hidden reasoning -> empty verdict). Force a small non-reasoning default.
+        mdl = model or "gpt-4.1"
+        if "gpt-5" in mdl:
+            kw = {"max_completion_tokens": 512, "reasoning_effort": "low"}
+        else:
+            kw = {"max_tokens": 8}
 
         def fn(prompt: str) -> str:
             r = client.chat.completions.create(
-                model=mdl, max_tokens=8, messages=[{"role": "user", "content": prompt}]
+                model=mdl, messages=[{"role": "user", "content": prompt}], **kw
             )
             return r.choices[0].message.content or ""
 
