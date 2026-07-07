@@ -48,8 +48,10 @@ def build_ground_scorer(detector_id: str):
     targets_path = "data/targets.json"
     targets = json.load(open(targets_path)) if os.path.exists(targets_path) else {}
     dev = "cuda" if torch.cuda.is_available() else "cpu"
+    use_bf16 = dev == "cuda" and torch.cuda.is_bf16_supported()
     proc = AutoProcessor.from_pretrained(detector_id)
     model = AutoModelForZeroShotObjectDetection.from_pretrained(detector_id).to(dev).eval()
+    batch = int(os.environ.get("GROUND_BATCH", "32"))
 
     def score_fn(frames, item):
         rec = targets.get(str(item["id"]), {})
@@ -58,13 +60,13 @@ def build_ground_scorer(detector_id: str):
             phrase = item.get("question", "").split("\n")[0].strip()
         text = phrase if phrase.endswith(".") else phrase + "."
         scores = []
-        with torch.no_grad():
-            for i in range(0, len(frames), 16):
-                imgs = [f.image for f in frames[i : i + 16]]
+        with torch.no_grad(), torch.autocast(dev, dtype=torch.bfloat16, enabled=use_bf16):
+            for i in range(0, len(frames), batch):
+                imgs = [f.image for f in frames[i : i + batch]]
                 enc = proc(images=imgs, text=[text] * len(imgs), return_tensors="pt").to(dev)
                 out = model(**enc)
                 # max box logit per image as the "is the target here" confidence
-                logits = out.logits.sigmoid().amax(dim=(1, 2))  # (B,)
+                logits = out.logits.float().sigmoid().amax(dim=(1, 2))  # (B,)
                 scores.extend(float(x) for x in logits)
         return scores
 
