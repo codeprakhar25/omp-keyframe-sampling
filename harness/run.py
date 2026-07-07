@@ -37,6 +37,10 @@ def build_selector(name: str, model_id: str | None = None, longest_edge: int | N
         from .selectors import HierarchicalSelector
         kwargs = {"model_id": model_id} if model_id else {}
         return HierarchicalSelector(**kwargs)
+    if name == "beam":
+        from .selectors import BeamCoarseToFineSelector
+        kwargs = {"model_id": model_id} if model_id else {}
+        return BeamCoarseToFineSelector(**kwargs)
     if name == "transcript":
         from .selectors import TranscriptGatedSelector
         kwargs = {"model_id": model_id} if model_id else {}
@@ -183,7 +187,7 @@ def main() -> None:
     ap.add_argument("--conditions", nargs="+", default=["A", "C"], choices=["A", "C"])
     ap.add_argument("--answerer", default="echo", choices=["echo", "anthropic", "openai"])
     ap.add_argument("--model", default=None, help="answerer model id (provider-specific)")
-    ap.add_argument("--selector", default="uniform", choices=["uniform", "embedding", "hier", "transcript", "videoret", "smolvlm", "pe"],
+    ap.add_argument("--selector", default="uniform", choices=["uniform", "embedding", "hier", "beam", "transcript", "videoret", "smolvlm", "pe"],
                     help="selector used for condition C")
     ap.add_argument("--selector-model", default=None,
                     help="override the selector's model id (e.g. HuggingFaceTB/SmolVLM2-2.2B-Instruct)")

@@ -227,6 +227,78 @@ class HierarchicalSelector(EmbeddingSelector):
         return [frames[i] for i in picked]
 
 
+class BeamCoarseToFineSelector(EmbeddingSelector):
+    """Fork B, redesigned: beam coarse-to-fine descent, validated by the region-recall gate (Jul 7).
+
+    The old HierarchicalSelector failed because it asked the coarse pass to find the exact *frame*
+    (sparse probe + greedy single-window hard-prune -> dropped the 1-2s needle). The region-recall
+    gate reframed the coarse job as "find the right *chunk*" and measured it: with SigLIP, M=4,
+    max-aggregation, the gold chunk lands in the **top-2 of 4** ~84-88% of the time at 600s/3600s
+    (vs frame-level hit@6 of only .36/.24, and clear of the random-chunk null). That result locks
+    the design:
+      - split each surviving window into `M` sub-windows (M=4 is the sweet spot; finer decays to null),
+      - window score = **max** frame score inside it (peak, not mean),
+      - keep the top `beam` windows (beam=2, NOT greedy-1: region@1 .56-.64 is too low to compound
+        over levels, region@2 .84-.88 survives two levels ~.77),
+      - recurse until windows are small, then take the global top-k *within the surviving windows*.
+
+    Crucially the whole video is scored **once, densely** (probe-sparsity hurt: rr@2 .52->.84 as
+    probe 1->all). That costs seconds for SigLIP; the payoff is the *answerer* seeing k frames not
+    500 -- the compression win was never in the selector. Beam descent then just shrinks the
+    distractor pool the final top-k competes in.
+
+    Next lever (NOT yet built/validated -> intentionally absent): temporal *zoom* -- re-decode the
+    surviving window from the SOURCE video at >1fps so a 1-2s needle becomes many frames. That needs
+    the source mp4 (we run on pre-extracted 1fps JPEGs), so it's a separate code path gated on
+    `self._item`; adding it here untested would overstate what's measured.
+    """
+
+    name = "beam"
+
+    def __init__(self, model_id: str = "google/siglip-so400m-patch14-384", device: str | None = None,
+                 M: int = 4, beam: int = 2, max_levels: int = 8, stop_frames: int | None = None):
+        super().__init__(model_id, device)
+        self.M = M
+        self.beam = beam
+        self.max_levels = max_levels
+        self.stop_frames = stop_frames  # stop descending once a window has <= this many frames
+        self.name = f"beam:{model_id.split('/')[-1]}(M{M},b{beam})"
+
+    def _descend(self, scores, n: int, k: int) -> List[int]:
+        """Beam coarse-to-fine over precomputed per-frame `scores`. Returns candidate frame indices."""
+        stop = self.stop_frames or max(4 * k, self.M)
+        windows = [(0, n)]  # (lo, hi) half-open, in frame-index space
+        for _ in range(self.max_levels):
+            if all((hi - lo) <= stop or (hi - lo) < self.M for (lo, hi) in windows):
+                break
+            subs = []  # (score, lo, hi)
+            for (lo, hi) in windows:
+                size = hi - lo
+                if size < self.M:  # too small to split -> carry forward intact
+                    subs.append((max(float(scores[i]) for i in range(lo, hi)), lo, hi))
+                    continue
+                for c in range(self.M):
+                    slo = lo + c * size // self.M
+                    shi = lo + (c + 1) * size // self.M
+                    if shi > slo:
+                        subs.append((max(float(scores[i]) for i in range(slo, shi)), slo, shi))
+            subs.sort(key=lambda t: t[0], reverse=True)
+            windows = [(lo, hi) for (_, lo, hi) in subs[: self.beam]]
+        return [i for (lo, hi) in sorted(windows) for i in range(lo, hi)]
+
+    def select(self, frames: List[Frame], question: str, k: int, batch_size: int = 64) -> List[Frame]:
+        n = len(frames)
+        if n <= k:
+            return frames
+        scores = self._score([f.image for f in frames], question, batch_size)  # dense, once
+        cand = self._descend(scores, n, k)
+        # global top-k WITHIN the surviving windows, by the same dense scores
+        cand_scores = self.torch.tensor([float(scores[i]) for i in cand])
+        top = self.torch.topk(cand_scores, min(k, len(cand))).indices.tolist()
+        picked = sorted(cand[t] for t in top)
+        return [frames[i] for i in picked]
+
+
 def _subs_to_seconds(ts: str) -> float:
     """'HH:MM:SS.mmm' -> seconds."""
     h, m, s = ts.split(":")
