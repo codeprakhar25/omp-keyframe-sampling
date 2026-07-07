@@ -436,3 +436,109 @@ and cannot discriminate selectors here — hit@k stays the primary metric, and t
 `results/e2e_{pe_L14,so400m}/`. Live gotcha: run.py default `--max-dump-frames 64` silently subsamples the
 candidate pool *before* the selector, pre-dropping the 1 s needle — use 3600 to score the full 1 fps pool,
 else end-to-end hit@k understates the selector.
+
+# Region-recall gate — Fork B REOPENED, **PROCEED** (Jul 7, 2026)
+
+**Reframe that reopened Fork B:** the old Fork B (hier/transcript) asked "find the exact frame" and failed.
+Wrong question. Coarse-to-fine only needs the right **chunk** at each level, then zoom. New metric
+`region_recall@m` (`harness/metrics.py`): split a video into `M` contiguous chunks, chunk score = **max**
+of its frame scores; is a **gold chunk** in the top-`m`? Anchored on a **random-chunk null**
+(`1 − C(M−G,m)/C(M,m)`), not an absolute. Echo/GPU-only, $0. Driver `scripts/region_recall.py`.
+
+**Setup:** SigLIP so400m, `data/manifest.lvb.frames.json`, n=25/bin all `gold_reliable`, 1-fps frames.
+Result `results/rr_siglip_all.json`. **Directional (n=25, SigLIP only).**
+
+**Headline (M=4 = quadrant, agg=max, dense), Wilson 95% CI:**
+
+| bin | frame hit@6 | region@1 | region@2 | null@2 |
+|---|---|---|---|---|
+| 60s   | 0.72 | 0.68 [.48–.83] | 0.92 [.75–.98] | 0.67 |
+| 600s  | 0.36 | 0.64 [.45–.80] | **0.84 [.65–.94]** | 0.57 |
+| 3600s | 0.24 | 0.56 [.37–.73] | **0.88 [.70–.96]** | 0.53 |
+
+**The premise holds:** where SigLIP lands the exact frame only 24–36 % of the time, it lands the right
+**quarter (top-2 of 4)** ~84–88 %, CIs clear of the random null. **The neighborhood is findable even when
+the frame isn't. SigLIP alone passes the gate — before the grounding arm.**
+
+**Design locked by the grid:**
+1. **M=4 is the sweet spot.** region@1 decays 0.56→0.36→0.28→0.20 as M=4→8→16→32 (sinks toward null).
+   Big/few chunks win → recurse with **small M per level**, never one fine partition.
+2. **Beam-2, not greedy-1.** region@1 (0.56–0.64) is below the ≳0.8 needed for 2-level single-chunk descent
+   (0.56²≈0.31, ~hit@6). region@2 = 0.84–0.88 → beam-2 over 2 levels ≈ 0.77, **survives**. The @1→@2 jump
+   (0.56→0.88 @3600) mandates keeping **2 of 4 per level**.
+3. **max ≫ mean** (0.84/0.88 vs 0.68/0.64); ucb mixed. Peak aggregation confirmed.
+4. **Dense coarse pass.** probe sparsity rr@2 @600: p1=.52 p2=.56 p4=.68 **all=.84** — sparse leaves recall
+   on the table. Fine: SigLIP over all 1-fps frames costs seconds; the compute win is the **answerer** seeing
+   6 frames not 500, not a cheaper selector. Score dense, descend cheap.
+
+**Build:** coarse-to-fine = **beam-2 · M=4 · max · dense**, then zoom (re-decode winning chunk at higher fps)
++ optional draft-verify. New selector class in `harness/selectors.py`.
+
+**Not yet paper-grade (pending hardening):**
+- **n=25/bin, SigLIP only.** Fix-1 = rebuild **100/bin** (re-validate `gold_reliable` on the new ~300) and
+  run the **`ground` arm** (GroundingDINO-tiny on decomposed targets) — could lift region@1 enough to permit
+  greedy descent, or confirm beam is mandatory. Log %concrete-noun targets, segment region_recall by it.
+- Pod cold-start (Jul 7): Blackwell sm_120 needs **torch 2.11+cu128** (2.4+cu124 = "no kernel image");
+  uninstall stale torchaudio, add transformers+sentencepiece+protobuf. Long ssh runs drop (exit 255) → run
+  detached with `nohup`, poll result file over short ssh calls.
+
+## Beam coarse-to-fine — the METHOD number (Jul 7, 2026) — ≈ flat, trending NEGATIVE
+
+The region-recall gate validated the *premise* (right chunk findable). This tests the *method*: does beam
+descent actually lift selection hit@k? `BeamCoarseToFineSelector` (beam-2 · M=4 · max · dense), **echo
+answerer (NO gpt-5.5 — pure hit@6 selection recall, $0)**, n=25/bin, same LongVideoBench frames.
+
+**Mechanism as run:** score all 1fps frames once (SigLIP), then recurse — split window into 4, keep best 2
+(by max frame score), split *each* kept window into 4 again, keep best 2, ... until windows ≤~24 frames,
+then flat SigLIP top-6 on that pool. Descent depth: 60s 1 level, 600s 2, 3600s 3–4. **No zoom** (unbuilt;
+and a red herring here — see gold spans).
+
+**Result — beam vs flat hit@6:**
+
+| bin | beam | flat | Δ |
+|---|---|---|---|
+| 15s | .96 | .96 | 0 |
+| 60s | .68 | .72 | −.04 |
+| 600s | .40 | .36 | +.04 |
+| 3600s | .24 | .24 | 0 |
+
+**Beam ≈ flat.** Every Δ inside n=25 noise (±.19); exact tie at the hard 3600s bin; beam even *loses* at
+60s (over-pruning drops needles flat keeps). `results/beam_echo/`.
+
+**Why (the real finding):** pruning distant distractors *should* raise the needle's rank, but hit@k didn't
+move. So the frames that outrank the needle are **not distant — they're near/similar look-alikes inside the
+needle's own region.** Beam removes *cold* frames, not the *competitors*. This is recall_vs_k's
+"ranking-capacity wall" **surviving pool-narrowing** — narrowing the haystack doesn't fix a per-frame
+ranking problem when the false positives are local.
+
+**Zoom won't rescue it:** gold spans on this set are **median/mean 2.0s, 158/161 ≤2s** — the needle is
+already ~2 frames at 1fps, rarely missed by undersampling, so denser resampling adds ~nothing. The lever
+was re-ranking, and re-ranking is inert.
+
+**Status:** region@2 = .88 (find the half) but beam hit@6 ≈ flat (can't rank inside the half). Premise real,
+method inert. **One lever left = the grounding arm** (different signal, not cosine — the only thing that can
+move ranking not just pool; queued in n=100 chain). If grounding hit@6 also ≈ SigLIP → Fork B closes as
+**principled negative #2**, honest ship = adaptive-k ≤10min. n=100 will *harden* the negative, not reverse a
+~0 effect. My briefing §6 error corrected: beam CAN beat flat in principle (re-ranking); it just doesn't here.
+
+## Region-recall — n=100/bin CONFIRMATION (Jul 7, 2026) — premise paper-grade
+
+Rebuilt to 100 distinct videos/bin (fetch 400/400, gold reliable **400/400**, exactly 100/bin), same
+SigLIP/M=4/max/dense. `results/rr_siglip_n100.json`. Premise holds at ±0.07–0.09 CIs:
+
+| bin | hit@6 | region@1 (M=4) | region@2 (M=4) | null@2 |
+|---|---|---|---|---|
+| 60s   | 0.72 | 0.67 [.57–.75] | 0.91 [.84–.95] | 0.66 |
+| 600s  | 0.34 | 0.59 [.49–.68] | 0.82 [.73–.88] | 0.57 |
+| 3600s | 0.20 | 0.61 [.51–.70] | 0.84 [.76–.90] | 0.56 |
+
+region@2 lower-CI (.73/.76) far above null (.57/.56) AND hit@6 (.34/.20) — separated, no overlap.
+Barely moved from n=25 (.84/.88). **"Neighborhood findable, exact frame not" is confirmed, not directional.**
+M=4 remains the sweet spot (M=8 worse at every m). hit@6 held at .34/.20 = the ranking wall is real.
+
+**Net Fork-B state:** premise CONFIRMED paper-grade; **method (beam≈flat) inert** — the tree can't exploit
+the found region with the same scorer (arithmetic: same numbers reshuffled). Zoom dead (2s spans; and the
+±1s gold window is OUR 1fps tolerance, not LVB's annotation — LVB gold = single native-fps keyframe, we
+match a ±1s temporal window). **Only remaining lever = a different SCORER** (grounding/detection, frame-level,
+concrete-noun segmented). Decision: build the grounding scorer-swap, or close Fork B as principled negative #2
+and ship adaptive-k ≤10min.
