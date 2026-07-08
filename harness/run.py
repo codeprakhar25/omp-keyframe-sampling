@@ -27,7 +27,8 @@ from .metrics import exact_match, hit_at_k, llm_judge, recall_at_k
 from .selectors import EmbeddingSelector, FullDumpSelector, Selector, UniformSelector
 
 
-def build_selector(name: str, model_id: str | None = None, longest_edge: int | None = None) -> Selector:
+def build_selector(name: str, model_id: str | None = None, longest_edge: int | None = None,
+                   vlm_model: str | None = None, reasoning_effort: str | None = None) -> Selector:
     if name == "uniform":
         return UniformSelector()
     if name == "embedding":
@@ -62,6 +63,16 @@ def build_selector(name: str, model_id: str | None = None, longest_edge: int | N
         # for PE the selector "model_id" is the PE-Core config (default = fair-peer L14-336)
         kwargs = {"config": model_id} if model_id else {}
         return PESelector(**kwargs)
+    if name == "twostage":
+        from .selectors import TwoStageVLMSelector
+        kwargs = {}
+        if model_id:
+            kwargs["model_id"] = model_id
+        if vlm_model:
+            kwargs["vlm_model"] = vlm_model
+        if reasoning_effort:
+            kwargs["reasoning_effort"] = reasoning_effort
+        return TwoStageVLMSelector(**kwargs)
     raise ValueError(f"unknown selector: {name!r}")
 
 
@@ -187,12 +198,17 @@ def main() -> None:
     ap.add_argument("--conditions", nargs="+", default=["A", "C"], choices=["A", "C"])
     ap.add_argument("--answerer", default="echo", choices=["echo", "anthropic", "openai"])
     ap.add_argument("--model", default=None, help="answerer model id (provider-specific)")
-    ap.add_argument("--selector", default="uniform", choices=["uniform", "embedding", "hier", "beam", "transcript", "videoret", "smolvlm", "pe"],
+    ap.add_argument("--selector", default="uniform",
+                    choices=["uniform", "embedding", "hier", "beam", "transcript", "videoret", "smolvlm", "pe", "twostage"],
                     help="selector used for condition C")
     ap.add_argument("--selector-model", default=None,
                     help="override the selector's model id (e.g. HuggingFaceTB/SmolVLM2-2.2B-Instruct)")
     ap.add_argument("--selector-res", type=int, default=None,
                     help="smolvlm only: processor longest_edge (raise to read fine UI detail)")
+    ap.add_argument("--vlm-model", default=None,
+                    help="twostage only: Stage-2 VLM model id (default gpt-5.5)")
+    ap.add_argument("--reasoning-effort", default=None, choices=["low", "medium", "high"],
+                    help="twostage only: gpt-5.5 reasoning_effort (default low)")
     ap.add_argument("--k", type=int, default=6, help="frames to select in condition C")
     ap.add_argument("--dump-fps", type=float, default=1.0, help="candidate-frame sampling rate for video")
     ap.add_argument("--max-dump-frames", type=int, default=64, help="cap on condition A frames")
@@ -214,7 +230,8 @@ def main() -> None:
     if args.judge:
         judge_fn = make_text_judge(args.judge_provider or args.answerer, args.judge_model)
 
-    c_selector = build_selector(args.selector, args.selector_model, args.selector_res)
+    c_selector = build_selector(args.selector, args.selector_model, args.selector_res,
+                               args.vlm_model, args.reasoning_effort)
 
     all_rows: List[dict] = []
     for cond in args.conditions:
