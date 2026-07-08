@@ -579,3 +579,68 @@ actually works), not a hierarchical selector for hour-scale needles.
 OWLv2 wiring note: text tower caps at 16 positions — long target phrases crash
 (`tensor a (34) must match tensor b (16)`); scorer truncates (`truncation=True, max_length=16`). Architectural
 property of that family, honest to report.
+
+---
+
+## Retrieve-then-ground (Fork B v2) — DECISIVE (Jul 8) — negative #3
+
+**Idea:** keep the cheap SigLIP per-frame retriever for Stage-1, but replace the *scorer* with a
+generative frontier VLM (GPT-5.5) that reads the retrieved frames JOINTLY (timestamp-tagged) and
+localizes the needle — the joint read being the lever cosine/detection structurally can't do.
+Two questions, both answered offline-first before spend.
+
+### Q1 — retriever union algorithm (free offline gate, `scripts/union_ceiling.py`, n=100 @600s)
+
+The designed **peak-NMS** union (adaptive-τ peaks → temporal NMS → pad-windows, frame-budgeted) is
+**DOMINATED by plain flat top-k** at every equal frame budget:
+
+| frames (=imgs to VLM) | peak_nms any-hit | flat_top_k any-hit |
+|---|---|---|
+| 30 | 0.49 | **0.56** |
+| 50 | 0.55 | **0.66** |
+| 86 | 0.63 | **0.72** |
+| 100 | 0.64 | **0.77** |
+
+peak-NMS gets *lower recall at lower cost* (not the thesis of equal recall at lower cost) — it just
+runs a smaller budget, and temporal spreading actively *hurts* because SigLIP ranking already
+concentrates on gold; padding around secondary peaks wastes budget. **peak-NMS killed; Stage-1 = flat
+top-k.** (bin 60 is degenerate — videos <100 frames, top-100 = whole video → trivial 1.00; ignore it.)
+
+### Q2 — does GPT-5.5 recover the rank headroom? (`scripts/gpt_probe.py`, @600s, K=50, n=30)
+
+| probe | floor (SigLIP top-6) | GPT-5.5 hit@6 | ceiling (gold-in-union) |
+|---|---|---|---|
+| 512px / effort=low    | 0.367 | **0.30** | 0.60 |
+| 768px / effort=medium | 0.367 | **0.30** | 0.60 |
+
+**GPT-5.5 lands BELOW the SigLIP top-6 floor**, identically at both resolutions/efforts — the
+resolution/effort confound is rejected. Item-level (n=30): 12 recall-fail (gold never in union), 18
+gold-in-union of which 11 already in SigLIP top-6; GPT recovered 3/7 rank-headroom items but **broke
+5/11 floor items** → net 9 < floor 11.
+
+### Root cause — the wall is the TASK, confirmed visually
+
+Both stages are gated by the *same* signal, and the gate is task structure, not scorer quality:
+
+1. **Stage-1 recall wall (40% miss, not sampling):** for all 12 recall-fail items a gold frame WAS
+   sampled at 1fps — SigLIP cosine just ranked it 55–323 (median >130) out of ~200–590. Not a
+   sampling/fps problem; a *ranking* problem.
+2. **Stage-2 can't beat cosine** even reading 50 frames jointly at 768px/medium.
+
+Eyeballing the frames (`results/probe_frames/`) shows why: LVB long-bin questions carry a **verbose
+compositional preamble** ("woman in dark-red floral top holding the craft with her *right hand*…")
+that pins ONE exact frame inside a video that is **visually homogeneous** — the same person, same
+setting, whole clip. Gold vs top-cosine frames are **near-identical** (e.g. `LYvStKy8iAc_0`: gold s96
+and cosine-top s348 are the same talking-head pose/background; the "pressing foundation onto a sponge"
+action is sub-second in a ~10-min constant image). A global CLIP embedding cannot separate the gold
+frame from ~300 near-duplicates, and a frontier VLM given 50 near-duplicates can't pin the transient
+instant either.
+
+**Fork B v2 CLOSED — negative #3.** peak-NMS dominated by flat top-k; GPT-5.5 joint-read below the
+cosine floor at iso-config. Same wall as Fork B v1 / the Marengo ceiling: **hour-/10-min-scale fine-
+needle localization in visually-homogeneous video is a TASK wall, not a selector-quality gap.** The
+honest ship remains **adaptive-k ≤10-min** (compression buys COST at iso-accuracy where the selector
+works), not a two-stage or hierarchical selector for the needle regime.
+
+Artifacts: `results/scores/scores.jsonl` (Stage-1 cache, n=200), `results/gpt_probe_600.json` +
+`_hi.json`, `results/union_ceiling_k1.json`, `results/probe_frames/` (95 gold/pick/cosine frames).
