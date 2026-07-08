@@ -542,3 +542,40 @@ the found region with the same scorer (arithmetic: same numbers reshuffled). Zoo
 match a ±1s temporal window). **Only remaining lever = a different SCORER** (grounding/detection, frame-level,
 concrete-noun segmented). Decision: build the grounding scorer-swap, or close Fork B as principled negative #2
 and ship adaptive-k ≤10min.
+
+## Grounding scorer-swap — DECISIVE (Jul 8, 2026) — Fork B closes, negative #2
+
+The last lever (a *different scorer* — open-vocab detection, frame-level, concrete-noun segmented) ran on
+n=100/bin, RTX PRO 6000. Two strong, independent detector families in one pass — deliberately going strong
+from exp 1 to remove the "weak-checkpoint" doubt from the S2 SigLIP lesson:
+`IDEA-Research/grounding-dino-base` (phrase grounding, DETR cross-modal fusion) and
+`google/owlv2-large-patch14-ensemble` (ViT + contrastive, cross-family control). Per-frame score = max box
+logit for the item's cached target phrase from `data/targets.json` (327/400 concrete). Both smoke-validated
+before the run (score spread, gold-above-median) so a flat/mis-wired scorer couldn't fake a tie.
+
+**Read metric: frame-level hit@6 on the *concrete* subset vs SigLIP.**
+
+| bin | SigLIP (ref) | grounding-dino-base | owlv2-large |
+|---|---|---|---|
+| 600s  | **0.34** | 0.12 [.067–.208] (n=83) | 0.24 (n=83) |
+| 3600s | **0.20** | 0.04 [.014–.111] (n=75) | — (skipped) |
+
+`results/rr_ground_base_n100.json` (full), `results/rr_ground_owlv2_n100.partial.json` (600s only).
+
+Both detector families lose to cheap SigLIP even at the *easier* 600s bin; base CIs don't touch SigLIP's
+point estimate at either decision bin. owlv2 3600s was intentionally not run — it already trails SigLIP at
+600s and the signal only decays with length (SigLIP .34→.20, base .12→.04), so a 3600s revival was
+near-impossible and not worth the credits. Detection scores the *object*, not the *event/relation* the
+question asks about, and long-video needle recall is dominated by the temporal-localization wall, not by
+what open-vocab thing sits in a frame.
+
+**Fork B CLOSED — conclusive negative #2.** Premise (neighborhood findable, exact frame not) is paper-grade;
+every method lever — beam re-ranking (inert), zoom (dead), scorer-swap (loses to SigLIP) — fails to convert
+the found region into frame-level recall with any scorer. Consistent with the Marengo ceiling (cloud span
+recall never beats cheap SigLIP either): **the hour-scale fine-needle wall is the TASK, not the cheap
+selector.** Honest ship = **adaptive-k ≤10-min** (compression buys COST at iso-accuracy where the selector
+actually works), not a hierarchical selector for hour-scale needles.
+
+OWLv2 wiring note: text tower caps at 16 positions — long target phrases crash
+(`tensor a (34) must match tensor b (16)`); scorer truncates (`truncation=True, max_length=16`). Architectural
+property of that family, honest to report.
