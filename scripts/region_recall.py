@@ -49,6 +49,7 @@ def build_ground_scorer(detector_id: str):
     targets = json.load(open(targets_path)) if os.path.exists(targets_path) else {}
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     use_bf16 = dev == "cuda" and torch.cuda.is_bf16_supported()
+    is_owl = "owlv2" in detector_id.lower()
     proc = AutoProcessor.from_pretrained(detector_id)
     model = AutoModelForZeroShotObjectDetection.from_pretrained(detector_id).to(dev).eval()
     batch = int(os.environ.get("GROUND_BATCH", "32"))
@@ -58,12 +59,17 @@ def build_ground_scorer(detector_id: str):
         phrase = (rec.get("target") or "").strip()
         if not phrase:  # fallback: nothing concrete to detect
             phrase = item.get("question", "").split("\n")[0].strip()
-        text = phrase if phrase.endswith(".") else phrase + "."
         scores = []
         with torch.no_grad(), torch.autocast(dev, dtype=torch.bfloat16, enabled=use_bf16):
             for i in range(0, len(frames), batch):
                 imgs = [f.image for f in frames[i : i + batch]]
-                enc = proc(images=imgs, text=[text] * len(imgs), return_tensors="pt").to(dev)
+                if is_owl:
+                    # OWLv2: text is a per-image list of object queries (no trailing period)
+                    enc = proc(images=imgs, text=[[phrase]] * len(imgs), return_tensors="pt").to(dev)
+                else:
+                    # GroundingDINO: one lowercased period-terminated phrase string per image
+                    text = phrase if phrase.endswith(".") else phrase + "."
+                    enc = proc(images=imgs, text=[text] * len(imgs), return_tensors="pt").to(dev)
                 out = model(**enc)
                 # max box logit per image as the "is the target here" confidence
                 logits = out.logits.float().sigmoid().amax(dim=(1, 2))  # (B,)
