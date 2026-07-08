@@ -64,8 +64,15 @@ def build_ground_scorer(detector_id: str):
             for i in range(0, len(frames), batch):
                 imgs = [f.image for f in frames[i : i + batch]]
                 if is_owl:
-                    # OWLv2: text is a per-image list of object queries (no trailing period)
-                    enc = proc(images=imgs, text=[[phrase]] * len(imgs), return_tensors="pt").to(dev)
+                    # OWLv2: text is a per-image list of object queries (no trailing period).
+                    # Text tower caps at 16 positions -> truncate or long phrases crash.
+                    enc = proc(
+                        images=imgs,
+                        text=[[phrase]] * len(imgs),
+                        return_tensors="pt",
+                        truncation=True,
+                        max_length=16,
+                    ).to(dev)
                 else:
                     # GroundingDINO: one lowercased period-terminated phrase string per image
                     text = phrase if phrase.endswith(".") else phrase + "."
