@@ -12,9 +12,10 @@ The EmbeddingSelector is the concrete, runnable stand-in for the spec's
 from __future__ import annotations
 
 import json
-from typing import List
+from typing import List, Optional
 
-from .media import Frame
+from .media import Frame, frame_to_base64
+from .union_retrieval import build_union_indices
 
 
 class Selector:
@@ -296,6 +297,132 @@ class BeamCoarseToFineSelector(EmbeddingSelector):
         cand_scores = self.torch.tensor([float(scores[i]) for i in cand])
         top = self.torch.topk(cand_scores, min(k, len(cand))).indices.tolist()
         picked = sorted(cand[t] for t in top)
+        return [frames[i] for i in picked]
+
+
+class TwoStageVLMSelector(EmbeddingSelector):
+    """Retrieve-then-ground, Fork B reopened (research/retrieve_then_ground_spec.md, Jul 8).
+
+    Beam coarse-to-fine (above) failed because both stages re-ranked the SAME SigLIP cosine,
+    which goes flat inside one scene (region@2 ~.84 but hit@6 stuck at .34/.20 -- "neighborhood
+    findable, exact frame not"). This selector swaps stage 2 for a different *kind* of model:
+
+      Stage 1 (search, cosine):  dense SigLIP score over every frame (same `._score` as beam) ->
+        `build_union_indices` (peak-NMS, harness/union_retrieval.py) turns the score array into a
+        frame-budgeted union of candidate windows. Multi-needle-safe by construction: disjoint
+        peaks far apart (e.g. 2:20 and 8:10) both survive NMS.
+      Stage 2 (localize, generative): the union frames, in temporal order and each tagged
+        `[t=<sec>s]`, go into ONE multi-image prompt to a reasoning VLM (gpt-5.5), which reads
+        them jointly and names the evidence timestamp(s) -- the thing a per-frame cosine cannot
+        do within a single scene.
+
+    Robust by construction: if the VLM stage returns nothing parseable, falls back to SigLIP
+    top-k *within the union* -- so twostage can never score worse than flat-in-union (same
+    fallback pattern as TranscriptGatedSelector / beam's own top-k-within-survivors).
+
+    The Stage-2 API call is isolated in `_vlm_localize` (only place that touches the network) so
+    tests can monkeypatch/mock it without torch or a network connection. Phase 1 does NOT call
+    the real API; `vlm_model` / `_client` are lazily created on first real use only.
+    """
+
+    name = "twostage"
+
+    def __init__(self, model_id: str = "google/siglip-so400m-patch14-384", device: str | None = None,
+                 vlm_model: str = "gpt-5.5", budget: int = 100, gmin: float = 10.0, pad: float = 2.0,
+                 k_std: float = 1.0, reasoning_effort: str = "low"):
+        super().__init__(model_id, device)
+        self.vlm_model = vlm_model
+        self.budget = budget
+        self.gmin = gmin
+        self.pad = pad
+        self.k_std = k_std
+        self.reasoning_effort = reasoning_effort
+        self._client = None  # lazy OpenAI client -- never touched in Phase 1 / tests
+        self.name = f"twostage:{model_id.split('/')[-1]}+{vlm_model}"
+
+    def _vlm_client(self):
+        if self._client is None:
+            from openai import OpenAI
+
+            self._client = OpenAI()
+        return self._client
+
+    def _vlm_localize(self, union_frames: List[Frame], question: str) -> Optional[List[float]]:
+        """Stage-2 API call, isolated so it's the only method a test needs to mock.
+
+        Builds one multi-image prompt: union frames in temporal order, each preceded by its
+        `[t=Xs]` tag, and asks for the evidence timestamp(s). Returns parsed floats, or None on
+        any failure (bad response, network error, unparseable text) -- caller must fall back.
+        """
+        content: list = [{
+            "type": "text",
+            "text": (
+                f"Question: {question}\n"
+                "The images below are frames from a video, in time order, each preceded by its "
+                "timestamp tag. Reply with ONLY the timestamp(s) in seconds (comma-separated if "
+                "more than one) of the frame(s) showing the visual evidence needed to answer."
+            ),
+        }]
+        for f in union_frames:
+            content.append({"type": "text", "text": f"[t={f.seconds:.1f}s]"})
+            content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{frame_to_base64(f)}"},
+            })
+        try:
+            resp = self._vlm_client().chat.completions.create(
+                model=self.vlm_model,
+                messages=[{"role": "user", "content": content}],
+                max_completion_tokens=128,
+                reasoning_effort=self.reasoning_effort,
+            )
+            text = resp.choices[0].message.content or ""
+        except Exception:
+            return None
+        return self._parse_timestamps(text)
+
+    @staticmethod
+    def _parse_timestamps(text: str) -> Optional[List[float]]:
+        import re
+
+        nums = re.findall(r"\d+(?:\.\d+)?", text)
+        return [float(n) for n in nums] if nums else None
+
+    def select(self, frames: List[Frame], question: str, k: int, batch_size: int = 64) -> List[Frame]:
+        n = len(frames)
+        if n <= k:
+            return frames
+
+        # Stage 1: dense SigLIP score, once, then peak-NMS union (pure function, no torch inside)
+        scores = self._score([f.image for f in frames], question, batch_size)
+        times = [f.seconds if f.seconds is not None else float(i) for i, f in enumerate(frames)]
+        union_idx = build_union_indices(
+            [float(s) for s in scores], times,
+            budget=self.budget, gmin=self.gmin, pad=self.pad, k_std=self.k_std,
+        )
+        union_frames = [frames[i] for i in union_idx]  # already time-ordered (indices are)
+
+        # Stage 2: VLM localizes within the union
+        vlm_ts = self._vlm_localize(union_frames, question)
+        if vlm_ts:
+            picked_idx: List[int] = []
+            seen = set()
+            for t in vlm_ts:
+                j = min(range(len(union_idx)), key=lambda j: abs(times[union_idx[j]] - t))
+                gi = union_idx[j]
+                if gi not in seen:
+                    seen.add(gi)
+                    picked_idx.append(gi)
+                if len(picked_idx) >= k:
+                    break
+            if picked_idx:
+                return [frames[i] for i in sorted(picked_idx)]
+
+        # Fallback: VLM parse failed / returned nothing usable -> SigLIP top-k WITHIN the union
+        # (never worse than beam-in-union; the union is already the frame-budgeted candidate set)
+        union_scores = self.torch.tensor([float(scores[i]) for i in union_idx])
+        top = self.torch.topk(union_scores, min(k, len(union_idx))).indices.tolist()
+        picked = sorted(union_idx[t] for t in top)
         return [frames[i] for i in picked]
 
 
