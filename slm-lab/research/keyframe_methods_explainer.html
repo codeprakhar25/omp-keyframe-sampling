@@ -1,0 +1,364 @@
+<title>Keyframe Selection Methods — Visual Explainer</title>
+<style>
+  :root{
+    --bg:#f7f7f8; --panel:#ffffff; --ink:#1a1a1e; --muted:#6b6b76; --line:#e3e3e8;
+    --accent:#2f6df6; --gold:#f0a000; --green:#22a06b; --red:#e5484d; --purplebg:#eef1ff;
+    --chipA:#e8f0ff; --chipAtx:#2f6df6; --chipB:#eafaf1; --chipBtx:#128a5a;
+    --chipC:#fdeef0; --chipCtx:#d1373c; --chipD:#fff3e0; --chipDtx:#c07800;
+    --frame:#d8dae0; --pick:#2f6df6; --skip:#c9ccd4;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#101014; --panel:#191920; --ink:#e9e9ee; --muted:#9a9aa6; --line:#2a2a33;
+      --purplebg:#1b1f34; --chipA:#16233f; --chipAtx:#6fa0ff; --chipB:#123024; --chipBtx:#4fce97;
+      --chipC:#3a1418; --chipCtx:#ff7b80; --chipD:#332412; --chipDtx:#f0b45a;
+      --frame:#33343d; --pick:#6fa0ff; --skip:#3a3b45; }
+  }
+  :root[data-theme="dark"]{ --bg:#101014; --panel:#191920; --ink:#e9e9ee; --muted:#9a9aa6; --line:#2a2a33;
+    --purplebg:#1b1f34; --chipA:#16233f; --chipAtx:#6fa0ff; --chipB:#123024; --chipBtx:#4fce97;
+    --chipC:#3a1418; --chipCtx:#ff7b80; --chipD:#332412; --chipDtx:#f0b45a;
+    --frame:#33343d; --pick:#6fa0ff; --skip:#3a3b45; }
+  :root[data-theme="light"]{ --bg:#f7f7f8; --panel:#ffffff; --ink:#1a1a1e; --muted:#6b6b76; --line:#e3e3e8;
+    --purplebg:#eef1ff; --chipA:#e8f0ff; --chipAtx:#2f6df6; --chipB:#eafaf1; --chipBtx:#128a5a;
+    --chipC:#fdeef0; --chipCtx:#d1373c; --chipD:#fff3e0; --chipDtx:#c07800;
+    --frame:#d8dae0; --pick:#2f6df6; --skip:#c9ccd4; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:940px;margin:0 auto;padding:26px 18px 60px;}
+  h1{font-size:23px;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin:0 0 20px;font-size:14px}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:12px}
+  .tab{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--muted);
+    padding:6px 11px;border-radius:8px;font-size:13px;font-weight:600;white-space:nowrap;transition:.12s}
+  .tab:hover{color:var(--ink)}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .panel{display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .panel.active{display:block}
+  .chip{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;
+    letter-spacing:.02em;vertical-align:middle}
+  .cA{background:var(--chipA);color:var(--chipAtx)} .cB{background:var(--chipB);color:var(--chipBtx)}
+  .cC{background:var(--chipC);color:var(--chipCtx)} .cD{background:var(--chipD);color:var(--chipDtx)}
+  .cBase{background:var(--purplebg);color:var(--muted)}
+  h2{font-size:20px;margin:10px 0 2px;letter-spacing:-.01em}
+  .trick{font-size:14.5px;color:var(--ink);background:var(--purplebg);border-radius:10px;
+    padding:11px 14px;margin:14px 0}
+  .trick b{color:var(--accent)}
+  .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 6px}
+  ol,ul{margin:6px 0 0;padding-left:20px} li{margin:4px 0}
+  .fig{margin:14px 0 4px;padding:14px;border:1px dashed var(--line);border-radius:10px;overflow-x:auto}
+  .cap{font-size:12px;color:var(--muted);margin-top:6px;text-align:center}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .kv{font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:5px 9px}
+  .kv b{color:var(--ink)}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:var(--bg);font-weight:700}
+  code{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:12.5px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:middle;margin-right:4px}
+  a{color:var(--accent)}
+</style>
+
+<div class="wrap">
+  <h1>Keyframe Selection for Long-Video MLLMs</h1>
+  <p class="sub">Same start for all: a scorer gives one number per frame. The <b>unique idea is how each turns scores → a picked subset.</b> Tap a method. · slm-lab, 2026-07</p>
+
+  <div class="tabs" id="tabs"></div>
+
+  <!-- OVERVIEW -->
+  <div class="panel active" data-tab="Overview">
+    <h2>The map</h2>
+    <p>Every method: <b>scorer (SigLIP / BLIP / CLIP) → one relevance number per frame.</b> The scorer is commodity — SigLIP vs BLIP is a ±2-pt detail. All the intellectual content is in the <b>selection algorithm</b>. Our baseline = plain <b>top-k</b> (take the highest numbers). It has two weaknesses everyone else attacks:</p>
+    <ul>
+      <li><b>W1 — redundancy:</b> top-k grabs near-duplicate frames all on one moment.</li>
+      <li><b>W2 — blind &amp; expensive:</b> scores every frame, trusts the raw number.</li>
+    </ul>
+    <div class="fig">
+      <svg viewBox="0 0 720 150" width="100%" height="150" font-family="inherit">
+        <text x="8" y="16" font-size="12" fill="var(--muted)">scorer output (cosine per frame)</text>
+        <polyline points="10,70 40,60 70,40 100,35 130,42 160,90 190,95 220,88 250,92 280,60 310,45 340,50 370,95 400,98 430,92 460,70 490,55 520,52 550,95 580,98 610,94 640,80 670,88 700,90"
+          fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+        <!-- top-k picks clustered on the one peak -->
+        <g fill="var(--pick)">
+          <circle cx="70" cy="40" r="5"/><circle cx="100" cy="35" r="5"/><circle cx="130" cy="42" r="5"/>
+          <circle cx="310" cy="45" r="5"/><circle cx="340" cy="50" r="5"/>
+        </g>
+        <text x="10" y="128" font-size="11" fill="var(--muted)">top-k picks (blue) bunch on the tallest bump — W1 redundancy; the rest of the video is never covered</text>
+      </svg>
+    </div>
+    <div class="lbl">Four families of fix</div>
+    <table>
+      <tr><th>Family</th><th>Fixes</th><th>Idea</th><th>Methods</th></tr>
+      <tr><td><span class="chip cA">A · Spread</span></td><td>W1</td><td>add a coverage/diversity term so picks don't cluster</td><td>AKS, AdaRD, Adaptive-Greedy, LDDR</td></tr>
+      <tr><td><span class="chip cB">B · Cheap</span></td><td>W2-cost</td><td>don't score every frame — glance, then zoom</td><td>Focus</td></tr>
+      <tr><td><span class="chip cC">C · Right thing</span></td><td>W2-blind</td><td>score "does this change the answer," not "does it look like the query"</td><td>Evidential, Swift</td></tr>
+      <tr><td><span class="chip cD">D · Compress</span></td><td>output</td><td>don't pick k — keep/compress/drop every frame</td><td>AdaCodec, LDDR</td></tr>
+    </table>
+    <p style="margin-top:14px"><b>Our unexplored levers = C and D.</b> A and B are crowded. Our still-ours edges: extreme-compression at iso-accuracy (decoupling proof: hit@k 0.24 yet acc 0.76) + the query-aware peak/plateau distinctness diagnosis.</p>
+  </div>
+
+  <!-- OURS -->
+  <div class="panel" data-tab="Ours · top-k">
+    <span class="chip cBase">baseline</span>
+    <h2>Ours — plain top-k</h2>
+    <div class="trick"><b>Unique trick:</b> none — take the k highest-scoring frames. The honest baseline every other method is defined against.</div>
+    <div class="lbl">How it works</div>
+    <ol><li>SigLIP so400m scores every 1-fps (or 2s-clip) frame vs the question.</li>
+      <li>Sort descending, take the top k (e.g. 8, 32).</li>
+      <li>Feed to the answerer (GPT).</li></ol>
+    <div class="fig">
+      <svg viewBox="0 0 720 90" width="100%" height="90">
+        <g id="strip"></g>
+      </svg>
+      <div class="cap">frames sorted by score; top-k = the brightest, wherever they fall (can bunch)</div>
+    </div>
+    <div class="lbl">Weakness</div>
+    <ul><li><b>W1:</b> near-duplicate frames on one moment eat the budget.</li>
+      <li><b>W2:</b> scores every frame; a frame that merely <i>looks</i> like the query beats the one that <i>answers</i> it.</li></ul>
+    <div class="meta"><span class="kv"><b>encoder:</b> SigLIP so400m</span><span class="kv"><b>train-free:</b> yes</span>
+      <span class="kv"><b>result:</b> LVB topk-8 0.74 vs uniform 0.52 (n=50, 600s)</span></div>
+  </div>
+
+  <!-- AKS -->
+  <div class="panel" data-tab="AKS">
+    <span class="chip cA">A · Spread</span> <span class="chip cBase">Feb 25 · the baseline</span>
+    <h2>AKS — recursive time-binning</h2>
+    <div class="trick"><b>Unique trick:</b> split the timeline into <b>bins</b> and force picks across them → guarantees temporal coverage, can't dump all frames on one moment.</div>
+    <div class="lbl">How it works</div>
+    <ol><li>BLIP/CLIP scores each frame vs the prompt.</li>
+      <li>Split video into bins. In each bin, compare its top score to a threshold.</li>
+      <li>Strong bin → take its best frame. Weak/ambiguous → recursively split &amp; spread.</li>
+      <li>Balances "high score" against "cover the whole timeline."</li></ol>
+    <div class="fig">
+      <svg viewBox="0 0 720 110" width="100%" height="110">
+        <g stroke="var(--line)"><line x1="10" y1="20" x2="10" y2="95"/><line x1="187" y1="20" x2="187" y2="95"/>
+          <line x1="364" y1="20" x2="364" y2="95"/><line x1="541" y1="20" x2="541" y2="95"/><line x1="710" y1="20" x2="710" y2="95"/></g>
+        <text x="70" y="16" font-size="11" fill="var(--muted)">bin 1</text><text x="250" y="16" font-size="11" fill="var(--muted)">bin 2</text>
+        <text x="430" y="16" font-size="11" fill="var(--muted)">bin 3</text><text x="600" y="16" font-size="11" fill="var(--muted)">bin 4</text>
+        <g fill="var(--frame)">
+          <rect x="30" y="55" width="16" height="30" rx="2"/><rect x="90" y="45" width="16" height="40" rx="2"/>
+          <rect x="220" y="60" width="16" height="25" rx="2"/><rect x="410" y="50" width="16" height="35" rx="2"/>
+          <rect x="600" y="58" width="16" height="27" rx="2"/></g>
+        <g fill="var(--pick)"><rect x="90" y="45" width="16" height="40" rx="2"/><rect x="220" y="60" width="16" height="25" rx="2"/>
+          <rect x="410" y="50" width="16" height="35" rx="2"/><rect x="600" y="58" width="16" height="27" rx="2"/></g>
+        <text x="10" y="108" font-size="11" fill="var(--muted)">one pick per bin (blue) — coverage forced even where scores are low</text>
+      </svg>
+    </div>
+    <div class="meta"><span class="kv"><b>encoder:</b> BLIP/CLIP</span><span class="kv"><b>train-free:</b> yes</span>
+      <span class="kv"><b>result:</b> LVB 62.7 vs 58.9 uniform</span><span class="kv"><b>role:</b> shared baseline</span></div>
+  </div>
+
+  <!-- AdaRD -->
+  <div class="panel" data-tab="AdaRD">
+    <span class="chip cA">A · Spread</span> <span class="chip cBase">Oct 25</span>
+    <h2>AdaRD-Key — log-determinant diversity</h2>
+    <div class="trick"><b>Unique trick:</b> the <b>determinant</b> of picked-frame embeddings = geometric "volume." Big only if picks point different directions; a near-duplicate adds ~0 → gets skipped.</div>
+    <div class="lbl">How it works</div>
+    <ol><li>R(f) = BLIP-2 ITM probability (relevance).</li>
+      <li>Add frames greedily, each maximizing <code>R(i) + λ·log det(Gram of picks)</code>.</li>
+      <li>log-det = diversity in feature space; λ tuned adaptively.</li>
+      <li>Gate: if best relevance &lt; 0.4 → diversity-only (scores too noisy to trust).</li></ol>
+    <div class="fig">
+      <svg viewBox="0 0 720 120" width="100%" height="120">
+        <text x="8" y="15" font-size="11" fill="var(--muted)">embedding space — pick spread-out directions, not a cluster</text>
+        <circle cx="200" cy="70" r="42" fill="none" stroke="var(--line)"/>
+        <g fill="var(--skip)"><circle cx="185" cy="60" r="6"/><circle cx="195" cy="70" r="6"/><circle cx="205" cy="63" r="6"/><circle cx="198" cy="80" r="6"/></g>
+        <text x="150" y="128" font-size="11" fill="var(--muted)">top-k: 4 near-dupes (small volume)</text>
+        <g fill="var(--pick)"><circle cx="520" cy="45" r="6"/><circle cx="470" cy="90" r="6"/><circle cx="575" cy="85" r="6"/><circle cx="525" cy="70" r="6"/></g>
+        <polygon points="520,45 470,90 575,85" fill="var(--pick)" opacity=".12"/>
+        <circle cx="520" cy="70" r="42" fill="none" stroke="var(--line)"/>
+        <text x="455" y="128" font-size="11" fill="var(--muted)">AdaRD: spread (big volume = det)</text>
+      </svg>
+    </div>
+    <div class="meta"><span class="kv"><b>encoder:</b> BLIP-2 ITM</span><span class="kv"><b>train-free:</b> yes</span>
+      <span class="kv"><b>result:</b> LVB 62.9 vs AKS 62.7</span><span class="kv"><b>note:</b> no encoder ablation</span></div>
+  </div>
+
+  <!-- Adaptive Greedy -->
+  <div class="panel" data-tab="Adaptive-Greedy">
+    <span class="chip cA">A · Spread</span> <span class="chip cBase">Mar 26 · uses SigLIP</span>
+    <h2>Adaptive Greedy — two encoders, facility-location</h2>
+    <div class="trick"><b>Unique trick:</b> split the job across <b>two encoders</b> — SigLIP judges relevance, DINOv2 (pure vision) judges "is the whole video visually covered." Greedy with a (1−1/e) guarantee.</div>
+    <div class="lbl">How it works</div>
+    <ol><li><code>F(S) = α·Relevance(S) + β·Coverage(S)</code>.</li>
+      <li>Relevance = <b>SigLIP</b> query cosine (like us).</li>
+      <li>Coverage = <b>DINOv2</b> facility-location: every unpicked frame should be near <i>some</i> picked frame.</li>
+      <li>Greedy add, submodular → (1−1/e) optimal. 1-fps pool ≤1000 frames.</li></ol>
+    <div class="fig">
+      <svg viewBox="0 0 720 130" width="100%" height="130">
+        <text x="8" y="14" font-size="11" fill="var(--accent)">SigLIP → relevance</text>
+        <text x="360" y="14" font-size="11" fill="var(--green)">DINOv2 → coverage</text>
+        <g fill="var(--frame)"><rect x="20" y="40" width="14" height="30" rx="2"/><rect x="60" y="30" width="14" height="40" rx="2"/>
+          <rect x="100" y="55" width="14" height="25" rx="2"/><rect x="140" y="35" width="14" height="45" rx="2"/><rect x="180" y="60" width="14" height="20" rx="2"/></g>
+        <rect x="60" y="30" width="14" height="40" rx="2" fill="var(--accent)"/><rect x="140" y="35" width="14" height="45" rx="2" fill="var(--accent)"/>
+        <text x="20" y="100" font-size="10.5" fill="var(--muted)">what matches the question</text>
+        <g fill="var(--frame)"><circle cx="420" cy="60" r="9"/><circle cx="470" cy="45" r="9"/><circle cx="530" cy="75" r="9"/><circle cx="590" cy="50" r="9"/><circle cx="640" cy="70" r="9"/></g>
+        <g fill="var(--green)"><circle cx="470" cy="45" r="9"/><circle cx="590" cy="50" r="9"/></g>
+        <text x="400" y="100" font-size="10.5" fill="var(--muted)">what represents the visual variety</text>
+        <text x="180" y="122" font-size="11" fill="var(--muted)" text-anchor="middle">final pick = weighted sum of both</text>
+      </svg>
+    </div>
+    <div class="meta"><span class="kv"><b>encoder:</b> SigLIP + DINOv2</span><span class="kv"><b>train-free:</b> yes</span>
+      <span class="kv"><b>result:</b> MLVU K=10 64.48 vs AKS 62.31</span><span class="kv"><b>validates our SigLIP</b></span></div>
+  </div>
+
+  <!-- LDDR -->
+  <div class="panel" data-tab="LDDR">
+    <span class="chip cA">A · Spread</span> <span class="chip cD">D · Compress</span> <span class="chip cBase">May 26</span>
+    <h2>LDDR — DPP diversity + dynamic resolution</h2>
+    <div class="trick"><b>Unique trick:</b> after picking diverse frames (DPP), give <b>important frames high resolution</b> and others low-res / pruned → spend the token budget on <i>pixels</i>, not just frame count.</div>
+    <div class="lbl">How it works</div>
+    <ol><li>Linear-DPP selects important + diverse frames (determinant = anti-redundancy).</li>
+      <li>Score each picked frame's importance (query-aware).</li>
+      <li>Allocate resolution: hi-res for important, lo-res/prune for the rest.</li>
+      <li>Same token budget → more of it on the frames that matter.</li></ol>
+    <div class="fig">
+      <svg viewBox="0 0 720 110" width="100%" height="110">
+        <text x="8" y="15" font-size="11" fill="var(--muted)">same token budget, unequal resolution</text>
+        <g fill="var(--pick)">
+          <rect x="30" y="30" width="60" height="60" rx="4"/><rect x="130" y="45" width="30" height="30" rx="3"/>
+          <rect x="200" y="30" width="60" height="60" rx="4"/><rect x="300" y="50" width="20" height="20" rx="3"/>
+          <rect x="360" y="45" width="30" height="30" rx="3"/><rect x="430" y="30" width="60" height="60" rx="4"/></g>
+        <text x="30" y="104" font-size="10.5" fill="var(--muted)">big = hi-res important frame · small = lo-res filler</text>
+      </svg>
+    </div>
+    <div class="meta"><span class="kv"><b>encoder:</b> CLIP</span><span class="kv"><b>train-free:</b> yes</span>
+      <span class="kv"><b>result:</b> +2.5 budget-constrained · 3× faster than DPP</span><span class="kv"><b>new lever:</b> resolution</span></div>
+  </div>
+
+  <!-- Focus -->
+  <div class="panel" data-tab="Focus">
+    <span class="chip cB">B · Cheap</span> <span class="chip cBase">Nov 25</span>
+    <h2>Focus — bandit, coarse-to-fine</h2>
+    <div class="trick"><b>Unique trick:</b> treat <b>scoring itself as a budget.</b> Clips = slot-machine arms; glance at all cheaply, then spend the rest zooming into promising clips — with a math guard (UCB) against dropping a good clip on bad luck.</div>
+    <div class="lbl">How it works</div>
+    <ol><li>Split video into 16s clips = bandit <b>arms</b>.</li>
+      <li><b>Coarse:</b> score a few frames in every clip (cheap glance everywhere).</li>
+      <li><b>Fine:</b> spend remaining scoring on top-α clips by <b>Bernstein UCB</b> — undersampled clip gets a wide uncertainty band, stays optimistically in the running.</li>
+      <li>Keep top clips by average score; sample frames from them.</li></ol>
+    <div class="fig">
+      <svg viewBox="0 0 720 130" width="100%" height="130">
+        <text x="8" y="15" font-size="11" fill="var(--muted)">coarse: glance all clips</text>
+        <g fill="var(--skip)"><rect x="20" y="30" width="40" height="18" rx="3"/><rect x="70" y="30" width="40" height="18" rx="3"/>
+          <rect x="120" y="30" width="40" height="18" rx="3"/><rect x="170" y="30" width="40" height="18" rx="3"/>
+          <rect x="220" y="30" width="40" height="18" rx="3"/><rect x="270" y="30" width="40" height="18" rx="3"/></g>
+        <text x="360" y="15" font-size="11" fill="var(--muted)">fine: zoom the promising ones</text>
+        <g fill="var(--pick)"><rect x="120" y="30" width="40" height="18" rx="3"/><rect x="220" y="30" width="40" height="18" rx="3"/></g>
+        <path d="M140,55 L470,80" stroke="var(--pick)" stroke-width="1" fill="none"/><path d="M240,55 L470,80" stroke="var(--pick)" stroke-width="1" fill="none"/>
+        <g fill="var(--pick)"><rect x="470" y="70" width="16" height="30" rx="2"/><rect x="495" y="62" width="16" height="38" rx="2"/>
+          <rect x="520" y="75" width="16" height="25" rx="2"/><rect x="545" y="66" width="16" height="34" rx="2"/></g>
+        <text x="470" y="118" font-size="10.5" fill="var(--muted)">dense score only here</text>
+      </svg>
+    </div>
+    <div class="lbl">Weak spot (our edge)</div>
+    <p style="margin:4px 0 0;font-size:13.5px">Clip scored by its <b>mean</b> → a one-frame answer inside a 16s clip is averaged down by ~15 irrelevant frames. UCB guards unlucky sampling, not a genuinely diluted mean. Our top-k on 2s clips doesn't dilute.</p>
+    <div class="meta"><span class="kv"><b>encoder:</b> BLIP ITM</span><span class="kv"><b>train-free:</b> yes</span>
+      <span class="kv"><b>result:</b> LVB 63.5 · +11.9 on &gt;20min · &lt;2% frames</span></div>
+  </div>
+
+  <!-- Evidential -->
+  <div class="panel" data-tab="Evidential">
+    <span class="chip cC">C · Right thing</span> <span class="chip cBase">Apr 26 · trained</span>
+    <h2>Query-Conditioned Evidential — similarity → evidence</h2>
+    <div class="trick"><b>Unique trick:</b> cosine picks frames that <i>look like</i> the query. They instead keep frames that <b>change the MLLM's answer</b> — formalized as mutual information <code>I(S;O∣Q)</code>. Learned, not matched.</div>
+    <div class="lbl">How it works</div>
+    <ol><li>Goal: <code>max I(S ; O | Q)</code> — picked frames S should be informative about output O given query Q.</li>
+      <li>Can't search combinatorially → submodular upper bound → independent frame scoring.</li>
+      <li><b>Train</b> a ~10M evidence scorer (frozen CLIP + causal-window temporal aggregator + query gate + InfoNCE) on the new <b>Seek-173K</b> dataset (annotated evidence segments).</li></ol>
+    <div class="fig">
+      <svg viewBox="0 0 720 120" width="100%" height="120">
+        <text x="60" y="15" font-size="11" fill="var(--muted)">"who kicked the ball?"</text>
+        <g fill="var(--frame)"><rect x="30" y="35" width="80" height="50" rx="4"/><rect x="130" y="35" width="80" height="50" rx="4"/>
+          <rect x="230" y="35" width="80" height="50" rx="4"/></g>
+        <text x="45" y="64" font-size="10" fill="var(--muted)">ball (looks</text><text x="52" y="76" font-size="10" fill="var(--muted)">relevant)</text>
+        <text x="150" y="64" font-size="10" fill="var(--muted)">crowd</text>
+        <rect x="230" y="35" width="80" height="50" rx="4" fill="var(--green)"/>
+        <text x="242" y="60" font-size="10" fill="#fff">the KICK</text><text x="238" y="74" font-size="10" fill="#fff">(=answer)</text>
+        <text x="380" y="50" font-size="12" fill="var(--muted)">cosine loves the ball frame.</text>
+        <text x="380" y="70" font-size="12" fill="var(--green)">evidence loves the kick frame —</text>
+        <text x="380" y="88" font-size="12" fill="var(--green)">the one that changes the answer.</text>
+      </svg>
+    </div>
+    <p style="margin-top:8px;font-size:13.5px"><b>= our blind-baseline critique, formalized before us.</b> Breaks frozen-encoder purity (it trains). Fails on audio + timestamp-grounded queries.</p>
+    <div class="meta"><span class="kv"><b>encoder:</b> CLIP + trained 10M</span><span class="kv"><b>train-free:</b> NO</span>
+      <span class="kv"><b>result:</b> LVBench 47.7 vs 37.6 uniform</span></div>
+  </div>
+
+  <!-- Swift -->
+  <div class="panel" data-tab="Swift">
+    <span class="chip cC">C · Right thing</span> <span class="chip cBase">May 26 · query-free</span>
+    <h2>Swift Sampling — temporal surprise</h2>
+    <div class="trick"><b>Unique trick:</b> score a frame by how much it <b>deviates from its neighbors</b> (Taylor-series temporal derivative). Sudden change = "surprise" = keep. No query needed.</div>
+    <div class="lbl">How it works</div>
+    <ol><li>Compute higher-order temporal derivatives via finite differences (Taylor series).</li>
+      <li>High derivative = visual novelty vs surrounding frames → high score.</li>
+      <li>Cheap — no optical flow, no dense features, <b>no query</b>, no training.</li></ol>
+    <div class="fig">
+      <svg viewBox="0 0 720 110" width="100%" height="110">
+        <polyline points="10,60 50,60 90,60 130,60 170,58 210,30 250,32 290,60 330,60 370,60 410,60 450,60 490,88 530,60 570,60 610,60 650,60 690,60"
+          fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+        <circle cx="210" cy="30" r="6" fill="var(--pick)"/><circle cx="490" cy="88" r="6" fill="var(--pick)"/>
+        <text x="150" y="20" font-size="11" fill="var(--pick)">spikes = change = surprise (kept)</text>
+        <text x="10" y="104" font-size="11" fill="var(--muted)">flat stretches (no change) skipped — even if they're what the question is about</text>
+      </svg>
+    </div>
+    <p style="margin-top:6px;font-size:13.5px"><b>= our "distinctness" axis, formalized</b> — but query-free, so it finds <i>change</i>, not <i>your question's</i> answer. That's its ceiling and our contrast.</p>
+    <div class="meta"><span class="kv"><b>encoder:</b> CLIP</span><span class="kv"><b>train-free:</b> yes</span>
+      <span class="kv"><b>result:</b> up to +12.5 on long, limited budget</span></div>
+  </div>
+
+  <!-- AdaCodec -->
+  <div class="panel" data-tab="AdaCodec">
+    <span class="chip cD">D · Compress</span> <span class="chip cBase">Jun 26 · closest to our thesis</span>
+    <h2>AdaCodec — predictive visual codec</h2>
+    <div class="trick"><b>Unique trick:</b> don't <i>pick k</i> — run a <b>codec</b>: per frame decide keep-full / compress / drop. Every frame contributes, at a token cost proportional to its information.</div>
+    <div class="lbl">How it works</div>
+    <ol><li>Score each frame's information/predictability.</li>
+      <li>Redundant frames → squeeze to a few tokens (don't discard).</li>
+      <li>Informative frames → keep at full token cost.</li>
+      <li>Training-free, sits in front of the MLLM like a video codec.</li></ol>
+    <div class="fig">
+      <svg viewBox="0 0 720 110" width="100%" height="110">
+        <g><rect x="20" y="35" width="46" height="46" rx="4" fill="var(--pick)"/>
+          <rect x="80" y="47" width="22" height="22" rx="3" fill="var(--skip)"/>
+          <rect x="116" y="50" width="16" height="16" rx="3" fill="var(--skip)"/>
+          <rect x="146" y="35" width="46" height="46" rx="4" fill="var(--pick)"/>
+          <rect x="206" y="50" width="16" height="16" rx="3" fill="var(--skip)"/>
+          <rect x="236" y="47" width="22" height="22" rx="3" fill="var(--skip)"/>
+          <rect x="272" y="35" width="46" height="46" rx="4" fill="var(--pick)"/></g>
+        <text x="20" y="100" font-size="10.5" fill="var(--muted)">big = full tokens · small = compressed (kept, cheap) · none dropped blindly</text>
+      </svg>
+    </div>
+    <p style="margin-top:6px;font-size:13.5px"><b>= "compression buys cost" as a product</b> — our exact pitch, already built. Headline: <b>1/7 token budget (32k vs 224k) beats the baseline</b>; TTFT 9.26s → 1.62s.</p>
+    <div class="meta"><span class="kv"><b>encoder:</b> —</span><span class="kv"><b>train-free:</b> yes</span>
+      <span class="kv"><b>result:</b> 1/7 tokens · 82% faster · 11 benches</span></div>
+  </div>
+
+</div>
+
+<script>
+  const order = ["Overview","Ours · top-k","AKS","AdaRD","Adaptive-Greedy","LDDR","Focus","Evidential","Swift","AdaCodec"];
+  const tabs = document.getElementById("tabs");
+  const panels = [...document.querySelectorAll(".panel")];
+  const byTab = t => panels.find(p => p.dataset.tab === t);
+  order.forEach((t,i)=>{
+    const b=document.createElement("div");
+    b.className="tab"+(i===0?" active":""); b.textContent=t;
+    b.onclick=()=>{
+      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+      panels.forEach(x=>x.classList.remove("active"));
+      b.classList.add("active"); byTab(t).classList.add("active");
+      window.scrollTo({top:0,behavior:"smooth"});
+    };
+    tabs.appendChild(b);
+  });
+  // top-k strip: sorted frames, brightest first
+  const strip=document.getElementById("strip");
+  if(strip){ const vals=[0.95,0.92,0.90,0.72,0.70,0.55,0.52,0.50,0.40,0.38,0.30,0.28,0.20,0.18,0.12];
+    vals.forEach((v,i)=>{ const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
+      const x=15+i*46, h=10+v*60; r.setAttribute("x",x); r.setAttribute("y",80-h);
+      r.setAttribute("width",34); r.setAttribute("height",h); r.setAttribute("rx",3);
+      r.setAttribute("fill", i<3 ? "var(--pick)" : "var(--skip)"); strip.appendChild(r);
+    });
+  }
+</script>
