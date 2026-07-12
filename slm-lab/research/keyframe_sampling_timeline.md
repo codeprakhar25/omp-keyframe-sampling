@@ -58,9 +58,36 @@ unexplored levers = **C (is the frame the answer?)** and **D (compress)** — A 
 | **Nov 25** | **Focus** (FOCUS) | 2510.27280 | select | **coarse-to-fine bandit** (CPE, Bernstein UCB) | BLIP ITM | yes | LVB 63.5 vs 58.9 uniform; **+11.9 on >20min**; <2% frames, 5.5 GPU-h |
 | **Mar 26** | **Adaptive Greedy** | 2603.20180 | select | relevance + **DINOv2 facility-location coverage**, submodular (1−1/e) | **SigLIP** | yes | MLVU K=10: **64.48** vs AKS 62.31 (+1.98 avg); oracle 66.38 |
 | **Apr 26** | **Query-Conditioned Evidential** | 2604.01002 | select | **info-bottleneck** max I(S;O∣Q) — *evidence not similarity* | CLIP + **trained 10M scorer** | **NO** (Seek-173K, 0.6 GPU-h) | LVBench 32f **47.7** vs 37.6 uniform (+10.1); VideoMME 63.6 vs 60.7; long 55.0 vs 50.6 |
-| May 26 | **Swift Sampling** (temporal surprise) | 2605.22678 | select | **Taylor-series temporal derivative** = novelty; **QUERY-FREE** | CLIP | yes | up to **+12.5** on long videos, limited frame budget; vs AdaRD/UniComp/FastVid |
-| May 26 | **LDDR** (Linear-DPP dynamic-res) | 2605.11477 | **compress** | **Linear-DPP** diversity + **dynamic resolution** (hi-res important frames) | CLIP | yes | **+2.5** budget-constrained / +1.6 high-budget; **3× faster** than DPP; 4 benches |
+| May 26 | **Swift Sampling** (temporal surprise) | 2605.22678 | select | **Taylor-series temporal derivative** = novelty; **QUERY-FREE** | **SigLIP** (LLaVA-OneVision) | yes | up to **+12.5** on long videos, limited frame budget; vs AdaRD/UniComp/FastVid |
+| May 26 | **LDDR** (Linear-DPP dynamic-res) | 2605.11477 | **compress** | **Linear-DPP** diversity + **dynamic resolution** (hi-res important frames) | **LongCLIP** | yes | **+2.5** budget-constrained / +1.6 high-budget; **3× faster** than DPP; 4 benches |
 | Jun 26 | **AdaCodec** (predictive visual code) | 2606.02569 | **compress** | **predictive codec** — retain/compress/drop per frame | — | yes | **1/7 token budget** (32k vs 224k) beats baseline; TTFT **9.26s→1.62s** (82%); 11 benches vs Qwen3-VL-8B |
+
+## Scorer · pick-method · budget · result matrix (vs ours)
+
+Our row on top. "pick method" = how per-frame scores become the top-k subset (the middle arrow).
+Frames→answerer = budget FED to the answer model (the free variable they turn up, we squeeze).
+**All numbers below VERIFIED from arXiv full-text, fetched 2026-07-12** (encoders, frame budgets,
+per-paper answerer VLM, headline accuracy, max video). None report frame hit@k — all report MCQA
+accuracy, so our head-to-head must go through Table A (methods we ran ourselves).
+
+| method | scorer / encoder (train?) | pick method (scores → @k) | frames→answerer | answerer VLM | benchmark · headline acc · max video | finding / note vs ours |
+|---|---|---|---|---|---|---|
+| **OURS (top-k)** | **SigLIP so400m** cosine · frozen | **sort cosine, take top-6** | **6** (8 in MCQA) | **GPT-5.5** (frontier) | LVB fine-needle subset · topk MCQA **0.74@600s / 0.78@60s** · hit@6 **0.24@3600s** · max **3600s (1h)** | compression = COST at iso-acc, not acc; **hit@6 0.24 yet acc 0.76 → answer ≠ gold frame** (decoupling proof) |
+| AKS (Feb 25) | BLIP (CLIP/Sevila alt) · frozen | recursive time-bin split + threshold spread | **64** | LLaVA-Video-7B | LVB **62.7** vs 58.9 uniform · videos >1h | THE baseline all beat; **10.7× our budget** |
+| Q-Frame (Jun 25) | CLIP / Long-CLIP · frozen | Gumbel-Max, multi-resolution | **8** (multi-res 4+8+32) | VILA-1.5 · Qwen2-VL · GPT-4o | MLVU 65.4 · LVB **58.4** · VideoMME 63.8 · max ~1h | sub-32 like us; res-adaptation lever |
+| AdaRD-Key (Oct 25) | **BLIP-2 ITM** (temp-free) · frozen | greedy R + λ·log-det(Gram) diversity | **32** (Qwen2-VL) / 64 (LLaVA) | Qwen2-VL · LLaVA-Video-7B | LVB **62.9**; **(900–3600s]=57.1** · max 3600s (1h) | diversity fix; even at 1h bin only 57.1 |
+| Focus (Nov 25) | BLIP ITM (SigLIP/CLIP ablated) · frozen | bandit coarse→fine (Bernstein-UCB), top-m | **32** (GPT-4o/Qwen2-VL) / 64 (LLaVA) | LLaVA-Video-7B | LVB **63.5** vs 58.9 · **+11.9 on >20min** · 16s clips · videos >1h | best long gain; **BLIP 63.5 > SigLIP 60.9 (+2.6)**; clip-mean dilutes 1-frame answer (admitted) = our single-needle edge |
+| Adaptive Greedy (Mar 26) | **SigLIP + DINOv2** · frozen | greedy submodular α·R(SigLIP)+β·C(DINOv2), 1−1/e | **K=10** (MLVU) / K=4 (LVB) | Qwen2-VL · Qwen3-VL | MLVU adaptive **74.33** vs AKS 69.10; K=10 preset 68.03 vs 57.20 unif · **pool ≤1000fr (~16min)** | **validates our SigLIP**; closest budget to ours |
+| Evidential (Apr 26) | CLIP-ViT-L frozen + **TRAINED 10M** (Seek-173K) | top-32 by predicted evidence I(S;O∣Q) | **32** (8/16/64 swept) | Qwen2.5-VL-7B · LLaVA-Video-7B | LVBench **47.7** vs 37.6; VideoMME long **55.0** · LVBench avg **4101s (~68min)** | evidence>similarity but **pays training**; coverage **50.3%@32f** vs 33.6 (only retrieval-ish # in field); fails audio/timestamp Qs |
+| Swift (May 26) | **SigLIP** (LLaVA-OneVision) · frozen · **query-free** | top-k by temporal-derivative (Taylor) novelty | **32** (from 128 cand) | LLaVA-OneVision-7B · LLaVA-Video-7B | LVB≥20min **54.3** vs 47.5 (+6.8); MLVU≥30min 54.2; up to **+12.5** @K=4 · videos >30min | novelty ≠ relevance → finds change, not the answer; = our distinctness axis, query-free |
+| LDDR (May 26) | **LongCLIP** · frozen | Linear-DPP diversity + dynamic resolution | K=F @1024 tok (dyn 256–1024) | Qwen2.5-VL-7B · Qwen3-VL-8B · GPT-5-mini | VideoMME **64.48** vs 63.22 (+1.26); **LVB 15/60/600/3600s subsets** (same bins as us) · max 3600s (1h) | cost lever = pixels not frames; 3× faster than DPP |
+| AdaCodec (Jun 26) | — (per-frame **pcost** codec) · frozen | retain-full / compress / drop per frame | **32k tokens** (vs 224k) | Qwen3-VL-8B | MLVU **65.3** (+3.1); MVBench 76.6; 11 benches · TTFT 9.26→1.62s (5.3×) | compression-as-product = our exact pitch, already built |
+
+Benches recurring (all MCQA, none moment-span): **LongVideoBench, LVBench, MLVU, VideoMME, EgoSchema**.
+Answerer VLMs are 7–8B open models (LLaVA-Video/OneVision-7B, Qwen2-VL / 2.5-VL-7B, Qwen3-VL-8B) — ours is
+the only one on a frontier answerer (GPT-5.5). Two methods notably share our exact setup pieces: **LDDR
+evaluates the same LVB 15/60/600/3600s bins** (even tests GPT-5-mini), and **Adaptive Greedy uses our SigLIP**
+at the closest budget (K=10) — the two cleanest external comparators if we ever run a head-to-head.
 
 ## Per-paper notes (mechanism + relevance to us)
 
@@ -97,14 +124,16 @@ purity. Limits: fails audio-centric + timestamp-grounded queries; evidence-cover
 
 ### Swift Sampling (May 26) — temporal surprise, QUERY-FREE
 Scores frames by **higher-order temporal derivatives** via Taylor-series / finite differences = visual novelty.
-No query, no training, no optical flow. = **our "distinctness" axis formalized** — but query-free, so finds
-*change* not *relevance*; can't target a question-specific needle. Ceiling + our contrast.
+No query, no training, no optical flow. **Encoder = SigLIP** (via LLaVA-OneVision, features from layer ℓ=0);
+K=4/8/16/22/32 selected from 128 candidates. = **our "distinctness" axis formalized** — but query-free, so
+finds *change* not *relevance*; can't target a question-specific needle. Ceiling + our contrast.
 
 ### LDDR (May 26) — DPP diversity + dynamic resolution
 **Linear-DPP** (determinant = anti-redundancy, probabilistic cousin of log-det) picks important+diverse frames,
-then **dynamic resolution**: important frames hi-res, others lo-res/pruned. Query-aware, CLIP, training-free.
-**New cost lever we haven't touched — vary resolution, not just frame count.** +2.5 budget-constrained, 3× faster
-than DPP.
+then **dynamic resolution**: important frames hi-res (1024 tok), others lo-res (256)/pruned. Query-aware,
+**LongCLIP**, training-free. **New cost lever we haven't touched — vary resolution, not just frame count.**
++2.5 budget-constrained, 3× faster than DPP. NB: evaluates the **same LVB 15/60/600/3600s bins as us**, and
+tests a frontier answerer (GPT-5-mini) — closest external setup to ours.
 
 ### AdaCodec (Jun 26) — predictive visual codec, closest to our thesis
 Training-free **codec**: score each frame → retain full / compress / drop. Content-aware token compression, not
