@@ -82,7 +82,10 @@ class EmbeddingSelector(Selector):
         """
         torch = self.torch
         scores = []
-        with torch.no_grad():
+        # bf16 autocast: 2-3x on Ampere+; cosine top-k ranking is insensitive to the
+        # precision loss (scores used for ordering, never absolute thresholds)
+        use_ac = self.device == "cuda"
+        with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16, enabled=use_ac):
             for i in range(0, len(images), batch_size):
                 chunk = images[i:i + batch_size]
                 inputs = self.processor(
@@ -90,7 +93,7 @@ class EmbeddingSelector(Selector):
                     padding="max_length", max_length=64, truncation=True,
                 ).to(self.device)
                 out = self.model(**inputs)
-                scores.append(out.logits_per_image.squeeze(-1))  # [chunk]
+                scores.append(out.logits_per_image.squeeze(-1).float())  # [chunk]
         return torch.cat(scores)
 
     def select(self, frames: List[Frame], question: str, k: int, batch_size: int = 64) -> List[Frame]:
