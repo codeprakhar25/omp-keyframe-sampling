@@ -15,6 +15,12 @@ Win: topk ~= full at k<<F (iso-accuracy under compression = COST win) AND topk >
 (selector earns its keep) AND full >> blind (task is genuinely visual). blind high => whole
 visual thesis moot on LVB. Scores vs manifest gold_letter. Reuses scores.jsonl (Stage-1 cache)
 and the same frame loader as gpt_probe.py so indices align.
+
+Local answerer (Qwen3-VL via vLLM): the vLLM server speaks the OpenAI chat API, so point
+this script at it -- set OPENAI_BASE_URL=http://localhost:8000/v1 OPENAI_API_KEY=dummy,
+pass --model Qwen/Qwen3-VL-8B-Instruct --effort none (skips reasoning_effort, greedy
+temperature=0) and --workers 8 so vLLM can batch concurrent requests. See
+scripts/pod_probe_k32.sh for the pod-side driver.
 """
 from __future__ import annotations
 
@@ -68,12 +74,16 @@ def ask(client, model, question, candidates, sel_frames, effort, max_side):
         parts.append({"type": "text", "text": f"[t={fr.seconds:.1f}s]"})
         parts.append({"type": "image_url",
                       "image_url": {"url": f"data:image/jpeg;base64,{encode(fr, max_side)}"}})
-    resp = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": parts}],
-        max_completion_tokens=2048,
-        reasoning_effort=effort,
-    )
+    kwargs = dict(model=model,
+                  messages=[{"role": "user", "content": parts}],
+                  max_completion_tokens=2048)
+    if effort == "none":
+        # non-reasoning answerer (e.g. Qwen3-VL on vLLM): greedy decode, short answer
+        kwargs["temperature"] = 0
+        kwargs["max_completion_tokens"] = 16
+    else:
+        kwargs["reasoning_effort"] = effort
+    resp = client.chat.completions.create(**kwargs)
     return resp.choices[0].message.content or ""
 
 
@@ -101,14 +111,17 @@ def main() -> None:
     ap.add_argument("--full", type=int, default=32, help="frames for the full/ceiling budget")
     ap.add_argument("--n", type=int, default=50)
     ap.add_argument("--model", default="gpt-5.5")
-    ap.add_argument("--effort", default="low", choices=["low", "medium", "high"])
+    ap.add_argument("--effort", default="low", choices=["none", "low", "medium", "high"],
+                    help="none = non-reasoning local model (greedy, temperature=0)")
     ap.add_argument("--max-side", type=int, default=512)
+    ap.add_argument("--workers", type=int, default=1,
+                    help=">1 sends concurrent requests; lets a vLLM server batch them")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
     from openai import OpenAI
     if not os.environ.get("OPENAI_API_KEY"):
-        sys.exit("OPENAI_API_KEY not set (source .env)")
+        sys.exit("OPENAI_API_KEY not set (source .env; for vLLM use OPENAI_API_KEY=dummy)")
     client = OpenAI()
 
     manifest = {it["id"]: it for it in json.load(open(args.manifest))}
@@ -125,18 +138,16 @@ def main() -> None:
         pins = json.load(open(args.pins))
         pins_by_id = {rec["id"]: rec["greedy_files"] for rec in pins["records"]}
 
-    correct = done = 0
-    records = []
-    for r in rows:
+    def run_one(r):
         item = manifest[r["id"]]
         cands = item["candidates"]
         gold = item["gold_letter"]
-        sel = []
+        sel, idx, secs = [], [], []
         if need_frames:
             frames = load_frames(item, dump_fps=1.0, max_frames=3600)
             if len(frames) != len(r["scores"]):
                 print(f"  !! frame/score mismatch {r['id']} {len(frames)}!={len(r['scores'])}, skip")
-                continue
+                return None
             if args.cond == "topk":
                 idx = flat_top_k(r["scores"], args.k)
             elif args.cond == "uniform":
@@ -147,26 +158,40 @@ def main() -> None:
                 # extracted-images path sets Frame.seconds from the same filename.
                 if r["id"] not in pins_by_id:
                     print(f"  !! no pins for {r['id']}, skip")
-                    continue
+                    return None
                 want_secs = {int(os.path.splitext(f)[0][1:]) for f in pins_by_id[r["id"]]}
                 idx = [i for i, fr in enumerate(frames) if int(fr.seconds) in want_secs]
                 if len(idx) != len(want_secs):
                     print(f"  !! pin mismatch {r['id']}: matched {len(idx)}/{len(want_secs)}, skip")
-                    continue
+                    return None
             else:  # full
                 idx = uniform_k(len(frames), args.full)
             sel = [frames[i] for i in idx]
+            secs = [round(float(fr.seconds), 1) for fr in sel]
         try:
             text = ask(client, args.model, item["question"], cands, sel, args.effort, args.max_side)
         except Exception as e:
-            print(f"  !! GPT error {r['id']}: {e}")
-            continue
+            print(f"  !! answerer error {r['id']}: {e}")
+            return None
         pred = parse_letter(text, len(cands))
-        ok = pred == gold
-        done += 1
-        correct += ok
-        records.append({"id": r["id"], "pred": pred, "gold": gold, "ok": ok, "raw": text[:80]})
-        print(f"[{done}] {r['id']} pred={pred} gold={gold} {'OK' if ok else 'x'}")
+        return {"id": r["id"], "pred": pred, "gold": gold, "ok": pred == gold,
+                "idx": idx, "secs": secs, "raw": text[:80]}
+
+    records = []
+    if args.workers > 1:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=args.workers) as ex:
+            results = list(ex.map(run_one, rows))
+    else:
+        results = [run_one(r) for r in rows]
+    for rec in results:
+        if rec is None:
+            continue
+        records.append(rec)
+        print(f"[{len(records)}] {rec['id']} pred={rec['pred']} gold={rec['gold']} "
+              f"{'OK' if rec['ok'] else 'x'}")
+    done = len(records)
+    correct = sum(rec["ok"] for rec in records)
 
     acc = round(correct / done, 3) if done else None
     result = {"args": vars(args), "n": done, "accuracy": acc, "records": records}
