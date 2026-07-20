@@ -932,3 +932,55 @@ from slmenv via PYTHONPATH, which precedes site-packages). **But collateral upgr
 NOT reverted and prior versions were not recorded**: pillow 12.2.0, setuptools 78.1.0,
 Jinja2 3.1.6, MarkupSafe 3.0.3, fsspec 2026.4.0, networkx 3.6.1, sympy 1.14.0, mpmath 1.3.0.
 Lesson: install to a scratch dir on local disk, never into lmmsenv.
+
+## 2026-07-20 — ST-OMP (temporal-trajectory S-OMP) — NEGATIVE #11, killed on CPU, zero GPU
+
+Proposal (external): replace query-reconstruction OMP with Simultaneous OMP over a
+query-gated velocity matrix. v_t = f_{t+1}-f_t; w_t = max(0, v_t.q); Y_t = w_t*v_t;
+S_i = sum_t (R_t.f_i)^2, Gram-Schmidt out of ALL rows. Motivation given was "residual
+collapse" in vector OMP — **already measured false** (residual keeps 96.7% of norm at
+k=16). Script `scripts/stomp_diagnostic.py`.
+
+### Results (full pools, both bins)
+| | 600s n=412 | 3600s n=564 |
+|---|---|---|
+| gate ratio true/mismatched query | 1.301 | 1.233 |
+| gate size vs per-frame \|f.q\| | 4.1% | 3.4% |
+| query-swap overlap, ST-OMP | 20.6% | 17.1% |
+| query-swap overlap, cosine top-k (control) | 3.7% | 2.5% |
+| gold recall@8, stem-OMP | **32.8%** | **16.5%** |
+| gold recall@8, ST-OMP | 24.5% | 8.0% |
+| delta | **-8.3pt** | **-8.5pt** |
+
+### Reads
+1. **The query barely enters.** w_t = v_t.q = (f_{t+1}.q) - (f_t.q) is a difference of two
+   small similar image-text cosines (those max at .233). Result is 3.4-4.1% the magnitude
+   of the raw frame-query signal, and only 1.23-1.30x above its mismatched-query null.
+2. **ST-OMP is substantially query-BLIND.** Fed another video's question it keeps 17-21% of
+   its picks; cosine top-k keeps 2.5-3.7%. So 5.5-6.8x more query-independent than the
+   simplest possible baseline. It is largely a motion/shot-boundary detector in OMP notation.
+3. **And those motion frames are WORSE.** At 3600s it recovers less than half the gold
+   evidence stem-OMP does (8.0% vs 16.5%). Query-blind AND worse.
+
+### Process note — a 40-video smoke lied
+Smoke n=40 (600s) gave ST-OMP 35.0% vs stem 27.5% = **+7.5pt**, i.e. the opposite sign.
+That was 14 videos vs 11. Full n=412 gave **-8.3pt**. Flagged as noise-level when reported;
+acting on it would have bought a GPU arm for a method that loses by 8pt. **Never act on a
+40-video smoke** — this is the same class of error as the subsample-instability worry in the
+thesis-direction notes.
+
+### Novelty note (independent of the numbers)
+This is **S-OMP (Tropp et al. 2006, "Algorithms for simultaneous sparse approximation")**
+applied to ReLU-gated velocity vectors; motion/temporal-difference keyframe selection is
+long-standing in video summarization. The proposal's claimed O(KTd) runtime is also wrong —
+`R @ E.T` is O(T^2 d). Identical scores come from S_i = f_i^T (R^T R) f_i at O(T d^2), which
+is what was implemented.
+
+### What it DOES buy
+Shuffle-invariance was the one legitimate critique in the external teardowns (our selector is
+permutation-invariant; shuffle the video, identical picks). We now have a measured answer:
+a temporal-trajectory selector was built and it LOSES by ~8pt on both bins. That closes the
+objection with evidence instead of a hand-wave, and is a real section for the analysis paper.
+
+**Selection axis remains closed. Query axis closed (NEG#10). Temporal axis now closed
+(NEG#11). All three point at the CLIP dual-encoder. Lever 2 is the only remaining lever.**
