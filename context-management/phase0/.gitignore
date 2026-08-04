@@ -1,0 +1,13 @@
+runs/
+data/locomo/locomo10.json
+data/locomo/hierstore.sqlite
+data/user_dir_snap/hierstore.sqlite
+data/user_dir_snap/place_tasks_from_snap.jsonl
+data/user_dir_snap/skipped.jsonl
+data/user_dir_snap/META.json
+data/sft_placer/
+data/multitree_synth_smoke/
+data/confusable_tree/hierstore.sqlite
+__pycache__/
+*.pyc
+.env
