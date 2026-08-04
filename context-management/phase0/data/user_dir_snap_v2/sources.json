@@ -1,0 +1,38 @@
+{
+  "note": "v2 snapshot. v1 (data/user_dir_snap) was 127 files from a partial source list and stays frozen as the basis of the existing gpt-4o / LoRA / base-8B numbers. v2 widens `sources` to the rest of the real dirs on this machine so the eval is large enough for a train/val split to mean anything. Two roots only: the `personal` root of v1 held exactly 1 markdown file (the rest of ~/personal is tax and bank PDFs, deliberately not ingested), so a third root would have been decorative. Snap sqlite is gitignored.",
+  "roots": ["work", "inbox"],
+  "max_depth": 5,
+  "max_file_bytes": 120000,
+  "max_files_per_root": 1200,
+  "extensions": [".md", ".markdown"],
+  "skip_dir_names": [
+    ".git", "node_modules", "__pycache__", ".venv", "venv",
+    "site-packages", "runs", "results", ".claude", ".cursor",
+    ".codex", ".agents", ".study", "dist", "build",
+    "repos", "results_from_pod", "results_from_pod_v2",
+    "results_from_pod_screen", "results_from_pod_codex",
+    "Dataset_and_Replication_Package", "__MACOSX",
+    "catboost_info", "1_data-collection", "arxiv_submission",
+    ".github", "vendor", "third_party", "target", ".next",
+    "coverage", "_build", "LLaMA-Factory", "nltk_data",
+    "test-results", "playwright-report", ".pytest_cache"
+  ],
+  "sources": {
+    "work": [
+      "/home/prakh/ml-resarch",
+      "/home/prakh/roam/monorepo",
+      "/home/prakh/openclaw",
+      "/home/prakh/agentdiff",
+      "/home/prakh/agentdiff-enterprise",
+      "/home/prakh/contextcon",
+      "/home/prakh/open-ai-golf",
+      "/home/prakh/sarvam-epoch",
+      "/home/prakh/safe-as-hell",
+      "/home/prakh/trippier"
+    ],
+    "inbox": [
+      "/home/prakh/misc-cc",
+      "/home/prakh/Documents/Last30Days"
+    ]
+  }
+}

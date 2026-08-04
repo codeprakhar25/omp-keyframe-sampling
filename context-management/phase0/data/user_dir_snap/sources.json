@@ -1,0 +1,48 @@
+{
+  "note": "Frozen mapping: logical hard-tree root → filesystem dirs. Edit + re-run snapshot_user_dir.py. PDFs/binaries skipped. Snap sqlite gitignored (may contain personal notes).",
+  "roots": ["work", "personal", "inbox"],
+  "max_depth": 5,
+  "max_file_bytes": 120000,
+  "max_files_per_root": 120,
+  "extensions": [".md", ".markdown"],
+  "skip_dir_names": [
+    ".git", "node_modules", "__pycache__", ".venv", "venv",
+    "site-packages", "runs", "results", ".claude", ".cursor",
+    ".codex", ".agents", ".study", "dist", "build",
+    "repos", "results_from_pod", "results_from_pod_v2",
+    "results_from_pod_screen", "results_from_pod_codex",
+    "Dataset_and_Replication_Package", "__MACOSX",
+    "catboost_info", "1_data-collection", "arxiv_submission"
+  ],
+  "sources": {
+    "work": [
+      "/home/prakh/ml-resarch/context-management",
+      "/home/prakh/ml-resarch/slm-lab",
+      "/home/prakh/ml-resarch/video-understanding",
+      "/home/prakh/ml-resarch/reward-hacking-context",
+      "/home/prakh/ml-resarch/prompt-compiler-pilot",
+      "/home/prakh/ml-resarch/docs",
+      "/home/prakh/ml-resarch/experiment/paper",
+      "/home/prakh/ml-resarch/experiment/analysis",
+      "/home/prakh/ml-resarch/experiment/reliability-study",
+      "/home/prakh/ml-resarch/experiment/RESULTS.md",
+      "/home/prakh/ml-resarch/experiment/README.md",
+      "/home/prakh/ml-resarch/experiment/HANDOFF.md",
+      "/home/prakh/ml-resarch/experiment/RESEARCH_RESOURCES.md",
+      "/home/prakh/ml-resarch/experiment/research_plan.md",
+      "/home/prakh/ml-resarch/experiment/VENUE_DEADLINES.md",
+      "/home/prakh/ml-resarch/experiment/PAPER_OUTLINE.md",
+      "/home/prakh/ml-resarch/CLAUDE.md",
+      "/home/prakh/ml-resarch/README.md",
+      "/home/prakh/roam/monorepo"
+    ],
+    "personal": [
+      "/home/prakh/personal"
+    ],
+    "inbox": [
+      "/home/prakh/Documents/Last30Days",
+      "/home/prakh/misc-cc/marketing",
+      "/home/prakh/misc-cc/claude-code/prompts"
+    ]
+  }
+}
