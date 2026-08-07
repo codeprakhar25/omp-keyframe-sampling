@@ -1,0 +1,62 @@
+[
+  {
+    "id": "e01",
+    "text": "तुम हमेशा देर से आते हो",
+    "tag_a": "angry",
+    "tag_b": "sad"
+  },
+  {
+    "id": "e02",
+    "text": "आज मौसम बहुत अच्छा है",
+    "tag_a": "excited",
+    "tag_b": "none"
+  },
+  {
+    "id": "e03",
+    "text": "मुझे नहीं पता क्या करूँ",
+    "tag_a": "fear",
+    "tag_b": "sad"
+  },
+  {
+    "id": "e04",
+    "text": "क्या सच में ये हो गया",
+    "tag_a": "surprise",
+    "tag_b": "none"
+  },
+  {
+    "id": "e05",
+    "text": "मतलब वो बात अलग है",
+    "tag_a": "thinking",
+    "tag_b": "pause"
+  },
+  {
+    "id": "e06",
+    "text": "हां मैं अभी बताता हूँ",
+    "tag_a": "inhaling",
+    "tag_b": "none"
+  },
+  {
+    "id": "e07",
+    "text": "ठीक है फिर कल मिलते हैं",
+    "tag_a": "sigh",
+    "tag_b": "none"
+  },
+  {
+    "id": "e08",
+    "text": "यहाँ कोई नहीं सुन रहा",
+    "tag_a": "whispering",
+    "tag_b": "none"
+  },
+  {
+    "id": "e09",
+    "text": "यह बिल्कुल गलत है",
+    "tag_a": "disgust",
+    "tag_b": "angry"
+  },
+  {
+    "id": "e10",
+    "text": "I think हमें अभी निकलना चाहिए",
+    "tag_a": "thinking",
+    "tag_b": "excited"
+  }
+]
