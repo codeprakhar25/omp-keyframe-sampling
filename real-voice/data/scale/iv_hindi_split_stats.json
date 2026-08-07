@@ -1,0 +1,168 @@
+{
+  "version": 7,
+  "algo_version": 7,
+  "dataset": "ai4bharat/IndicVoices",
+  "config": "hindi",
+  "label_source": "indicvoices_verbatim_tags",
+  "n_rows_scanned": 450690,
+  "n_gated_clips": 102476,
+  "n_source_clips": 15559,
+  "n_proposals": 24933,
+  "mean_cuts_per_kept_source": 1.602,
+  "cuts_per_source_hist": {
+    "1": 8890,
+    "2": 3964,
+    "3": 2705
+  },
+  "gate_raw_tags": [
+    "breathing",
+    "cough",
+    "gasp",
+    "inhaling",
+    "laugh",
+    "laughter",
+    "sigh",
+    "sniffle",
+    "throat_clearing",
+    "tsk",
+    "ugh",
+    "whispering"
+  ],
+  "emit_tags": [
+    "sigh",
+    "whispering",
+    "breathing",
+    "inhaling",
+    "thinking",
+    "laugh",
+    "gasp",
+    "throat_clearing",
+    "cough",
+    "tsk",
+    "ugh",
+    "sniffle"
+  ],
+  "gate_tag_clip_hits": {
+    "inhaling": 92839,
+    "breathing": 13053,
+    "tsk": 3862,
+    "throat_clearing": 1770,
+    "gasp": 1280,
+    "ugh": 1129,
+    "sigh": 854,
+    "cough": 733,
+    "laughter": 585,
+    "whispering": 160,
+    "sniffle": 122
+  },
+  "by_tag": {
+    "laugh": 451,
+    "sigh": 612,
+    "gasp": 1490,
+    "ugh": 923,
+    "tsk": 2711,
+    "throat_clearing": 1294,
+    "whispering": 111,
+    "cough": 580,
+    "sniffle": 104,
+    "inhaling": 7043,
+    "thinking": 3410,
+    "breathing": 6204
+  },
+  "by_tag_distinct_clips": {
+    "laugh": 440,
+    "sigh": 584,
+    "gasp": 1134,
+    "ugh": 881,
+    "tsk": 2457,
+    "throat_clearing": 1266,
+    "whispering": 106,
+    "cough": 547,
+    "sniffle": 98,
+    "inhaling": 5000,
+    "thinking": 3000,
+    "breathing": 5000
+  },
+  "drop_stats": {
+    "stack_ambiguous": 11595,
+    "drop_short": 7865,
+    "drop_empty_side": 2830,
+    "drop_unlabeled_emit": 6595,
+    "drop_cap": 31258
+  },
+  "n_stacks_skipped": 11595,
+  "n_proposals_before_tag_caps": 161409,
+  "tag_source_caps": {
+    "thinking": 3000,
+    "breathing": 5000,
+    "inhaling": 5000
+  },
+  "tag_source_cap_stats": {
+    "thinking": {
+      "cap": 3000,
+      "sources_kept": 3000,
+      "rows_dropped": 12599
+    },
+    "breathing": {
+      "cap": 5000,
+      "sources_kept": 5000,
+      "rows_dropped": 7173
+    },
+    "inhaling": {
+      "cap": 5000,
+      "sources_kept": 5000,
+      "rows_dropped": 116704
+    }
+  },
+  "tag_lock": {
+    "source": "scripts/iv_tags.py",
+    "locked_addons": [
+      "gasp",
+      "throat_clearing",
+      "cough",
+      "tsk",
+      "ugh",
+      "sniffle"
+    ],
+    "gate_raw": [
+      "breathing",
+      "cough",
+      "gasp",
+      "inhaling",
+      "laugh",
+      "laughter",
+      "sigh",
+      "sniffle",
+      "throat_clearing",
+      "tsk",
+      "ugh",
+      "whispering"
+    ],
+    "emit_tags": [
+      "sigh",
+      "whispering",
+      "breathing",
+      "inhaling",
+      "thinking",
+      "laugh",
+      "gasp",
+      "throat_clearing",
+      "cough",
+      "tsk",
+      "ugh",
+      "sniffle"
+    ],
+    "tag_source_caps": {
+      "thinking": 3000,
+      "breathing": 5000,
+      "inhaling": 5000
+    },
+    "thinking_in_gate": false
+  },
+  "quality": {
+    "keep_rate_gated_to_source": 0.1518,
+    "props_per_gated": 0.2433,
+    "stack_rate_approx": 0.1131
+  },
+  "note": "Hindi full text split only. Audio slice = next step (WhisperX). source_meta has parquet+row for audio fetch."
+}
