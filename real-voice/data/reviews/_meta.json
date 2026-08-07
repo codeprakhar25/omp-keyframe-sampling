@@ -1,0 +1,98 @@
+{
+  "candidate_tags": [
+    "laugh",
+    "sigh",
+    "whisper",
+    "angry",
+    "sad",
+    "excited",
+    "pause",
+    "teasing",
+    "soft_disagreement",
+    "interrupting",
+    "thinking",
+    "emphasis"
+  ],
+  "fields": [
+    {
+      "id": "link",
+      "label": "Source / link",
+      "type": "url",
+      "prefill": true,
+      "help": "HF / Zenodo / paper URL. Where to open the dataset."
+    },
+    {
+      "id": "hours_hindi",
+      "label": "Hindi hours",
+      "type": "text",
+      "prefill": true,
+      "help": "Approx hours of Hindi (or best estimate). Not total multilingual size."
+    },
+    {
+      "id": "hours_hinglish",
+      "label": "Hinglish / CS hours",
+      "type": "text",
+      "prefill": true,
+      "help": "Code-switched Hindi–English speech hours if known. 0 if mono Hindi."
+    },
+    {
+      "id": "conversational",
+      "label": "Conversational?",
+      "type": "select",
+      "options": ["yes", "partial", "lecture", "read", "no", "unknown"],
+      "prefill": true,
+      "help": "Is it dialogue-like / spontaneous? Lecture CS ≠ chat."
+    },
+    {
+      "id": "native_labels",
+      "label": "Native labels already in data",
+      "type": "text",
+      "prefill": true,
+      "help": "What the dataset already ships: emotion, style, scenario, CS ratios, etc."
+    },
+    {
+      "id": "fit",
+      "label": "Fit for our wedge",
+      "type": "select",
+      "options": ["P0 keep", "P1 later", "optional", "skip", "undecided"],
+      "prefill": true,
+      "help": "P0 = use in annotation pilot. Skip = out of scope for v1."
+    },
+    {
+      "id": "tag_match",
+      "label": "Can we get ~5–6 of our tags?",
+      "type": "select",
+      "options": ["yes-native", "yes-manual", "partial", "hard", "no", "unknown"],
+      "prefill": false,
+      "help": "yes-native = labels already map. yes-manual = you can mark by ear. hard = audio rarely shows those acts."
+    },
+    {
+      "id": "tags_available",
+      "label": "Which candidate tags fit here?",
+      "type": "tags",
+      "prefill": false,
+      "help": "Tick tags you believe this data can support (native or hand-label). Aim 5–6 strong ones across P0 sets."
+    },
+    {
+      "id": "tag_how",
+      "label": "How would tags get there?",
+      "type": "text",
+      "prefill": false,
+      "help": "e.g. map Rasa HAPPY→excited; hand-label MUCS switches; LLM draft + human accept."
+    },
+    {
+      "id": "what_i_think",
+      "label": "What do I think of it?",
+      "type": "textarea",
+      "prefill": false,
+      "help": "Short gut: useful / misleading / wrong domain. One paragraph max."
+    },
+    {
+      "id": "notes",
+      "label": "Notes / free views",
+      "type": "textarea",
+      "prefill": false,
+      "help": "Anything else: listen notes, shard IDs tried, risks, next action on this set."
+    }
+  ]
+}
