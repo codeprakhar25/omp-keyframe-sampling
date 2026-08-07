@@ -1,0 +1,15 @@
+{
+  "id": "common_voice_hi",
+  "name": "Common Voice Hindi",
+  "link": "https://huggingface.co/datasets/mozilla-foundation/common_voice_17_0",
+  "hours_hindi": "read; tens of hrs validated",
+  "hours_hinglish": "~0",
+  "conversational": "read",
+  "native_labels": "none useful for emotion/CS chat",
+  "fit": "skip",
+  "tag_match": "no",
+  "tags_available": [],
+  "tag_how": "Out of scope v1.",
+  "what_i_think": "",
+  "notes": "Skip. No samples pulled on purpose."
+}

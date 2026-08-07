@@ -1,0 +1,15 @@
+{
+  "id": "hingcos",
+  "name": "IITG-HingCoS",
+  "link": "",
+  "hours_hindi": "—",
+  "hours_hinglish": "~25h (paper)",
+  "conversational": "partial",
+  "native_labels": "classic CS ASR",
+  "fit": "skip",
+  "tag_match": "unknown",
+  "tags_available": [],
+  "tag_how": "Deprioritize until HiACC + MUCS exhausted.",
+  "what_i_think": "",
+  "notes": "Access friction. Not on HF."
+}

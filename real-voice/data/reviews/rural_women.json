@@ -1,0 +1,15 @@
+{
+  "id": "rural_women",
+  "name": "Rural Women ASR v2 (Hindi)",
+  "link": "https://huggingface.co/datasets/ai4bharat/Rural_Women_ASR_v2",
+  "hours_hindi": "~30.8k utts / ~31 GB Hindi split (hrs not on card)",
+  "hours_hinglish": "~0",
+  "conversational": "partial",
+  "native_labels": "scenario, verbatim, demographics — ASR focus, no emotion tags",
+  "fit": "skip",
+  "tag_match": "hard",
+  "tags_available": [],
+  "tag_how": "Wrong primary fuel; accent/ASR diversity side quest only.",
+  "what_i_think": "",
+  "notes": "Do not pull. Bookmark only."
+}

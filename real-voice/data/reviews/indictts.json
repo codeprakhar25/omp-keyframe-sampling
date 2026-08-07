@@ -1,0 +1,15 @@
+{
+  "id": "indictts",
+  "name": "SPRINGLab IndicTTS-Hindi",
+  "link": "https://huggingface.co/datasets/SPRINGLab/IndicTTS-Hindi",
+  "hours_hindi": "studio read (tens of hrs)",
+  "hours_hinglish": "~0",
+  "conversational": "read",
+  "native_labels": "none for emotion/CS",
+  "fit": "optional",
+  "tag_match": "hard",
+  "tags_available": [],
+  "tag_how": "Almost no expressive acts — skip for tag pilot.",
+  "what_i_think": "",
+  "notes": "Samples indictts_*.wav. Clean acoustic prior only."
+}
