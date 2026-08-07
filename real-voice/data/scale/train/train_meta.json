@@ -1,0 +1,15 @@
+{
+  "model_id": "SPRINGLab/Indic-Mio",
+  "codec_id": "Aratako/MioCodec-25Hz-24kHz",
+  "epochs": 2,
+  "lora_r": 16,
+  "n_train": 227,
+  "emo_map": {
+    "angry": "<angry>",
+    "sad": "<sad>",
+    "excited": "<happy>",
+    "fear": "<fear>",
+    "surprise": "<surprise>",
+    "disgust": "<disgust>"
+  }
+}
