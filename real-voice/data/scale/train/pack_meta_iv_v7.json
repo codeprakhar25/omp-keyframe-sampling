@@ -1,0 +1,28 @@
+{
+  "pack": "iv_hindi_v7_align_ok",
+  "algo_version": 7,
+  "n_train": 23675,
+  "n_holdout": 1248,
+  "n_train_sources": 14772,
+  "n_holdout_sources": 778,
+  "wav_miss": 0,
+  "holdout_frac": 0.05,
+  "seed": 7,
+  "by_tag_train": {
+    "inhaling": 6688,
+    "breathing": 5860,
+    "thinking": 3248,
+    "tsk": 2600,
+    "gasp": 1418,
+    "throat_clearing": 1222,
+    "ugh": 881,
+    "sigh": 582,
+    "cough": 545,
+    "laugh": 430,
+    "whispering": 104,
+    "sniffle": 97
+  },
+  "p01_codec_rt": "PASS",
+  "modal_run": "https://modal.com/apps/prakharkhatri123/main/ap-icXCgnvsWEXfuUyZ9vjPvy",
+  "pipeline": "pack\u2192encode\u00d732\u2192merge\u2192LoRA epochs=2 r=16"
+}
