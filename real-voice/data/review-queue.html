@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Scale review queue — M/L drafts</title>
+<style>
+  :root {
+    --bg: #f6f1e8; --ink: #1c1916; --muted: #5c5348; --line: #d9cfc0;
+    --card: #fffdf8; --accent: #0f6b5c; --warn: #8a4b12;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 14px/1.4 "IBM Plex Sans", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: radial-gradient(900px 400px at 10% -10%, #e7f2ef 0%, transparent 55%), var(--bg);
+  }
+  main { max-width: 1200px; margin: 0 auto; padding: 22px 14px 80px; }
+  h1 { font-size: 1.3rem; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 12px; max-width: 75ch; }
+  .sub a { color: var(--accent); }
+  .panel {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 12px;
+  }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button {
+    border: 1px solid var(--line); background: #fff; border-radius: 7px;
+    padding: 7px 11px; cursor: pointer; font: inherit;
+  }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .status { font-size: 0.85rem; color: var(--muted); }
+  .status.ok { color: var(--accent); }
+  .status.err { color: #9b2c2c; }
+  .stats { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+  .stats b { color: var(--ink); }
+  .wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 960px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 6px 7px; vertical-align: top; text-align: left; }
+  th {
+    background: #efe7da; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--muted); position: sticky; top: 0;
+  }
+  tr.done { background: #f3faf7; }
+  select, textarea {
+    font: inherit; width: 100%; border: 1px solid var(--line);
+    border-radius: 5px; padding: 4px 6px; background: #fff;
+  }
+  textarea { min-height: 48px; resize: vertical; }
+  audio { width: 160px; height: 32px; display: block; margin-top: 4px; }
+  .id { font-weight: 650; }
+  .src { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; }
+  .reason { font-size: 0.78rem; color: var(--warn); max-width: 200px; }
+  .draft { font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Scale review queue</h1>
+  <p class="sub">
+    Only drafts with <b>needs_review</b> (M/L or rule↔audio conflict).
+    Accept draft or override human tags → Save.
+    Build drafts: <code>.venv/bin/python scripts/draft_tags.py --from-smoke</code>
+    · optional <code>--audio --merge</code> (OpenAI).
+    <a href="smoke.html">smoke</a> · <a href="tag-swap.html">tag-swap</a> · freeze: repo <code>TAG_FREEZE.md</code>
+  </p>
+
+  <div class="panel">
+    <div class="bar">
+      <button type="button" class="primary" id="saveBtn">Save</button>
+      <button type="button" id="reloadBtn">Reload</button>
+      <label><input type="checkbox" id="showAll" /> show auto-accepted too</label>
+      <span class="status" id="status">Loading…</span>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Audio</th>
+          <th>Text (redacted)</th>
+          <th>Draft</th>
+          <th>Human tag1</th>
+          <th>Human tag2</th>
+          <th>Accept draft</th>
+          <th>✓</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</main>
+<script>
+let meta = { tags: ["none","angry","sad","excited","surprise","fear","disgust","pause","inhaling","thinking","sigh","whispering","laugh"] };
+let data = { clips: [] };
+
+const statusEl = document.getElementById("status");
+const tbody = document.getElementById("tbody");
+
+function setStatus(msg, kind="") {
+  statusEl.textContent = msg;
+  statusEl.className = "status " + kind;
+}
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+function redact(text) {
+  return String(text || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function tagSelect(value) {
+  const s = document.createElement("select");
+  const empty = document.createElement("option");
+  empty.value = ""; empty.textContent = "—";
+  if (!(value || "")) empty.selected = true;
+  s.appendChild(empty);
+  for (const t of meta.tags) {
+    const o = document.createElement("option");
+    o.value = t; o.textContent = t;
+    if (t === value) o.selected = true;
+    s.appendChild(o);
+  }
+  return s;
+}
+
+function visibleClips() {
+  const all = document.getElementById("showAll").checked;
+  return data.clips
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => all || c.needs_review || c.status === "pending_review");
+}
+
+function updateStats() {
+  const clips = data.clips || [];
+  const review = clips.filter(c => c.needs_review && !c.reviewed).length;
+  const done = clips.filter(c => c.reviewed).length;
+  const auto = clips.filter(c => c.status === "auto_accepted").length;
+  document.getElementById("stats").innerHTML =
+    `<span>queue left <b>${review}</b></span>` +
+    `<span>reviewed <b>${done}</b></span>` +
+    `<span>auto_accepted <b>${auto}</b></span>` +
+    `<span>total <b>${clips.length}</b></span>`;
+}
+
+function render() {
+  tbody.innerHTML = "";
+  for (const { c, i } of visibleClips()) {
+    const tr = document.createElement("tr");
+    if (c.reviewed) tr.classList.add("done");
+
+    const tdId = document.createElement("td");
+    tdId.innerHTML = `<div class="id">${c.id || ("#" + i)}</div><div class="src">${c.source || ""}</div>` +
+      `<div class="reason">${c.reason || ""}</div>`;
+
+    const tdAudio = document.createElement("td");
+    if (c.file) {
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.preload = "none";
+      audio.src = "samples/" + c.file;
+      tdAudio.appendChild(audio);
+    }
+
+    const tdText = document.createElement("td");
+    const ta = document.createElement("textarea");
+    ta.readOnly = true;
+    ta.value = redact(c.text);
+    tdText.appendChild(ta);
+
+    const tdDraft = document.createElement("td");
+    tdDraft.className = "draft";
+    tdDraft.innerHTML = `<div>${c.tag1 || "none"}${c.tag2 ? " + " + c.tag2 : ""}</div>` +
+      `<div>conf ${c.confidence || "?"} · ${c.draft_source || ""}</div>` +
+      (c.audio_draft ? `<div>audio→ ${c.audio_draft.tag1}</div>` : "");
+
+    const tdH1 = document.createElement("td");
+    const s1 = tagSelect(c.human_tag1 || "");
+    s1.onchange = () => { c.human_tag1 = s1.value; };
+    tdH1.appendChild(s1);
+
+    const tdH2 = document.createElement("td");
+    const s2 = tagSelect(c.human_tag2 || "");
+    s2.onchange = () => { c.human_tag2 = s2.value; };
+    tdH2.appendChild(s2);
+
+    const tdAcc = document.createElement("td");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "Accept draft";
+    btn.onclick = () => {
+      c.human_tag1 = c.tag1 || "none";
+      c.human_tag2 = c.tag2 || "";
+      c.reviewed = true;
+      c.needs_review = false;
+      c.status = "human_accepted";
+      s1.value = c.human_tag1;
+      s2.value = c.human_tag2 || "";
+      tr.classList.add("done");
+      updateStats();
+    };
+    tdAcc.appendChild(btn);
+
+    const tdD = document.createElement("td");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !!c.reviewed;
+    cb.onchange = () => {
+      c.reviewed = cb.checked;
+      if (c.reviewed) {
+        if (!c.human_tag1) {
+          c.human_tag1 = c.tag1 || "none";
+          c.human_tag2 = c.tag2 || "";
+          s1.value = c.human_tag1;
+          s2.value = c.human_tag2 || "";
+        }
+        c.needs_review = false;
+        c.status = "human_accepted";
+      }
+      tr.classList.toggle("done", c.reviewed);
+      updateStats();
+    };
+    tdD.appendChild(cb);
+
+    tr.append(tdId, tdAudio, tdText, tdDraft, tdH1, tdH2, tdAcc, tdD);
+    tbody.appendChild(tr);
+  }
+  updateStats();
+}
+
+async function load() {
+  try {
+    meta = await api("/api/smoke/meta");
+  } catch (_) {}
+  data = await api("/api/scale/drafts");
+  render();
+  setStatus("Loaded data/scale/drafts.json", "ok");
+}
+
+async function save() {
+  // apply human tags into final fields for reviewed rows
+  for (const c of data.clips) {
+    if (c.reviewed && c.human_tag1) {
+      c.final_tag1 = c.human_tag1;
+      c.final_tag2 = c.human_tag2 || "";
+      c.caption = (c.final_tag1 && c.final_tag1 !== "none"
+        ? `[${c.final_tag1}]` : "") +
+        (c.final_tag2 && c.final_tag2 !== "none" ? `[${c.final_tag2}]` : "") +
+        " " + redact(c.text);
+      c.caption = c.caption.trim();
+    }
+  }
+  try {
+    const res = await api("/api/scale/drafts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    setStatus("Saved " + res.path, "ok");
+  } catch (e) {
+    setStatus("Save failed: " + e.message, "err");
+  }
+}
+
+document.getElementById("saveBtn").onclick = save;
+document.getElementById("reloadBtn").onclick = load;
+document.getElementById("showAll").onchange = render;
+load().catch(() => setStatus("Run draft_tags.py then serve_lab.py", "err"));
+</script>
+</body>
+</html>
