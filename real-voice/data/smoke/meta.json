@@ -1,0 +1,39 @@
+{
+  "tags": [
+    "none",
+    "angry",
+    "sad",
+    "excited",
+    "surprise",
+    "fear",
+    "disgust",
+    "pause",
+    "inhaling",
+    "thinking",
+    "sigh",
+    "whispering",
+    "laugh"
+  ],
+  "confidence": [
+    "",
+    "H",
+    "M",
+    "L"
+  ],
+  "ear_match": [
+    "",
+    "y",
+    "n",
+    "na"
+  ],
+  "sources": {
+    "rasa": "Rasa Hindi — clear emotions only (~20)",
+    "iv": "IndicVoices — event tags (~20 core) + 4 bonus laughter (s52–s55); M/F",
+    "ivr": "IndicVoices-R Extempore (~5) — natural prior, mostly none",
+    "hiacc": "HiACC local — 3 adult + 3 child Hinglish (~6)"
+  },
+  "mix": "rasa20 / iv20 / ivr5 / hiacc6 = 51 + 4 bonus laugh (s52–s55)",
+  "why": "Check if frozen tags are reliably audible before any training.",
+  "go_nogo": "Self-agree ≥70% on pass2 of 15 clips; Rasa ear-match ≥80% on clear emotions.",
+  "human_gold": "smoke 55 ear-audited by human; do NOT re-judge with agent. Agent+OpenAI only for new scale batch; few-shot from this sheet."
+}
