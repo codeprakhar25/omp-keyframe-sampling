@@ -1,0 +1,93 @@
+{
+  "rasa_hi_published_h": 50.83,
+  "rasa_hi_female_h": 27.05,
+  "rasa_hi_male_h": 23.78,
+  "rasa_style_counts_2shards": [
+    [
+      "CONV",
+      516
+    ],
+    [
+      "WIKI",
+      409
+    ],
+    [
+      "PROPER NOUN",
+      317
+    ],
+    [
+      "BOOK",
+      245
+    ],
+    [
+      "NEWS",
+      127
+    ],
+    [
+      "HAPPY",
+      64
+    ],
+    [
+      "ANGER",
+      62
+    ],
+    [
+      "INDIC",
+      56
+    ],
+    [
+      "SAD",
+      49
+    ],
+    [
+      "SURPRISE",
+      46
+    ],
+    [
+      "ALEXA",
+      46
+    ],
+    [
+      "DISGUST",
+      37
+    ],
+    [
+      "FEAR",
+      35
+    ],
+    [
+      "BB",
+      23
+    ],
+    [
+      "DIGI",
+      15
+    ],
+    [
+      "UMANG",
+      11
+    ]
+  ],
+  "rasa_2shard_hours": 3.56,
+  "ivr_hindi_shards": 99,
+  "ivr_hindi_hours_est": 73.2,
+  "ivr_scenario_sample": [
+    [
+      "Extempore",
+      1981
+    ],
+    [
+      "Read",
+      146
+    ]
+  ],
+  "indicvoices_gated": true,
+  "indicvoices_total_h_hf": 23700,
+  "indicvoices_read_pct": 8,
+  "indicvoices_extempore_pct": 76,
+  "indicvoices_conversational_pct": 15,
+  "indicvoices_conv_hours_all_langs_approx": 3555,
+  "mucs_hinglish_h": 95.04,
+  "hinglish_agg_h": 2264,
+  "hiacc_h": 5.24
+}
