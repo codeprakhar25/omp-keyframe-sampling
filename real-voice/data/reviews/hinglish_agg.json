@@ -1,0 +1,15 @@
+{
+  "id": "hinglish_agg",
+  "name": "Hinglish aggregate",
+  "link": "https://huggingface.co/datasets/agarwalayushi/hinglish",
+  "hours_hindi": "mixed inside ~2264h total",
+  "hours_hinglish": "subset with <hi-en> tags (many lecture hrs)",
+  "conversational": "lecture",
+  "native_labels": "<hi-en> language tags, source id — no emotion",
+  "fit": "P1 later",
+  "tag_match": "partial",
+  "tags_available": ["pause", "emphasis"],
+  "tag_how": "Only after filtering true CS; same caveats as MUCS.",
+  "what_i_think": "",
+  "notes": "First shards ≈ Spoken Tutorial family. Filter hard or skip for pilot."
+}
