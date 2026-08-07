@@ -1,0 +1,8 @@
+{
+  "id": "sniffle_01",
+  "source_parquet": "hindi/train-00048-of-00082.parquet",
+  "row": 4789,
+  "text": "[Persistent-noise-start] औड़ यहाँ पे इतना अच्छा से लगता है झूला आता है [inhaling] झूला आता है [stammers] मीना बजार लगता है <Sniffle> [inhaling] ये चूड़ी ए वाले आते हैं खाने पीने की दूकान होता है बौहौत सारे चीज होती है <Sniffle>[Persistent-noise-end]",
+  "duration_s": 13.16,
+  "sr": 16000
+}
