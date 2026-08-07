@@ -1,0 +1,19 @@
+{
+  "id": "indicvoices",
+  "name": "IndicVoices (raw)",
+  "link": "https://huggingface.co/datasets/ai4bharat/IndicVoices",
+  "hours_hindi": "per-lang TBD; 83 Hindi shards available (access OK)",
+  "hours_hinglish": "limited",
+  "conversational": "partial",
+  "native_labels": "read ~8% / extempore ~76% / conv ~15% (all-langs); scenario meta",
+  "fit": "P0 keep",
+  "tag_match": "yes-manual",
+  "tags_available": [
+    "pause",
+    "thinking",
+    "emphasis"
+  ],
+  "tag_how": "Sip 1–2 Hindi shards only; same manual tag path as IV-R.",
+  "what_i_think": " Okay, I will delete it to P0. The reason for that specifically is due to the conversation scenario that is in decoys.\n\nI don't know if that is there in the second version of IVR too, but if it's not, we should keep P0 specifically for the conversation scenario type, because this is what gives us the real-time two-way communication, and how does the voice or audio work here in that type of case. Other than that, it is quite similar to IVR, but I feel like this should be there.\n\nAlso, another thing is, this is a bigger dataset. Only for Hindi, we have around 400K rows, 150K rows.\n\nAnd let me see for that. Okay, we have area, district, and state, so this could be really useful too.\n\nThere are also some of the type of tags, which is \"persistent noise start.\" Then there is \"talking\" type of tag, and there is \"inhaling.\" This would be awesome to be used. Yeah, \"inhaling\" is there, \"talking\" is there. This should definitely be there.",
+  "notes": "Unlocked. Do NOT full download. Prefer IV-R for TTS-clean prior first.\n\nvery good data overall"
+}
