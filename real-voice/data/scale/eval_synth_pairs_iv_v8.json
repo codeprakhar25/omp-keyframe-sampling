@@ -1,0 +1,110 @@
+[
+  {
+    "id": "v01",
+    "text": "यहाँ कोई नहीं सुन रहा",
+    "tag_a": "whispering",
+    "tag_b": "none",
+    "family": "whisper",
+    "caption_a": "यहाँ कोई [whispering] नहीं सुन रहा",
+    "caption_b": "यहाँ कोई नहीं सुन रहा"
+  },
+  {
+    "id": "v02",
+    "text": "ठीक है फिर कल मिलते हैं",
+    "tag_a": "sigh",
+    "tag_b": "none",
+    "family": "event",
+    "caption_a": "ठीक है [sigh] फिर कल मिलते हैं",
+    "caption_b": "ठीक है फिर कल मिलते हैं"
+  },
+  {
+    "id": "v03",
+    "text": "यह बात सुन के हँसी आ गई",
+    "tag_a": "laugh",
+    "tag_b": "none",
+    "family": "event",
+    "caption_a": "यह बात सुन के [laugh] हँसी आ गई",
+    "caption_b": "यह बात सुन के हँसी आ गई"
+  },
+  {
+    "id": "v04",
+    "text": "मतलब वो बात अलग है",
+    "tag_a": "thinking",
+    "tag_b": "none",
+    "family": "hesitation",
+    "caption_a": "मतलब [thinking] वो बात अलग है",
+    "caption_b": "मतलब वो बात अलग है"
+  },
+  {
+    "id": "v05",
+    "text": "अचानक वो दरवाज़े पे आ गया",
+    "tag_a": "gasp",
+    "tag_b": "none",
+    "family": "event",
+    "caption_a": "अचानक [gasp] वो दरवाज़े पे आ गया",
+    "caption_b": "अचानक वो दरवाज़े पे आ गया"
+  },
+  {
+    "id": "v06",
+    "text": "नहीं नहीं वैसा नहीं है",
+    "tag_a": "tsk",
+    "tag_b": "none",
+    "family": "event",
+    "caption_a": "नहीं नहीं [tsk] वैसा नहीं है",
+    "caption_b": "नहीं नहीं वैसा नहीं है"
+  },
+  {
+    "id": "v07",
+    "text": "गलले में कुछ खटक रहा है",
+    "tag_a": "throat_clearing",
+    "tag_b": "none",
+    "family": "event",
+    "caption_a": "गलले में [throat_clearing] कुछ खटक रहा है",
+    "caption_b": "गलले में कुछ खटक रहा है"
+  },
+  {
+    "id": "v08",
+    "text": "उफ़ ये काम नहीं हो रहा",
+    "tag_a": "ugh",
+    "tag_b": "none",
+    "family": "event",
+    "caption_a": "उफ़ [ugh] ये काम नहीं हो रहा",
+    "caption_b": "उफ़ ये काम नहीं हो रहा"
+  },
+  {
+    "id": "v09",
+    "text": "सर्दी की वजह से नाक बह रही",
+    "tag_a": "sniffle",
+    "tag_b": "none",
+    "family": "event",
+    "caption_a": "सर्दी की वजह से [sniffle] नाक बह रही",
+    "caption_b": "सर्दी की वजह से नाक बह रही"
+  },
+  {
+    "id": "v10",
+    "text": "I think हमें अभी निकलना चाहिए",
+    "tag_a": "cough",
+    "tag_b": "thinking",
+    "family": "mixed",
+    "caption_a": "I think [cough] हमें अभी निकलना चाहिए",
+    "caption_b": "I think [thinking] हमें अभी निकलना चाहिए"
+  },
+  {
+    "id": "v11",
+    "text": "हां मैं अभी बताता हूँ",
+    "tag_a": "tsk",
+    "tag_b": "sigh",
+    "family": "swap",
+    "caption_a": "हां [tsk] मैं अभी बताता हूँ",
+    "caption_b": "हां [sigh] मैं अभी बताता हूँ"
+  },
+  {
+    "id": "v12",
+    "text": "थोड़ा रुक के बात करते हैं",
+    "tag_a": "laugh",
+    "tag_b": "none",
+    "family": "event",
+    "caption_a": "थोड़ा रुक के [laugh] बात करते हैं",
+    "caption_b": "थोड़ा रुक के बात करते हैं"
+  }
+]
