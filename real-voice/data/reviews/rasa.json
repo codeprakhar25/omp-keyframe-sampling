@@ -1,0 +1,20 @@
+{
+  "id": "rasa",
+  "name": "AI4Bharat Rasa (Hindi)",
+  "link": "https://huggingface.co/datasets/ai4bharat/Rasa",
+  "hours_hindi": "~50.8h (F 27.05 + M 23.78)",
+  "hours_hinglish": "~0 (mono Hindi)",
+  "conversational": "partial",
+  "native_labels": "style: CONV, BOOK, WIKI, NEWS, HAPPY, ANGER, SAD, FEAR, SURPRISE, DISGUST, ALEXA, …",
+  "fit": "P0 keep",
+  "tag_match": "yes-native",
+  "tags_available": [
+    "angry",
+    "sad",
+    "excited",
+    "emphasis"
+  ],
+  "tag_how": "Map HAPPY→excited, ANGER→angry, SAD→sad; CONV for delivery context. No native laugh/sigh/tease. Also has SURPRISE, FEAR, DISGUIST, ",
+  "what_i_think": "Okay, I think this is very good data and it also contains various tags, which is justified in the sense of how I get the feeling while I hear the audio. The maximum duration is around 50 seconds, a few seconds, but this gets us the tags and also the info on how it is being spoken.\n\nIt is multilingual, but just focusing on Hindi, and hinglish is not there.",
+  "notes": "Local samples: rasa_*.wav, rasa_em_*.wav. Best public Hindi emotion/style labels.\n\n-- overall a good data for our cases and helps while getting us the tags so usefull.\n-- have good amount of tags as I mentioned previously too \n-- multilingual too and tags there too (later)\n--  six Ekman emotions (happy, sad, angry, fear, disgust, and surprise\n-- only one speaker for each gender: Hindi\tFemale\t27.05(hrs)\t15,107\nHindi\tMale\t23.78(hrs)\t13,464"
+}
