@@ -1,0 +1,21 @@
+{
+  "id": "indicvoices_r",
+  "name": "IndicVoices-R (Hindi)",
+  "link": "https://huggingface.co/datasets/ai4bharat/indicvoices_r",
+  "hours_hindi": "~99 train shards; sample est ~70–100h+ Hindi (refine later)",
+  "hours_hinglish": "light loanwords only",
+  "conversational": "partial",
+  "native_labels": "scenario (Extempore/Read), gender, age, SNR, pitch, district — no emotion tags",
+  "fit": "P0 keep",
+  "tag_match": "yes-manual",
+  "tags_available": [
+    "sigh",
+    "excited",
+    "pause",
+    "thinking",
+    "emphasis"
+  ],
+  "tag_how": "Hand/LLM label on extempore: pauses, repairs, emphasis. Not for teasing/interrupt.",
+  "what_i_think": "-- Most detailed dataset\n-- No hinglish available\n-- a huge dataset\n-- max duration is upto 30sec\n-- many speakers, - workers, students, diff sections of working also medical prof. , Speaker Diversity: 10,496 speakers, ensuring rich demographic and linguistic variation.\n\n-- IMPORTANT- DIFF STATE DATA will help in having the accent of it and also their different professions , house wife, cashier, supervisor, etc....\n\n-- VERY IMPORTANT-- Natural Speech Recordings: 93.25% extempore speech, leading to more expressive and natural-sounding synthesis.\n\n-- tags possible but all manuasl needed\n\n-- Scenario field\n\n-- age-group\n\n-- Hard work can be on the tags....",
+  "notes": "Samples indicvoices_r_*.wav — disfluency gold. Natural prior, not chat acting.\n\n\n-- really good as I have mentioned this is the best one yet that I would say I have found. It serves largely most of our purposes, like having a vast diversity data according to state, district, occupation, job type, and it feels real too, like it's a real recorded data. Also, it has ablation in age group, so I feel like this is a really good data. "
+}
