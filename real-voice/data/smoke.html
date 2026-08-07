@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tag smoke test — 55 clips</title>
+<style>
+  :root {
+    --bg: #f6f1e8; --ink: #1c1916; --muted: #5c5348; --line: #d9cfc0;
+    --card: #fffdf8; --accent: #0f6b5c; --warn: #8a4b12;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 14px/1.4 "IBM Plex Sans", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: radial-gradient(900px 400px at 10% -10%, #e7f2ef 0%, transparent 55%), var(--bg);
+  }
+  main { max-width: 1280px; margin: 0 auto; padding: 22px 14px 80px; }
+  h1 { font-size: 1.3rem; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 12px; max-width: 75ch; }
+  .sub a { color: var(--accent); }
+  .panel {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 12px;
+  }
+  .panel h2 {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); margin: 0 0 8px;
+  }
+  .tags { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  button {
+    border: 1px solid var(--line); background: #fff; border-radius: 7px;
+    padding: 7px 11px; cursor: pointer; font: inherit;
+  }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .status { font-size: 0.85rem; color: var(--muted); }
+  .status.ok { color: var(--accent); }
+  .status.err { color: #9b2c2c; }
+  .stats { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 0.85rem; color: var(--muted); }
+  .stats b { color: var(--ink); }
+  .wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 1100px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 6px 7px; vertical-align: top; text-align: left; }
+  th {
+    background: #efe7da; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--muted); position: sticky; top: 0; z-index: 1;
+  }
+  tr.done { background: #f3faf7; }
+  tr.active { outline: 2px solid var(--accent); outline-offset: -2px; }
+  select, input[type="text"] {
+    font: inherit; width: 100%; min-width: 0; border: 1px solid var(--line);
+    border-radius: 5px; padding: 4px 6px; background: #fff;
+  }
+  textarea {
+    font: inherit; width: 100%; min-width: 120px; border: 1px solid var(--line);
+    border-radius: 5px; padding: 4px 6px; background: #fff; min-height: 42px; resize: vertical;
+  }
+  .id { font-weight: 650; white-space: nowrap; }
+  .src { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  audio { width: 140px; height: 32px; }
+  .eye {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 999px; border: 1px solid var(--line);
+    font-size: 10px; color: var(--muted); cursor: help; margin-left: 3px;
+  }
+  .eye:hover { color: var(--accent); border-color: var(--accent); }
+  .lab { display: inline-flex; align-items: center; }
+  .path { font-size: 0.8rem; }
+  .textcell { font-size: 0.82rem; max-width: 280px; }
+  .blind-banner {
+    background: #fff3e0; border: 1px solid #e0c29a; color: var(--warn);
+    padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.9rem;
+  }
+  label.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tag smoke — 55 clips</h1>
+  <p class="sub">
+    Pass2 / confidence pass: Native + tag1/tag2 hidden in UI (still in JSON).
+    Angle-bracket events stripped from text display so IV tags don’t leak.
+    Fill <b>Conf</b> + <b>Pass2</b> from ear only → Save.
+    Needs <code>.venv/bin/python scripts/serve_lab.py</code> ·
+    <a href="dataset-review.html">reviews</a> ·
+    <a href="datasets.html">listen</a>
+  </p>
+
+  <div class="blind-banner" id="blindBanner">
+    Blind mode ON — Native / tag1 / tag2 / Ear≡native hidden. Data kept on Save.
+  </div>
+
+  <div class="panel">
+    <h2>Frozen tags <button type="button" class="eye" title="Use these for Pass2. none = no expressive tag.">ⓘ</button></h2>
+    <div class="tags" id="tagList"></div>
+    <div class="stats" id="stats" style="margin-top:10px"></div>
+    <div class="bar">
+      <button type="button" class="primary" id="saveBtn">Save</button>
+      <button type="button" id="reloadBtn">Reload</button>
+      <button type="button" id="exportBtn">Download JSON</button>
+      <label class="toggle">
+        <input type="checkbox" id="blindToggle" checked />
+        Blind (hide native/tags)
+      </label>
+      <span class="status" id="status">Loading…</span>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr id="headRow">
+          <th><span class="lab">ID <button type="button" class="eye" title="Row id. Mix: rasa20 / iv20 / ivr5 / hiacc6 = 51 + 4 bonus laugh (s52–s55).">ⓘ</button></span></th>
+          <th><span class="lab">Source <button type="button" class="eye" title="Which P0 bucket this clip belongs to.">ⓘ</button></span></th>
+          <th><span class="lab">Audio / path <button type="button" class="eye" title="Local samples/… plays here.">ⓘ</button></span></th>
+          <th><span class="lab">Text <button type="button" class="eye" title="Transcript. In blind mode &lt;event&gt; tags stripped.">ⓘ</button></span></th>
+          <th class="col-reveal"><span class="lab">Native <button type="button" class="eye" title="Dataset label if any.">ⓘ</button></span></th>
+          <th class="col-reveal"><span class="lab">tag1 <button type="button" class="eye" title="Pass1 primary tag (hidden in blind).">ⓘ</button></span></th>
+          <th class="col-reveal"><span class="lab">tag2 <button type="button" class="eye" title="Pass1 second tag (hidden in blind).">ⓘ</button></span></th>
+          <th><span class="lab">Conf <button type="button" class="eye" title="H/M/L how sure you are of Pass2 / overall ear.">ⓘ</button></span></th>
+          <th class="col-reveal"><span class="lab">Ear≡native? <button type="button" class="eye" title="Hidden in blind — was derived/prior.">ⓘ</button></span></th>
+          <th><span class="lab">Pass2 <button type="button" class="eye" title="Blind re-tag from ear. Compare later to tag1.">ⓘ</button></span></th>
+          <th><span class="lab">Notes <button type="button" class="eye" title="Anything odd. Short.">ⓘ</button></span></th>
+          <th>✓</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</main>
+<script>
+let meta = null;
+let clips = [];
+let blind = true;
+
+const statusEl = document.getElementById("status");
+const tbody = document.getElementById("tbody");
+
+function setStatus(msg, kind="") {
+  statusEl.textContent = msg;
+  statusEl.className = "status " + kind;
+}
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+function redactEvents(text) {
+  return String(text || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tagSelect(value, cls, { allowEmpty = false } = {}) {
+  const s = document.createElement("select");
+  s.className = cls;
+  if (allowEmpty) {
+    const o = document.createElement("option");
+    o.value = ""; o.textContent = "—";
+    if (!(value || "")) o.selected = true;
+    s.appendChild(o);
+  }
+  for (const t of meta.tags) {
+    const o = document.createElement("option");
+    o.value = t; o.textContent = t;
+    if (t === (value || "") && !allowEmpty) o.selected = true;
+    if (allowEmpty && t === value) o.selected = true;
+    s.appendChild(o);
+  }
+  return s;
+}
+
+function updateStats() {
+  const conf = clips.filter(c => c.confidence).length;
+  const p2 = clips.filter(c => c.pass2_tag1).length;
+  const parts = [
+    `<span>conf <b>${conf}/${clips.length}</b></span>`,
+    `<span>pass2 <b>${p2}/${clips.length}</b></span>`,
+  ];
+  document.getElementById("stats").innerHTML = parts.join("");
+}
+
+function render() {
+  document.getElementById("tagList").textContent = meta.tags.filter(t => t !== "none").join(" · ");
+  document.getElementById("blindBanner").style.display = blind ? "" : "none";
+  document.querySelectorAll(".col-reveal").forEach(el => {
+    el.style.display = blind ? "none" : "";
+  });
+  tbody.innerHTML = "";
+  clips.forEach((c, idx) => {
+    const tr = document.createElement("tr");
+    if (c.done) tr.classList.add("done");
+    tr.dataset.idx = idx;
+
+    const tdId = document.createElement("td");
+    tdId.innerHTML = `<div class="id">${c.id}</div><div class="src">${c.source}</div>`;
+
+    const tdSrc = document.createElement("td");
+    tdSrc.textContent = c.dataset || c.source;
+
+    const tdAudio = document.createElement("td");
+    if (c.file) {
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.preload = "none";
+      audio.src = "samples/" + c.file;
+      tdAudio.appendChild(audio);
+    } else {
+      const pathInp = document.createElement("input");
+      pathInp.type = "text";
+      pathInp.className = "path";
+      pathInp.placeholder = "samples/…";
+      pathInp.value = c.hf_or_path || "";
+      pathInp.onchange = () => { c.hf_or_path = pathInp.value; };
+      tdAudio.appendChild(pathInp);
+    }
+
+    const tdText = document.createElement("td");
+    const ta = document.createElement("textarea");
+    ta.className = "textcell";
+    ta.readOnly = blind;
+    ta.value = blind ? redactEvents(c.text) : (c.text || "");
+    if (!blind) ta.onchange = () => { c.text = ta.value; };
+    tdText.appendChild(ta);
+
+    const tdNative = document.createElement("td");
+    tdNative.className = "col-reveal";
+    if (!blind) {
+      const nat = document.createElement("input");
+      nat.type = "text";
+      nat.value = c.native_label || "";
+      nat.onchange = () => { c.native_label = nat.value; };
+      tdNative.appendChild(nat);
+    }
+
+    const td1 = document.createElement("td");
+    td1.className = "col-reveal";
+    if (!blind) {
+      const s1 = tagSelect(c.tag1, "tag1");
+      s1.onchange = () => { c.tag1 = s1.value; updateStats(); };
+      td1.appendChild(s1);
+    }
+
+    const td2 = document.createElement("td");
+    td2.className = "col-reveal";
+    if (!blind) {
+      const s2 = tagSelect(c.tag2, "tag2", { allowEmpty: true });
+      s2.onchange = () => { c.tag2 = s2.value; };
+      td2.appendChild(s2);
+    }
+
+    const tdC = document.createElement("td");
+    const sc = document.createElement("select");
+    for (const v of meta.confidence) {
+      const o = document.createElement("option");
+      o.value = v; o.textContent = v || "—";
+      if (v === (c.confidence || "")) o.selected = true;
+      sc.appendChild(o);
+    }
+    sc.onchange = () => { c.confidence = sc.value; updateStats(); };
+    tdC.appendChild(sc);
+
+    const tdE = document.createElement("td");
+    tdE.className = "col-reveal";
+    if (!blind) {
+      const se = document.createElement("select");
+      for (const v of meta.ear_match) {
+        const o = document.createElement("option");
+        o.value = v; o.textContent = v || "—";
+        if (v === (c.ear_match_native || "")) o.selected = true;
+        se.appendChild(o);
+      }
+      se.onchange = () => { c.ear_match_native = se.value; };
+      tdE.appendChild(se);
+    }
+
+    const tdP = document.createElement("td");
+    const sp = tagSelect(c.pass2_tag1, "pass2", { allowEmpty: true });
+    sp.onchange = () => { c.pass2_tag1 = sp.value; updateStats(); };
+    tdP.appendChild(sp);
+
+    const tdN = document.createElement("td");
+    const tn = document.createElement("textarea");
+    tn.value = c.notes || "";
+    tn.onchange = () => { c.notes = tn.value; };
+    tdN.appendChild(tn);
+
+    const tdD = document.createElement("td");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !!c.done;
+    cb.onchange = () => { c.done = cb.checked; tr.classList.toggle("done", c.done); updateStats(); };
+    tdD.appendChild(cb);
+
+    tr.append(tdId, tdSrc, tdAudio, tdText, tdNative, td1, td2, tdC, tdE, tdP, tdN, tdD);
+    if (blind) {
+      [tdNative, td1, td2, tdE].forEach(td => { td.style.display = "none"; });
+    }
+    tbody.appendChild(tr);
+  });
+  updateStats();
+}
+
+function collect() {
+  return { clips };
+}
+
+async function load() {
+  meta = await api("/api/smoke/meta");
+  const data = await api("/api/smoke/clips");
+  clips = data.clips;
+  render();
+  setStatus("Loaded data/smoke/clips.json", "ok");
+}
+
+async function save() {
+  try {
+    const res = await api("/api/smoke/clips", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(collect()),
+    });
+    setStatus("Saved " + res.path, "ok");
+  } catch (e) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(collect(), null, 2)], { type: "application/json" }));
+    a.download = "clips.json";
+    a.click();
+    setStatus("Server save failed — downloaded clips.json → put in data/smoke/", "err");
+  }
+}
+
+document.getElementById("saveBtn").onclick = save;
+document.getElementById("reloadBtn").onclick = load;
+document.getElementById("exportBtn").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(collect(), null, 2)], { type: "application/json" }));
+  a.download = "clips.json";
+  a.click();
+};
+document.getElementById("blindToggle").onchange = (e) => {
+  blind = !!e.target.checked;
+  render();
+  setStatus(blind ? "Blind ON — tag1/tag2/native hidden" : "Blind OFF — full columns", "ok");
+};
+
+load().catch(() => setStatus("Start: .venv/bin/python scripts/serve_lab.py → http://127.0.0.1:8765/smoke.html", "err"));
+</script>
+</body>
+</html>
