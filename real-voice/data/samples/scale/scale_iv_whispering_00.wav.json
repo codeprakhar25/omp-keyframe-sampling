@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_whispering_00.wav",
+  "native_label": "Extempore|whispering",
+  "text": "मिल्लत <whispering> कहाँ से आप आएँगी",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

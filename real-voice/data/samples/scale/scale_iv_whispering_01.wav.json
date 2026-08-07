@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_whispering_01.wav",
+  "native_label": "Extempore|whispering",
+  "text": "<Persistent-noise-start> और देख भी सके अच्छे से <inhaling> <bird_squawk> और समझ भी सके लोग अच्छे से <inhaling> <umm> उर्दू में भी सोचती हूँ कि लिखें <inhaling> समझें <inhaling> लेकिन उर्दू आता नहीं है <whispering> जो मैं लिख सकती हूँ <inhaling> पढ़ने कि कोशिश करती हूँ कि मैं उर्दू भी समझ जाऊँ और उर्दू भी साफ साफ से लिखूँ <inhaling> लेकिन ऐसा होता नहीं है <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

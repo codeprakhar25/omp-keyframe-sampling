@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_06.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "अच्छा <bird_squawk> अच्छा अच्छा <inhaling> और ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

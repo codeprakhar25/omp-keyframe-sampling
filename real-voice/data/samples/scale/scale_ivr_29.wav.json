@@ -1,0 +1,12 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_29.wav",
+  "text": "अगर आप एक महीने में एक सप्ताह में अगर आप दो बार तीन बार एक महीने में खाते हो खिचड़ी तो आप निरोगी हो मतलब आपकी जो पेट हे ओ थोड़ा निरोगी ओ शांत रहेगा ओ ज़्यादा आपकी पेट मतलब खराब नही होगी इसे इसिलिए तो मैं खिचड़ी ज़्यादातर",
+  "native_label": "Extempore",
+  "gender": "Female",
+  "state": "Rajasthan",
+  "duration_s": 18.11,
+  "shard": "Hindi/train-00000-of-00099.parquet",
+  "from_cache": true
+}

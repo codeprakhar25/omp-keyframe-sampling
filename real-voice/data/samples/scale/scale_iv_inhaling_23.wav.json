@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_23.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "[hmm] <noise> तो आप आएँगे उसके बाद मैं चेक करूँगा <inhaling> अब जो भी सलूशन <noise> हो ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

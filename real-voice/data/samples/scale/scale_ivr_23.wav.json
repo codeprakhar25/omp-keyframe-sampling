@@ -1,0 +1,11 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_23.wav",
+  "text": "हाँ हमारे करौली ज़िले के अंदर अत्यधिक ऐतिहासिक किले मूर्तियाँ मंदिर हैं जिनकी सांस्कृतिक और उन कला को देख कर ऐसा लगता है कि पीढ़ी दर पीढ़ी पता नहीं कितनी पीढ़ियाँ गुज़र चुकी हैं और सांस्कृतिक को उनकी साँस्कृतिक सजावट को देखके लगता है आज भी हम पुराने समय में",
+  "native_label": "Extempore",
+  "gender": "Male",
+  "state": "Rajasthan",
+  "duration_s": 19.84,
+  "shard": "Hindi/train-00049-of-00099.parquet"
+}

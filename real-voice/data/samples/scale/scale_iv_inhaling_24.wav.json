@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_24.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "<Persistent-noise-start> क्या आप मेरा मार्गदर्सन कर सकते हैं कि डिजि <inhaling> लोकल में मेरा मोबाइल नंबर <inhaling> थ्री नाइन थ्री <barking> थ्री थ्री सिक्स टू थ्री जीरो थ्री से <inhaling> एट सेवन जीरो फोर नाइन थ्री जीरो फाइव टू थ्री कैसे अपडेट किया जाए <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

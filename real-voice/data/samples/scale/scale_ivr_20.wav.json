@@ -1,0 +1,11 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_20.wav",
+  "text": "आजकल की लड़कियाँ भी उन ट्रेंड्स को फॉलो करती हैं जिससे समाज पर बुरा असर पड़ता है मेरी सबसे फेवरेट मूवी पद्मावती थी जिसमें दीपिका पादुकोण का कैरेक्टर बहुत अच्छा था दीपिका पादुकोन ने बहुत अच्छे राजपूती कपड़े पहने थे जो जो",
+  "native_label": "Extempore",
+  "gender": "Male",
+  "state": "Rajasthan",
+  "duration_s": 19.89,
+  "shard": "Hindi/train-00043-of-00099.parquet"
+}

@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_16.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "<Persistent-noise-start> और तो मुझे किताबें पढ़ना पसंद है <inhaling> और जो चैहिए किताब सस्ती मंहगी <inhaling> वो मार्केट में ही मिलता है <inhaling> यहाँ आसपास कोई बूक इस्टोर नहीं है <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

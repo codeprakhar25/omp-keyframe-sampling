@@ -1,0 +1,12 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_35.wav",
+  "text": "और समय रहते हम लोगों ने अपने दोस्तों के साथ सीखने का काफ़ी प्रयास किया है लेकिन हम नहीं सीख पाए हमें इतना पता है कि दोनों हाथ और पैर को चलाने से और साँस रोकने से पानी हमें ऊपर की ओर भेजता है लेकिन उसके बावजूद भी काफ़ी प्रयास करने के बावजूद भी तैरना नहीं सीख पाए",
+  "native_label": "Extempore",
+  "gender": "Male",
+  "state": "Madhya Pradesh",
+  "duration_s": 20.92,
+  "shard": "Hindi/train-00003-of-00099.parquet",
+  "from_cache": true
+}

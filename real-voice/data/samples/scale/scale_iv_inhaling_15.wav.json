@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_15.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "<Persistent-noise-start> और मुझे <inhaling> <noise> सस्ते तो नहीं मिलती मंहगी ही मिलती है ढाई सौ तीन सौ चर सौ <inhaling> कि एक बूक मिलती है <Persistent-noise-end> ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

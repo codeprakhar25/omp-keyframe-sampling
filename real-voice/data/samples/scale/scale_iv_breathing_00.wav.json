@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_breathing_00.wav",
+  "native_label": "Extempore|breathing",
+  "text": "<Persistent-noise-start> तो सर तो <noise> फिर इधर तो दस हजार परेगा आपके पास फिर <talking> उसको लाना भी परेगा <breathing> फिर उसका <unintelligible> <Persistent-noise-end> ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

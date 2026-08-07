@@ -1,0 +1,12 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_34.wav",
+  "text": "तो उसमे मतलब मैं मैं मोर के पंख नहीं बना रही थी मैं तो नॉर्मल एक डिज़ाइन बना रही थी पंख जैसी पर उसमें मैंने ध्यान नहीं दिया और मैं इस तरह से उसमें रंग फील कर दिए कि जब उसको देखा तो बाद में वह मोर के पंख जैसा दिखने लगा तो इतना अच्छा मुझे उसे समय लगा कि मैंने",
+  "native_label": "Extempore",
+  "gender": "Female",
+  "state": "Madhya Pradesh",
+  "duration_s": 21.76,
+  "shard": "Hindi/train-00003-of-00099.parquet",
+  "from_cache": true
+}

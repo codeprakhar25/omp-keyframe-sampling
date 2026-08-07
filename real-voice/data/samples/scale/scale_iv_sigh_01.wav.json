@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_sigh_01.wav",
+  "native_label": "Extempore|sigh",
+  "text": "<Persistent-noise-start> वहाँ गए <sigh> रास्ते में ऐसे बहुत से अभी जगह मिली हमलोगों को <breathing> और इतने दोस्त थे सबलोग अपने आपस में बाते करते हुए <Persistent-noise-end>  ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

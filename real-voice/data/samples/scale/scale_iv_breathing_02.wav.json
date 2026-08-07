@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_breathing_02.wav",
+  "native_label": "Extempore|breathing",
+  "text": "<Persistent-noise-start> कुछ बर्तन ऐसे हैं जो प्रत्येक रसोईघर में आसानी से <breathing> मिल जाते हैं जैसे कि <bird_squawk> कुकर कढ़ाई तवा <Persistent-noise-end>   ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

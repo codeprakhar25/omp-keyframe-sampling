@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_sigh_14.wav",
+  "native_label": "Extempore|sigh",
+  "text": "<Persistent-noise-start> छठ <breathing> पूजा को ही हम लोग <inhaling> महान समझते हैं <breathing> <inhaling> छठ <breathing> पर्व में ही <bird_squawk> हम लोग <motorcycle> विसेस रूप से <inhaling> सब लोग पूरे समाज <sigh> पूजा <breathing> करते हैं <inhaling> और पूजा करने के बाद छठ का ही प्रधानता देते हैं <Persistent-noise-end> ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

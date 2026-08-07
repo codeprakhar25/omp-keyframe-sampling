@@ -1,0 +1,11 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_24.wav",
+  "text": "और हम दोस्त जहाँ भी यात्रा करते हैं हमें बहुत अच्छा लगता है हम लोग जहान भी अगर ट्रेन की यात्रा कर रहे हैं तो जो स्टेशन पर ट्रेन रुकती है वहाँ पर हम लोग उतर उतर के घूमते हैं वहाँ के नज़ारे दिखते हैं वहाँ पर कुछ खाते हैं पीते हैं साथ में हंसी मज़ाक करते हुए अपने सफ़र को तय करते हैं",
+  "native_label": "Extempore",
+  "gender": "Male",
+  "state": "Uttar Pradesh",
+  "duration_s": 21.09,
+  "shard": "Hindi/train-00051-of-00099.parquet"
+}

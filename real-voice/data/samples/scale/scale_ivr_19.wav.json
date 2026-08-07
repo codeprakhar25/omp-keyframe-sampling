@@ -1,0 +1,11 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_19.wav",
+  "text": "मेरे जीवन काल में बहुत सारे टेक्नोलॉलिकल जो बदलाव हुए हैं वो काफ़ी सारे हैं जैसे कि पहले टेलीविजन चलता था बड़ा वाला आजकल है जो एल ई डी टी वी आ गया है वो भी आसानी से टेक्निकल की वजह से ही वो आसानी से चल रहा है और काफ़ी दूर बैठे रिमोट से ही उसको चला सकते हैं हम",
+  "native_label": "Extempore",
+  "gender": "Male",
+  "state": "Rajasthan",
+  "duration_s": 22.45,
+  "shard": "Hindi/train-00041-of-00099.parquet"
+}

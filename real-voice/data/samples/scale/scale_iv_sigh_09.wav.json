@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_sigh_09.wav",
+  "native_label": "Extempore|sigh",
+  "text": "<Persistent-noise-start> के द्वारा <bell> प्रदर्सन किया जाता है <inhaling> नए नए प्रकार की <sigh> <inhaling> परम्पराएँ <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

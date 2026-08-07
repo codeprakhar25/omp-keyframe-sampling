@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_whispering_09.wav",
+  "native_label": "Extempore|whispering",
+  "text": "<Persistent-noise-start> यह <click> ग्रामिण क्षेत्र <rustling> में <whispering> सरकारी सासन में त <whispering> बहुत सी कमियाँ हैं <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

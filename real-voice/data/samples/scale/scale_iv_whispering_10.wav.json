@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_whispering_10.wav",
+  "native_label": "Extempore|whispering",
+  "text": "<Persistent-noise-start> उसका हल निकालती है और उसपर <inhaling> हमलोगों को क्या दिक्कतें हैं परेशानियाँ हैं उसको दूर करती है <inhaling> सरकार <whispering> और पुलिस [Police] भी हमारे यहाँ की बहुत अच्छी है <inhaling> इसलिए हमारी बातों को बहुत अच्छे से सुनती है और हमारी सहायता भी करती है <inhaling> और एक कॉल [Call] करने के बाद भी आ जाती है <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_13.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "<Persistent-noise-start> जैसे एडमिशन होता है चार्ज जमा होता है <inhaling> फिर किताबें सबको उपलब्ध कारवाई जाती है <inhaling> जिससे कि हम <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

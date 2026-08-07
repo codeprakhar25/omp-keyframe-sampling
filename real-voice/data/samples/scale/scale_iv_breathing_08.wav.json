@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_breathing_08.wav",
+  "native_label": "Extempore|breathing",
+  "text": "<Persistent-noise-start> बिल्डिंग मैटीरियल ओगेरा की दुकान हम लोग डालते हैं तो <bird_squawk> जो आडर हमारे यहाँ <breathing> कश्टमर <squawking> का आता है उसको समय से <breathing> पहोंचाना <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

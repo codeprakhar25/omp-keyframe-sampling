@@ -1,0 +1,12 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_27.wav",
+  "text": "मैं उस समय के बारे में बता सकती हूँ जब बो मैंने चित्रकारी में एक रचनात्मक जोखिम उठाया तथा इसका परिणाम भी बहुत अच्छा हुआ जब मैं छठवीं क्लास में थी तब एक",
+  "native_label": "Extempore",
+  "gender": "Female",
+  "state": "Madhya Pradesh",
+  "duration_s": 19.13,
+  "shard": "Hindi/train-00000-of-00099.parquet",
+  "from_cache": true
+}

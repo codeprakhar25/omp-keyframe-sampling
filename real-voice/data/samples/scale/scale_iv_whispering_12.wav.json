@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_whispering_12.wav",
+  "native_label": "Extempore|whispering",
+  "text": "यहाँ से खुलेगी <whispering> साम को पाँच बजे खुलेगी ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

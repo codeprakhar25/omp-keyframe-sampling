@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_14.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "<Persistent-noise-start> बच्चे जैसे अच्छे किताबों कि अच्छी <inhaling> <talking> प्राइज होती है कुआल्टी होती है उसी कि मतलब <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

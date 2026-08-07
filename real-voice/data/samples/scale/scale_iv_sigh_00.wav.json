@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_sigh_00.wav",
+  "native_label": "Extempore|sigh",
+  "text": "<Persistent-noise-start> सबसे यादगार सफर मेरा था <umm> <breathing> हमलोग गए थे दो हजार <sigh> सात में दिल्ली <Persistent-noise-end>  ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

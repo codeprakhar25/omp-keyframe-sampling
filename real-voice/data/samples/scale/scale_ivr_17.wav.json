@@ -1,0 +1,11 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_17.wav",
+  "text": "हमारे राजस्थान के अंदर छोटे व्यवसायों में मिर्ची बड़े का मिर्ची बड़े से काफ़ी मैं मतलब मैं उनको जानकारी रखता हूँ मिर्ची बड़ा हुआ उसके अलावा जूट का है मोजरी का जो सामान है जो चमड़े से बने हुए हाँथ से बनी हुईं चीज़ें हैं इनका व्यवसाय आप यह समझ लीजिए कि जो छोटी सी चीज़ें हैं",
+  "native_label": "Extempore",
+  "gender": "Male",
+  "state": "Rajasthan",
+  "duration_s": 23.08,
+  "shard": "Hindi/train-00037-of-00099.parquet"
+}

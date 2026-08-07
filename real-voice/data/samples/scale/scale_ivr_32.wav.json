@@ -1,0 +1,12 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_32.wav",
+  "text": "मध्य प्रदेश एइया में हम ऐतिहासिक स्थलों को विरासत के रूप में देखते आ रहें हैं जहाँ उज्जैन में बड़ी उज्जैन में बड़ी धूम धाम से मनाया जाता है और हमारे यहाँ पर्यटन स्थल हैं और मंदिरें हैं जैसे कि मैहर में माँ काली देवी और पर्यट स्थल को देख देखें तो हमारे यहाँ",
+  "native_label": "Extempore",
+  "gender": "Female",
+  "state": "Madhya Pradesh",
+  "duration_s": 19.66,
+  "shard": "Hindi/train-00002-of-00099.parquet",
+  "from_cache": true
+}

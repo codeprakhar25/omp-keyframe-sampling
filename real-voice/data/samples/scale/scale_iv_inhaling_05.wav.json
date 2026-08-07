@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_05.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "<Persistent-noise-start> हलुआ भी सूजी का <click> बनाई <talking> <inhaling> पह‍िले उसको घिउ डाल के भूज <breathing> <talking> के <inhaling> फिर <breathing> <talking> उसमें <inhaling> मेवा चीनी <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

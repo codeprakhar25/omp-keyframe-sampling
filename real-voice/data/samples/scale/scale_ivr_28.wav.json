@@ -1,0 +1,12 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_28.wav",
+  "text": "और अगर अवसर की बात करें तो उत्तर भारत में लोगों को कम औसर मिलता है क्योंकि अभी भारत जो है प्रगतिशील है और दक्षिण भारत में जो है बहुत अच्छे से प्रगति की है इस वजह से वहाँ पर अवसर की संभावना अधिक है",
+  "native_label": "Extempore",
+  "gender": "Male",
+  "state": "Madhya Pradesh",
+  "duration_s": 18.69,
+  "shard": "Hindi/train-00000-of-00099.parquet",
+  "from_cache": true
+}

@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_22.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "<Persistent-noise-start> खाद देते हैं <inhaling> पानी पटाते हैं <inhaling> अब मन्जर दे दिया लीची का उसको एस्प्रे कराना पड़ेगा <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

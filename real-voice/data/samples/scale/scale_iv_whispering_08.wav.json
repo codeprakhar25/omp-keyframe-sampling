@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_whispering_08.wav",
+  "native_label": "Extempore|whispering",
+  "text": "<Persistent-noise-start> मनोरंजक है <inhaling> बहोत ही अच्छे समारोह हैं <inhaling> इससे हमें बहोत कुछ <whispering> <breathing> बहोत कुछ सीखने को <inhaling> समझने को मिलता है <inhaling> और हमारा अनुभव बहोत ज़ादा अच्छा रहा है <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

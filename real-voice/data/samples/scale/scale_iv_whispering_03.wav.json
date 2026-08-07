@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_whispering_03.wav",
+  "native_label": "Extempore|whispering",
+  "text": "<Persistent-noise-start> और क्या <whispering> मुखिया <tapping> आ जाते हैं तो <tapping> मुखिया तो कुछ सुनबे नहीं करते हैं मुखिया पता न उसका घर हुआ बरियारपुर कि कहाँ हुआ जानते <tapping> नई हैं मकेन <Persistent-noise-end>  ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

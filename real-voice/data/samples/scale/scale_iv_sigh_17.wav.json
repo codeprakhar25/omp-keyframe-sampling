@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_sigh_17.wav",
+  "native_label": "Extempore|sigh",
+  "text": "<Persistent-noise-start> अच्छे से पैसे <thumping> मिलते हैं <thumping> और मेरे परिवार <thumping> का खर्च चलता है <thumping> <inhaling> औ सरकार द्वारा हमें <clinking> <talking> जो <sigh> मिलता है पैसा <talking> उससे हम <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

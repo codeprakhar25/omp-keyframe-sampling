@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_20.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "<Persistent-noise-start> और यदि ऊपर <umm> कोई तरह की दिक्कत लगती है <inhaling> तो उसको खाद भी जड़ी में देते हैं <inhaling> जैसे गोबर उबर गोवा ओवा का खाद हो या कोई भी खाद पोटाश <inhaling> वह सब भी देते हैं <inhaling> एस्प्रे भी करते हैं <inhaling> तब न पौधा अच्छा <breathing> रहेगा <throat_clearing><Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

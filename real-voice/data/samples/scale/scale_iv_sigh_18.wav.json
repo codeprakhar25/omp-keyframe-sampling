@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_sigh_18.wav",
+  "native_label": "Extempore|sigh",
+  "text": "<Persistent-noise-start> मैंने बच्चे ने फिर खाया मैंने बोला कि बेटा खाकर देखो अब अच्छा लगेगा <inhaling> मेरे बच्चों ने खाया <breathing> और <talking> कहा कि मम्मा बहुत टेस्टी है <inhaling> तो मैंने सोचा <sigh> कि मैं अच्छा बना सकती हूँ <Persistent-noise-end> ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

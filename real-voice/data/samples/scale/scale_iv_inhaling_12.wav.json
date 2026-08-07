@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_12.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "<Persistent-noise-start> चार पाँच हजार लग जाते हैं कैताबों में ही <inhaling> <noise> किताबें कि इस्टोर <inhaling> तो वो <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

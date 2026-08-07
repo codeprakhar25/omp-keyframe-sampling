@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_whispering_02.wav",
+  "native_label": "Extempore|whispering",
+  "text": "<Persistent-noise-start> यही मैं  सोचती हूँ कि अगर मैं अच्छा लिखूँगी <inhaling> तब तो लोग मुझे कहेंगे <inhaling> लिखने के लिए <inhaling> <whispering> हाँ तुम लिखो <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

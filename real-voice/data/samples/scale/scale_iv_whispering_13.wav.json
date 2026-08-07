@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_whispering_13.wav",
+  "native_label": "Extempore|whispering",
+  "text": "<Persistent-noise-start> सरीर <whispering> सरीर को <bird_squawk> <uhh> सरीर से अलग दिखते हैं <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

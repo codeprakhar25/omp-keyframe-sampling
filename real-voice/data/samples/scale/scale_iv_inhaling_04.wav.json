@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_04.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "<Persistent-noise-start> फिर <noise> उसके बाद दूध खौल गया उसमें चावल भी डाल दी <click> <inhaling> चावल डालने के बाद <tapping> में चीनी भी डाल <squeak> दी <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

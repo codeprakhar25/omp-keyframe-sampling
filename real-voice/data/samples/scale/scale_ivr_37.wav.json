@@ -1,0 +1,12 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_37.wav",
+  "text": "तुरंत तुरंत मालूम चल जाएगा समाचार पत्र पत्रिका में एक दिन के जब जब छप के जब वो हो जाएगा उसके बाद में फिर वहाँ पर जो नोट्स करेंगे उसके एक दिन के बाद में वो छपेगा तब जा के उसके अगले दिन हम न्यूज़पेपर में हमारे हम लोगों के पास आएगा और ए वी मीडिया का क्या साधन है कि वो तुरंत होगा और तुरंत वहाँ पर",
+  "native_label": "Extempore",
+  "gender": "Male",
+  "state": "Uttar Pradesh",
+  "duration_s": 21.73,
+  "shard": "Hindi/train-00006-of-00099.parquet",
+  "from_cache": true
+}

@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_thinking_12.wav",
+  "native_label": "Extempore|thinking",
+  "text": "<Persistent-noise-start> <hmm> अच्छा तो ईट हटाने का अलग से आपको ठेका देना पड़ेगा <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

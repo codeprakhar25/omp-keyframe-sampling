@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_thinking_06.wav",
+  "native_label": "Extempore|thinking",
+  "text": "<Persistent-noise-start> सर कुछ इधर उधर करके सर <squeak> वो तो महँगा मिले मिल <stammers> मिलता हीं है सर <squeak> क्यूँकि बंद है तो महँगा तो स्वतः है कि मिलेगा <squeak> <click> लेकिन सर <uhh> उस पर भी थोड़ा सा डिस्काउंट करके दीजियेगा जिससे हमें भी एक रुपया <Persistent-noise-end>  ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

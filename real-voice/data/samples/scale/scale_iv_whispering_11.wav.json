@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_whispering_11.wav",
+  "native_label": "Extempore|whispering",
+  "text": "<Persistent-noise-start> मुझे कविता लिखने का बहोत साैख है इसीलिए मैं कविता लिखती हूँ <stammers> लिखके टाइम पास करती हूँ <inhaling> इसीलिए मैं कविता में <whispering> बहोत <stammers> बहोत अच्छी है कविता मुझे बहोत पसंद आती है कविता <inhaling> इसीलिए मैं कविता लिखती हूँ <inhaling> मुझे बहोत सौक है कविता लिखने का <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

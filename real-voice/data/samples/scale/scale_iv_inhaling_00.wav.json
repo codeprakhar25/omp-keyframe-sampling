@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_00.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "और फिर <breathing> मैं <bird_squawk> चावल <inhaling> दाल",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

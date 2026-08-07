@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_whispering_07.wav",
+  "native_label": "Extempore|whispering",
+  "text": "<Persistent-noise-start> और घर पर जब मैंने उसे <whispering> किया <inhaling> तो बहोत ही वि‍चित्र तरीके से मुझे अनुभव प्राप्त हुआ <inhaling> <noise> जैसा कि नहीं होना चाहिए था <breathing> मैं समझ रहा था कि <gasp> योग अभ्यास जो कक्छाओं में कराया जाता है वेह बिल्कुल <tsk> <inhaling> यथार्थ रहेता है घर पर करने पर वी <inhaling> ठीक वैसा ही अनुभव प्राप्त होगा किन्तु वैसा नहीं हुआ <Persistent-noise-end> ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

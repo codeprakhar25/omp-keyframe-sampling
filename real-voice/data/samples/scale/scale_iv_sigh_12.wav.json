@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_sigh_12.wav",
+  "native_label": "Extempore|sigh",
+  "text": "<Persistent-noise-start> जाड़ा के जून में <bird_squawk> जैसे ठंढी के मौसम में <sigh> ठंढी के <child> मौसम में हमलोग <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

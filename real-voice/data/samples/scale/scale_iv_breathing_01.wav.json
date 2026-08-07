@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_breathing_01.wav",
+  "native_label": "Extempore|breathing",
+  "text": "<Persistent-noise-start> रसोई घर में विभिन्न प्रकार के बर्तनों को प्रयोग किया जाता है <breathing> दैनिक जीवन में भोजन बनाने के लिये विभिन्न प्रकार के बर्तनों के उपयोग आते हैं जिसमें कि <Persistent-noise-end>   ",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

@@ -1,0 +1,8 @@
+{
+  "source": "iv",
+  "file": "scale/scale_iv_inhaling_09.wav",
+  "native_label": "Extempore|inhaling",
+  "text": "<Persistent-noise-start> क्या आप कृपया डिजिलॉकर <noise> से मेरे वाहन पंजीकरण प्रमाण पत्र को पुनः प्राप्त कर सकते हैं <inhaling> मेरा डिजिलॉकर उपयोगकर्ता नाम प्रिया सर्मा है <inhaling> और डिजिलॉकर से जुड़े मेरे मोबाइल नम्बर के अंतिम चार अंक <screeching> हैं आठ नौ जीरो चार हैं <Persistent-noise-end>",
+  "note": "text missing — agent uses audio",
+  "text_source": "hf_recover"
+}

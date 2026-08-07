@@ -1,0 +1,12 @@
+{
+  "source": "ivr",
+  "dataset": "ai4bharat/indicvoices_r",
+  "file": "scale/scale_ivr_31.wav",
+  "text": "मेंने कुछ महीने पहले एक केमरा खरीदा ता खरीदने के वाद जब मेरे फ्रेंडों से मैंने बोला कि अपन टूर पे चल रहे हैं तो मेरे दोस्तों ने बोला कि केमरा ले चलना क्योंकि कैमरे से बहुत अच्छी फोटो आती हैं हम लोग टूर पे जाने के बाद हमने बहुत से फोटू खींचे फोटू खींचने के बाद",
+  "native_label": "Extempore",
+  "gender": "Male",
+  "state": "Madhya Pradesh",
+  "duration_s": 21.18,
+  "shard": "Hindi/train-00002-of-00099.parquet",
+  "from_cache": true
+}
