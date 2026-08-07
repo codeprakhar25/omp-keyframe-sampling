@@ -1,0 +1,70 @@
+{
+  "n_proposals": 24933,
+  "align_ok": 24923,
+  "align_fail_cuts": 10,
+  "align_fail_src": 0,
+  "sources": 15559,
+  "by_tag_align_ok": {
+    "breathing": {
+      "ok": 6197,
+      "n": 6204,
+      "rate": 0.999
+    },
+    "cough": {
+      "ok": 580,
+      "n": 580,
+      "rate": 1.0
+    },
+    "gasp": {
+      "ok": 1490,
+      "n": 1490,
+      "rate": 1.0
+    },
+    "inhaling": {
+      "ok": 7042,
+      "n": 7043,
+      "rate": 1.0
+    },
+    "laugh": {
+      "ok": 451,
+      "n": 451,
+      "rate": 1.0
+    },
+    "sigh": {
+      "ok": 611,
+      "n": 612,
+      "rate": 0.998
+    },
+    "sniffle": {
+      "ok": 104,
+      "n": 104,
+      "rate": 1.0
+    },
+    "thinking": {
+      "ok": 3410,
+      "n": 3410,
+      "rate": 1.0
+    },
+    "throat_clearing": {
+      "ok": 1293,
+      "n": 1294,
+      "rate": 0.999
+    },
+    "tsk": {
+      "ok": 2711,
+      "n": 2711,
+      "rate": 1.0
+    },
+    "ugh": {
+      "ok": 923,
+      "n": 923,
+      "rate": 1.0
+    },
+    "whispering": {
+      "ok": 111,
+      "n": 111,
+      "rate": 1.0
+    }
+  },
+  "review_url": "https://prakharkhatri123--real-voice-iv-hindi-slice-review-app.modal.run"
+}
