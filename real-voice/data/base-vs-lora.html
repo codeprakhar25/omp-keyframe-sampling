@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Base vs LoRA — same tags</title>
+<style>
+  :root {
+    --bg: #f6f1e8; --ink: #1c1916; --muted: #5c5348; --line: #d9cfc0;
+    --card: #fffdf8; --accent: #0f6b5c;
+  }
+  body {
+    margin: 0; font: 14px/1.4 "IBM Plex Sans", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: radial-gradient(900px 400px at 10% -10%, #e7f2ef 0%, transparent 55%), var(--bg);
+  }
+  main { max-width: 900px; margin: 0 auto; padding: 22px 14px 80px; }
+  h1 { font-size: 1.25rem; }
+  .sub { color: var(--muted); max-width: 75ch; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px; margin: 12px 0;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+  audio { width: 100%; margin: 4px 0 10px; }
+  .tag { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; }
+  .col h3 { margin: 0 0 6px; font-size: 0.95rem; }
+  .muted { color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Base Indic-Mio vs our LoRA</h1>
+  <p class="sub">
+    Same text + same tag conditioning. Left = stock <code>SPRINGLab/Indic-Mio</code>.
+    Right = LoRA adapter (what you judged in tag-swap).
+    Ref speaker both: train <code>s01</code>.
+  </p>
+  <div id="panel" class="muted">Loading…</div>
+</main>
+<script>
+async function load() {
+  const r = await fetch("/api/scale/eval");
+  if (!r.ok) throw new Error(await r.text());
+  const doc = await r.json();
+  const panel = document.getElementById("panel");
+  panel.innerHTML = "";
+  panel.className = "";
+  for (const p of doc.pairs || []) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<div><b>${p.id}</b> · ${p.family}</div>
+      <div>${p.text}</div>
+      <div class="muted">Ask was: which more <span class="tag">${p.tag_a}</span>? (A=${p.tag_a} / B=${p.tag_b})</div>`;
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    for (const [side, tag] of [["a", p.tag_a], ["b", p.tag_b]]) {
+      const col = document.createElement("div");
+      col.className = "col";
+      col.innerHTML = `<h3>Clip ${side.toUpperCase()} · <span class="tag">${tag}</span></h3>`;
+      const lb = document.createElement("div");
+      lb.className = "muted";
+      lb.textContent = "base";
+      const ab = document.createElement("audio");
+      ab.controls = true; ab.preload = "none";
+      ab.src = `scale/eval_pairs_base/${p.id}_${side}.wav`;
+      const ll = document.createElement("div");
+      ll.className = "muted";
+      ll.textContent = "LoRA (judged)";
+      const al = document.createElement("audio");
+      al.controls = true; al.preload = "none";
+      al.src = `scale/eval_pairs/${p.id}_${side}.wav`;
+      col.append(lb, ab, ll, al);
+      grid.appendChild(col);
+    }
+    card.appendChild(grid);
+    panel.appendChild(card);
+  }
+}
+load().catch(e => { document.getElementById("panel").textContent = String(e); });
+</script>
+</body>
+</html>
