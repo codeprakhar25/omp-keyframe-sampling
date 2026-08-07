@@ -22,7 +22,21 @@
     "whispering": 104,
     "sniffle": 97
   },
-  "p01_codec_rt": "PASS",
-  "modal_run": "https://modal.com/apps/prakharkhatri123/main/ap-icXCgnvsWEXfuUyZ9vjPvy",
-  "pipeline": "pack\u2192encode\u00d732\u2192merge\u2192LoRA epochs=2 r=16"
+  "by_tag_holdout": {
+    "inhaling": 354,
+    "breathing": 337,
+    "thinking": 162,
+    "tsk": 111,
+    "gasp": 72,
+    "throat_clearing": 71,
+    "ugh": 42,
+    "cough": 35,
+    "sigh": 29,
+    "laugh": 21,
+    "whispering": 7,
+    "sniffle": 7
+  },
+  "cuts_volume": "real-voice-iv-cuts",
+  "mio_volume": "real-voice-mio",
+  "p01_codec_rt": "PASS"
 }

@@ -387,6 +387,7 @@ def synth(
     ref_wav: str = f"{REMOTE}/data/wavs/s01.wav",
     use_lora: bool = True,
     out_subdir: str = "eval_pairs",
+    max_new_tokens: int = 384,
 ) -> dict:
     """Synthesize tag-swap A/B wavs → /vol/{out_subdir}/.
 
@@ -402,7 +403,23 @@ def synth(
 
     _hf_login()
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    pairs = json.loads(Path(pairs_path).read_text(encoding="utf-8"))
+    raw = json.loads(Path(pairs_path).read_text(encoding="utf-8"))
+    if isinstance(raw, dict):
+        pairs = list(raw.get("pairs") or [])
+        for q in raw.get("bare_quality") or []:
+            pairs.append(
+                {
+                    "id": q["id"],
+                    "text": q.get("text") or "",
+                    "tag_a": "none",
+                    "tag_b": "__skip__",
+                    "caption_a": q.get("caption") or q.get("text") or "",
+                    "caption_b": "",
+                    "single": True,
+                }
+            )
+    else:
+        pairs = list(raw)
     out_dir = Path(f"{REMOTE}/{out_subdir}")
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -429,8 +446,14 @@ def synth(
         print("LOADED base (no LoRA)", model_id, flush=True)
     model.eval()
 
-    def make_user(text: str, tag: str) -> str:
-        return user_text_from_row({"text": text, "tag1": tag or "none", "tag2": ""})
+    def make_user(text: str, tag: str, caption: str | None = None) -> str:
+        # Prefer explicit caption (inline for events). Never invent prefix if caption given.
+        if caption is not None and str(caption).strip():
+            return str(caption).strip()
+        if not tag or tag == "none":
+            return (text or "").strip()
+        # legacy fallback only
+        return user_text_from_row({"text": text, "tag1": tag, "tag2": ""})
 
     def gen_codes(user: str) -> list[int]:
         messages = [{"role": "user", "content": user}]
@@ -441,7 +464,7 @@ def synth(
         with torch.inference_mode():
             out = model.generate(
                 **inputs,
-                max_new_tokens=1024,
+                max_new_tokens=max_new_tokens,
                 do_sample=True,
                 temperature=0.8,
                 top_p=0.9,
@@ -473,14 +496,21 @@ def synth(
     n_ok = 0
     for p in pairs:
         pid = p["id"]
-        text = p["text"]
-        for side, tag in (("a", p["tag_a"]), ("b", p["tag_b"])):
-            user = make_user(text, tag)
-            print(f"synth {pid}_{side} tag={tag} user={user[:80]}", flush=True)
+        text = p.get("text") or ""
+        sides = (("a", p.get("tag_a")), ("b", p.get("tag_b")))
+        if p.get("single") or p.get("tag_b") == "__skip__":
+            sides = (("a", p.get("tag_a") or "none"),)
+        for side, tag in sides:
+            if tag == "__skip__":
+                continue
+            cap = p.get(f"caption_{side}")
+            user = make_user(text, tag or "none", caption=cap)
+            out_name = f"{pid}.wav" if p.get("single") else f"{pid}_{side}.wav"
+            print(f"synth {out_name} tag={tag} user={user[:80]}", flush=True)
             codes = gen_codes(user)
             print(f"  codes={len(codes)}", flush=True)
             audio = decode_wav(codes)
-            path = out_dir / f"{pid}_{side}.wav"
+            path = out_dir / out_name
             sf.write(str(path), audio, sr)
             n_ok += 1
         vol.commit()
@@ -497,7 +527,7 @@ def synth(
 
 @app.local_entrypoint()
 def main(action: str = "upload"):
-    """modal run modal_indic_mio.py --action upload|train|synth|synth_base"""
+    """modal run modal_indic_mio.py --action upload|train|synth|synth_iv|synth_base"""
     if action == "upload":
         _upload_local()
     elif action == "train":
@@ -508,6 +538,63 @@ def main(action: str = "upload"):
         print("upload pairs…")
         _put.remote(local_pairs.read_bytes(), "data/eval_pairs.json")
         print(synth.remote(use_lora=True, out_subdir="eval_pairs"))
+    elif action == "synth_iv":
+        # IV v7 event LoRA. Use: modal run --detach … --action synth_iv
+        # (.spawn from local entrypoint dies when app stops; --detach keeps remote)
+        local_pairs = ROOT / "data" / "scale" / "eval_synth_pairs_iv_v7.json"
+        assert local_pairs.exists(), local_pairs
+        print("upload IV v7 event pairs…")
+        _put.remote(local_pairs.read_bytes(), "data/eval_pairs_iv_v7.json")
+        print(
+            synth.remote(
+                use_lora=True,
+                adapter_dir=f"{REMOTE}/out/adapter_iv_v7",
+                pairs_path=f"{REMOTE}/data/eval_pairs_iv_v7.json",
+                ref_wav=f"{REMOTE}/data/wavs/s01.wav",
+                out_subdir="eval_pairs_iv_v7",
+            )
+        )
+        print("Pull: modal volume get real-voice-mio eval_pairs_iv_v7 ./data/scale/eval_pairs_iv_v7")
+    elif action == "synth_iv_v8":
+        # IV v8 inline LoRA. captions must be inline (caption_a/b).
+        local_pairs = ROOT / "data" / "scale" / "eval_synth_pairs_iv_v8.json"
+        assert local_pairs.exists(), local_pairs
+        print("upload IV v8 inline pairs…")
+        _put.remote(local_pairs.read_bytes(), "data/eval_pairs_iv_v8.json")
+        print(
+            synth.remote(
+                use_lora=True,
+                adapter_dir=f"{REMOTE}/out/adapter_iv_v8",
+                pairs_path=f"{REMOTE}/data/eval_pairs_iv_v8.json",
+                ref_wav=f"{REMOTE}/data/wavs/s01.wav",
+                out_subdir="eval_pairs_iv_v8",
+                max_new_tokens=384,  # ~15s @25Hz — avoid v7 40s runaway
+            )
+        )
+        print(
+            "Pull: modal volume get real-voice-mio eval_pairs_iv_v8 ./data/scale/eval_pairs_iv_v8"
+        )
+    elif action == "synth_iv_v8_e3":
+        # epochs=3 adapter + full eval_iv_v8_pairs (29 A/B + 5 bare_quality)
+        # MUST use: modal run --detach … --action synth_iv_v8_e3
+        local_pairs = ROOT / "data" / "scale" / "eval_iv_v8_pairs.json"
+        assert local_pairs.exists(), local_pairs
+        print("upload IV v8 e3 pairs (eval_iv_v8_pairs.json)…")
+        _put.remote(local_pairs.read_bytes(), "data/eval_pairs_iv_v8_e3.json")
+        print(
+            synth.remote(
+                use_lora=True,
+                adapter_dir=f"{REMOTE}/out/adapter_iv_v8_e3",
+                pairs_path=f"{REMOTE}/data/eval_pairs_iv_v8_e3.json",
+                ref_wav=f"{REMOTE}/data/wavs/s01.wav",
+                out_subdir="eval_pairs_iv_v8_e3",
+                max_new_tokens=384,
+            )
+        )
+        print(
+            "Pull: modal volume get real-voice-mio eval_pairs_iv_v8_e3 "
+            "./data/scale/eval_pairs_iv_v8_e3/"
+        )
     elif action == "synth_base":
         local_pairs = ROOT / "data" / "scale" / "eval_synth_pairs.json"
         assert local_pairs.exists(), "run scripts/tag_swap_eval.py --init first"

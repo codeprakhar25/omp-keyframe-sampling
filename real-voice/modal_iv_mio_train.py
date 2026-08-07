@@ -3,10 +3,13 @@
 Cuts stay on volume real-voice-iv-cuts. Manifest + codes + adapter on
 real-voice-mio.
 
-  modal run --detach modal_iv_mio_train.py --action all
-  # or: pack | encode | train
+Long jobs use .spawn() so local exits immediately — laptop/WSL close OK.
+Watch progress on https://modal.com/apps (do not block on .remote()).
 
-  modal volume get real-voice-mio /vol/out/adapter ./data/scale/train/adapter_iv
+  modal run modal_iv_mio_train.py --action all
+  # or: pack | encode | train | merge_train
+
+  modal volume get real-voice-mio out/adapter_iv_v7 ./data/scale/train/adapter_iv
 """
 from __future__ import annotations
 
@@ -315,7 +318,7 @@ def merge_codes() -> dict:
 
 @app.function(
     gpu="A10G",
-    timeout=60 * 60 * 6,
+    timeout=60 * 60 * 8,
     memory=32768,
     volumes={MIO: vol_mio},
     secrets=[hf_secret],
@@ -328,8 +331,14 @@ def train(epochs: int = 2, lora_r: int = 16, max_rows: int = 0) -> dict:
         AutoModelForCausalLM,
         AutoTokenizer,
         Trainer,
+        TrainerCallback,
         TrainingArguments,
     )
+
+    class _VolCommit(TrainerCallback):
+        def on_save(self, args, state, control, **kwargs):
+            vol_mio.commit()
+            print(f"vol.commit @ step={state.global_step}", flush=True)
 
     _hf_login()
     vol_mio.reload()
@@ -413,6 +422,14 @@ def train(epochs: int = 2, lora_r: int = 16, max_rows: int = 0) -> dict:
     model.print_trainable_parameters()
 
     out_dir = f"{MIO}/out/adapter_iv_v7"
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
+    ckpts = sorted(
+        Path(out_dir).glob("checkpoint-*"),
+        key=lambda p: int(p.name.split("-")[-1]),
+    )
+    resume = str(ckpts[-1]) if ckpts else None
+    print(f"resume_from={resume}", flush=True)
+
     args = TrainingArguments(
         output_dir=out_dir,
         num_train_epochs=epochs,
@@ -422,7 +439,9 @@ def train(epochs: int = 2, lora_r: int = 16, max_rows: int = 0) -> dict:
         lr_scheduler_type="cosine",
         warmup_ratio=0.03,
         logging_steps=10,
-        save_strategy="epoch",
+        save_strategy="steps",
+        save_steps=500,
+        save_total_limit=3,
         bf16=True,
         optim="adamw_torch",
         report_to=[],
@@ -452,8 +471,9 @@ def train(epochs: int = 2, lora_r: int = 16, max_rows: int = 0) -> dict:
         args=args,
         train_dataset=ds,
         data_collator=collate,
+        callbacks=[_VolCommit()],
     )
-    trainer.train()
+    trainer.train(resume_from_checkpoint=resume)
     model.save_pretrained(out_dir)
     tokenizer.save_pretrained(out_dir)
     meta = {
@@ -465,6 +485,7 @@ def train(epochs: int = 2, lora_r: int = 16, max_rows: int = 0) -> dict:
         "adapter": out_dir,
         "pack": "iv_hindi_v7_align_ok",
         "p01_codec_rt": "PASS",
+        "resumed_from": resume,
     }
     Path(MIO, "out/train_meta_iv_v7.json").write_text(
         json.dumps(meta, indent=2) + "\n", encoding="utf-8"
@@ -496,30 +517,54 @@ def run_all(epochs: int = 2, lora_r: int = 16) -> dict:
     return {"pack": pmeta, "encode": mmeta, "train": tmeta}
 
 
+@app.function(volumes={MIO: vol_mio}, timeout=60 * 60 * 10, secrets=[hf_secret])
+def run_merge_train(epochs: int = 2, lora_r: int = 16) -> dict:
+    """Merge codes then train (one Modal-side chain — safe if laptop closes)."""
+    mmeta = merge_codes.remote()
+    print("MERGE", mmeta, flush=True)
+    if mmeta["n_miss"] > 100:
+        raise RuntimeError(f"too many encode misses: {mmeta['n_miss']}")
+    tmeta = train.remote(epochs=epochs, lora_r=lora_r)
+    print("TRAIN", tmeta, flush=True)
+    return {"encode": mmeta, "train": tmeta}
+
+
+@app.function(volumes={MIO: vol_mio, CUTS: vol_cuts}, timeout=60 * 60 * 3, secrets=[hf_secret])
+def run_encode() -> dict:
+    """Parallel encode + merge (Modal-side — safe if laptop closes)."""
+    enc = list(
+        encode_shard.starmap(
+            [(i, N_ENCODE_SHARDS) for i in range(N_ENCODE_SHARDS)],
+            order_outputs=False,
+        )
+    )
+    mmeta = merge_codes.remote()
+    print("ENCODE+MERGE", mmeta, flush=True)
+    return {"shards": enc, "merge": mmeta}
+
+
+def _spawn_and_exit(call, label: str) -> None:
+    """Fire-and-forget: local process exits; GPU job keeps running on Modal."""
+    print(f"SPAWNED {label} call_id={call.object_id}", flush=True)
+    print("Local exit OK — close laptop fine. Watch https://modal.com/apps", flush=True)
+    print("Status later: modal app list   |   logs on the app run page", flush=True)
+
+
 @app.local_entrypoint()
 def main(action: str = "all", epochs: int = 2, lora_r: int = 16):
+    # Long GPU jobs: .spawn() then exit (do NOT block on .remote() — laptop/WSL
+    # kill cancels the waiting client and can cancel the Modal input).
     if action == "pack":
-        print(pack.remote())
+        print(pack.remote())  # short CPU — ok to wait
     elif action == "encode":
-        print(
-            list(
-                encode_shard.starmap(
-                    [(i, N_ENCODE_SHARDS) for i in range(N_ENCODE_SHARDS)],
-                    order_outputs=False,
-                )
-            )
-        )
-        print(merge_codes.remote())
+        _spawn_and_exit(run_encode.spawn(), "encode")
     elif action == "train":
-        print(train.remote(epochs=epochs, lora_r=lora_r))
+        _spawn_and_exit(train.spawn(epochs=epochs, lora_r=lora_r), "train")
     elif action == "merge_train":
-        # resume after encode already on volume
-        mmeta = merge_codes.remote()
-        print("MERGE", mmeta)
-        if mmeta["n_miss"] > 100:
-            raise SystemExit(f"too many encode misses: {mmeta['n_miss']}")
-        print(train.remote(epochs=epochs, lora_r=lora_r))
+        _spawn_and_exit(
+            run_merge_train.spawn(epochs=epochs, lora_r=lora_r), "merge_train"
+        )
     elif action == "all":
-        print(run_all.remote(epochs=epochs, lora_r=lora_r))
+        _spawn_and_exit(run_all.spawn(epochs=epochs, lora_r=lora_r), "all")
     else:
         raise SystemExit("action=pack|encode|train|merge_train|all")

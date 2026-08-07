@@ -30,6 +30,18 @@
   .ask { font-weight: 650; margin: 8px 0; }
   .status { color: var(--muted); font-size: 0.9rem; }
   .status.ok { color: var(--accent); }
+  .meta { color: var(--muted); font-size: 0.85rem; margin: 4px 0 8px; }
+  .prompt {
+    font-family: ui-monospace, "Cascadia Code", monospace;
+    font-size: 0.82rem; background: #f0ebe3; border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 8px; margin: 4px 0 8px; white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .side-label { font-weight: 650; margin-top: 10px; }
+  .tagchip {
+    display: inline-block; font-size: 0.75rem; padding: 1px 6px; border-radius: 4px;
+    background: #e7f2ef; color: var(--accent); margin-left: 6px;
+  }
   label.notes-label {
     display: block; margin-top: 10px; font-size: 0.8rem; color: var(--muted);
   }
@@ -38,14 +50,38 @@
     font: inherit; border: 1px solid var(--line); border-radius: 6px;
     padding: 6px 8px; background: #fff; box-sizing: border-box;
   }
+  .compare {
+    margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  @media (max-width: 700px) { .compare { grid-template-columns: 1fr; } }
+  .compare-box {
+    border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px;
+    background: #faf7f1; font-size: 0.82rem;
+  }
+  .compare-box h3 {
+    margin: 0 0 6px; font-size: 0.78rem; letter-spacing: 0.02em;
+    text-transform: uppercase; color: var(--muted); font-weight: 650;
+  }
+  .compare-box .err { color: #9a3412; }
+  .compare-box ul { margin: 4px 0 0; padding-left: 1.1em; }
+  .compare-box .diff {
+    margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line);
+    color: var(--muted);
+  }
+  .reply-box {
+    margin-top: 10px; border-left: 3px solid var(--accent);
+    background: #eef7f4; border-radius: 0 8px 8px 0; padding: 8px 10px;
+    font-size: 0.85rem; white-space: pre-wrap;
+  }
+  .reply-box .ttl { font-size: 0.75rem; color: var(--muted); font-weight: 650; margin-bottom: 4px; }
 </style>
 </head>
 <body>
 <main>
   <h1>Tag-swap A/B</h1>
   <p class="sub">
-    Blind listen: which clip better matches the asked tag?
-    Init: <code>scripts/tag_swap_eval.py --init</code> · put wavs under <code>data/scale/eval_pairs/</code>.
+    Listen A vs B. Ask = which clip carries the <b>asked tag</b> (see chip).
+    Prompts = exact inline LoRA user strings. Adapter in status line.
   </p>
   <div class="status" id="status">Loading…</div>
   <div id="panel"></div>
@@ -62,30 +98,67 @@ async function api(path, opts) {
   return r.json();
 }
 
+function loraPrompt(tag, text, caption) {
+  if (caption) return caption;
+  if (!tag || tag === "none") return text || "";
+  return `[${tag}] ${text || ""}`.trim();
+}
+
 function updateStatus() {
   const n = (doc.pairs || []).filter(p => p.pick).length;
-  statusEl.textContent = `Judged ${n}/${(doc.pairs || []).length}`;
+  const ad = doc.adapter ? ` · adapter=${doc.adapter}` : "";
+  statusEl.textContent = `Judged ${n}/${(doc.pairs || []).length}${ad}`;
   statusEl.className = "status ok";
+}
+
+function askedTag(p) {
+  return p.ask || p.tag_a || "";
+}
+
+function sideHasAsk(p, side) {
+  const ask = askedTag(p);
+  if (!ask || ask === "any difference") return null;
+  return (side === "a" ? p.tag_a : p.tag_b) === ask;
 }
 
 function render() {
   panel.innerHTML = "";
   (doc.pairs || []).forEach((p) => {
     if (p.notes == null) p.notes = "";
+    const promptA = loraPrompt(p.tag_a, p.text, p.caption_a);
+    const promptB = loraPrompt(p.tag_b, p.text, p.caption_b);
+    const ask = askedTag(p);
+    const kind = p.kind ? ` · ${p.kind}` : "";
     const div = document.createElement("div");
     div.className = "card";
-    div.innerHTML = `<div><b>${p.id}</b> · ${p.family}</div>
-      <div class="ask">Which clip is more <code>${p.tag_a}</code>?</div>
-      <div>Text: ${p.text}</div>`;
+    const askLine = (p.kind === "control")
+      ? `Control — identical captions. Hear a real difference? (should be rare)`
+      : `Which clip carries <code>${ask}</code>?`;
+    div.innerHTML = `<div><b>${p.id}</b> · ${p.family || ""}${kind}</div>
+      <div class="ask">${askLine}</div>
+      <div class="meta">plain text: ${p.text}</div>`;
+
+    const la = document.createElement("div");
+    la.className = "side-label";
+    la.innerHTML = `Clip A <span class="tagchip">tag=${p.tag_a || "none"}</span>`;
+    const pa = document.createElement("div");
+    pa.className = "prompt";
+    pa.textContent = "LoRA user ← " + promptA;
     const a = document.createElement("audio");
     a.controls = true; a.preload = "none";
     a.src = "scale/" + p.wav_a;
+
+    const lb = document.createElement("div");
+    lb.className = "side-label";
+    lb.innerHTML = `Clip B <span class="tagchip">tag=${p.tag_b || "none"}</span>`;
+    const pb = document.createElement("div");
+    pb.className = "prompt";
+    pb.textContent = "LoRA user ← " + promptB;
     const b = document.createElement("audio");
     b.controls = true; b.preload = "none";
     b.src = "scale/" + p.wav_b;
-    const la = document.createElement("div"); la.textContent = "Clip A";
-    const lb = document.createElement("div"); lb.textContent = "Clip B";
-    div.append(la, a, lb, b);
+
+    div.append(la, pa, a, lb, pb, b);
     const row = document.createElement("div");
     row.style.marginTop = "8px";
     const btns = [];
@@ -96,7 +169,14 @@ function render() {
       if (p.pick === val) btn.classList.add("primary");
       btn.onclick = () => {
         p.pick = val;
-        p.correct = val === "a"; // protocol: asked tag_a
+        // correct = picked side actually carries `ask` (not always A)
+        if (p.kind === "control") {
+          p.correct = (val === "same"); // difference = fail for control
+        } else if (val === "a" || val === "b") {
+          p.correct = sideHasAsk(p, val) === true;
+        } else {
+          p.correct = false; // unsure/same on swap/bare = wrong
+        }
         btns.forEach(b => b.classList.toggle("primary", b === btn));
         updateStatus();
       };
@@ -115,9 +195,79 @@ function render() {
     ta.oninput = () => { p.notes = ta.value; };
     div.append(lab, ta);
 
+    if (p.assistant_reply) {
+      const rb = document.createElement("div");
+      rb.className = "reply-box";
+      rb.innerHTML = `<div class="ttl">Answers to your notes</div>`;
+      const rt = document.createElement("div");
+      rt.textContent = p.assistant_reply.replace(/^ANSWERS:\s*/i, "");
+      rb.appendChild(rt);
+      div.appendChild(rb);
+    }
+
+    const bc = p.blind_chars || {};
+    const cmp = document.createElement("div");
+    cmp.className = "compare";
+    cmp.appendChild(fmtBlindBox("gpt-audio-1.5 (blind, no caption)", bc.gpt));
+    cmp.appendChild(fmtBlindBox("gemini-2.5 (blind, no caption)", bc.gemini));
+    div.appendChild(cmp);
+
     panel.appendChild(div);
   });
   updateStatus();
+}
+
+function fmtBlindBox(title, side) {
+  const box = document.createElement("div");
+  box.className = "compare-box";
+  const h = document.createElement("h3");
+  h.textContent = title + (side && side._model ? ` · ${side._model}` : "");
+  box.appendChild(h);
+  if (!side) {
+    const e = document.createElement("div");
+    e.className = "err";
+    e.textContent = "not run yet";
+    box.appendChild(e);
+    return box;
+  }
+  if (side.error) {
+    const e = document.createElement("div");
+    e.className = "err";
+    e.textContent = "ERROR: " + String(side.error).slice(0, 220);
+    box.appendChild(e);
+    return box;
+  }
+  for (const lab of ["a", "b"]) {
+    const s = side[lab] || {};
+    const block = document.createElement("div");
+    block.style.marginTop = lab === "b" ? "8px" : "0";
+    const head = document.createElement("div");
+    head.innerHTML = `<b>Clip ${lab.toUpperCase()}</b> · intelligible=${s.intelligible} · ${s.language_guess || "?"}`;
+    block.appendChild(head);
+    if (s.quality) {
+      const q = document.createElement("div");
+      q.textContent = "quality: " + s.quality;
+      block.appendChild(q);
+    }
+    if (s.chars) {
+      const c = document.createElement("div");
+      c.textContent = s.chars;
+      block.appendChild(c);
+    }
+    const ul = document.createElement("ul");
+    const para = (s.paralinguistics || []).join(", ") || "—";
+    const art = (s.artifacts || []).join(", ") || "—";
+    ul.innerHTML = `<li>paralinguistics: ${para}</li><li>artifacts: ${art}</li>`;
+    block.appendChild(ul);
+    box.appendChild(block);
+  }
+  if (side.diff) {
+    const d = document.createElement("div");
+    d.className = "diff";
+    d.textContent = "diff: " + side.diff;
+    box.appendChild(d);
+  }
+  return box;
 }
 
 async function load() {
