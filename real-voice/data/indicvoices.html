@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>IndicVoices — tag browse + cuts</title>
+<style>
+  :root {
+    --bg: #f6f1e8; --ink: #1c1916; --muted: #5c5348; --line: #d9cfc0;
+    --card: #fffdf8; --accent: #0f6b5c; --tag: #8a4b12; --chip: #e7f2ef;
+    --ok: #0f6b5c; --bad: #9b2c2c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 14px/1.45 "IBM Plex Sans", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: radial-gradient(900px 400px at 10% -10%, #e7f2ef 0%, transparent 55%), var(--bg);
+  }
+  main { max-width: 920px; margin: 0 auto; padding: 20px 14px 80px; }
+  h1 { font-size: 1.25rem; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 14px; max-width: 78ch; }
+  .tabs {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    position: sticky; top: 0; z-index: 5;
+    padding: 10px 0 12px;
+    background: linear-gradient(var(--bg) 70%, transparent);
+  }
+  .tab {
+    border: 1px solid var(--line); background: #fff; border-radius: 999px;
+    padding: 6px 12px; cursor: pointer; font: inherit; color: var(--ink);
+  }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tab.cuts { border-color: #c4a574; }
+  .tab .n { opacity: 0.75; font-size: 0.85em; margin-left: 4px; }
+  .filters {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin-bottom: 12px; color: var(--muted); font-size: 0.9rem;
+  }
+  .filters label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  .status { color: var(--muted); font-size: 0.9rem; margin-bottom: 10px; }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--bad); }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; margin: 0 0 10px;
+    overflow: hidden; max-width: 100%;
+  }
+  .card.accepted { border-color: #8fbfb0; }
+  .card.rejected { opacity: 0.55; }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline;
+    margin-bottom: 6px; max-width: 100%;
+  }
+  .meta b { font-size: 0.95rem; word-break: break-word; }
+  .chip {
+    display: inline-block; background: var(--chip); border: 1px solid var(--line);
+    border-radius: 999px; padding: 1px 8px; font-size: 0.8rem;
+  }
+  .chip.tag { background: #f3e6d4; color: var(--tag); }
+  audio { width: 100%; margin: 6px 0 8px; }
+  .text {
+    white-space: pre-wrap; word-break: break-word;
+    font-size: 0.95rem; line-height: 1.5;
+  }
+  .text mark.ev {
+    background: #ffe8a3; color: var(--ink); border-radius: 3px;
+    padding: 0 3px; font-family: ui-monospace, Menlo, monospace; font-size: 0.88em;
+  }
+  .caption { color: var(--muted); font-size: 0.85rem; margin-top: 6px; }
+  .caption code { color: var(--tag); }
+  .cut-cap {
+    margin: 8px 0; padding: 8px 10px; background: #f7f0e4;
+    border: 1px solid var(--line); border-radius: 8px;
+    font-size: 0.95rem; line-height: 1.5;
+    white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere;
+  }
+  .edit-row {
+    display: flex; flex-direction: column; gap: 10px; align-items: stretch;
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
+  }
+  .edit-row .row2 {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start;
+  }
+  .edit-row label {
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 0.8rem; color: var(--muted); width: 100%;
+  }
+  .edit-row label.narrow { width: auto; }
+  .edit-row select, .edit-row textarea {
+    font: inherit; border: 1px solid var(--line); border-radius: 6px;
+    padding: 5px 8px; background: #fff;
+  }
+  .edit-row textarea {
+    width: 100%; min-height: 56px; resize: vertical;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .edit-row textarea.cap {
+    min-height: 72px; font-size: 0.95rem; line-height: 1.45;
+  }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  button {
+    border: 1px solid var(--line); background: #fff; border-radius: 7px;
+    padding: 7px 11px; cursor: pointer; font: inherit;
+  }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.good { border-color: var(--ok); color: var(--ok); }
+  button.bad { border-color: var(--bad); color: var(--bad); }
+  button.active.good { background: var(--ok); color: #fff; }
+  button.active.bad { background: var(--bad); color: #fff; }
+  .empty { color: var(--muted); padding: 24px 0; }
+  .savebar { margin: 8px 0 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .hint { font-size: 0.85rem; color: var(--muted); margin: 0 0 10px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>IndicVoices browse + cut proposals</h1>
+  <p class="sub">
+    <b>cuts:*</b> = catalog-only IV tags (<code>iv_tags.py</code>). Gate includes
+    sigh|whisper|gasp|throat_clearing|cough|tsk|ugh|sniffle. breathing≠inhaling.
+    Accept = sanity, <b>not</b> retag.
+  </p>
+  <div class="tabs" id="tabs"></div>
+  <div class="filters">
+    <label><input type="checkbox" id="srcIv" checked /> IndicVoices (iv)</label>
+    <label><input type="checkbox" id="srcIvr" checked /> IndicVoices-R (ivr)</label>
+  </div>
+  <div class="savebar">
+    <button type="button" class="primary" id="saveBtn">Save</button>
+  </div>
+  <div class="status" id="status">Loading…</div>
+  <p class="hint" id="hint"></p>
+  <div id="panel"></div>
+</main>
+<script>
+let catalog = null;
+let activeTab = "cuts_sigh";
+let dirtyClips = new Set();
+let dirtyCuts = new Set();
+
+const tabsEl = document.getElementById("tabs");
+const panel = document.getElementById("panel");
+const statusEl = document.getElementById("status");
+const hintEl = document.getElementById("hint");
+const srcIv = document.getElementById("srcIv");
+const srcIvr = document.getElementById("srcIvr");
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function formatText(text) {
+  const esc = escapeHtml(text || "");
+  return esc.replace(/&lt;([^&]+)&gt;/g, '<mark class="ev">&lt;$1&gt;</mark>');
+}
+
+function isCutsTab(tab) {
+  return String(tab || "").startsWith("cuts_");
+}
+
+function cutsTag(tab) {
+  return String(tab || "").replace(/^cuts_/, "");
+}
+
+function sourceAllowed(c) {
+  const allow = new Set();
+  if (srcIv.checked) allow.add("iv");
+  if (srcIvr.checked) allow.add("ivr");
+  return allow.has(c.source);
+}
+
+function clipById(id) {
+  return (catalog.clips || []).find((c) => c.id === id);
+}
+
+function allCuts() {
+  const out = [];
+  for (const c of catalog.clips || []) {
+    if (!sourceAllowed(c)) continue;
+    for (const cut of c.cuts || []) {
+      out.push({ clip: c, cut });
+    }
+  }
+  return out;
+}
+
+function markClipDirty(id) {
+  dirtyClips.add(id);
+  refreshStatus();
+}
+function markCutDirty(id) {
+  dirtyCuts.add(id);
+  refreshStatus();
+}
+
+function refreshStatus() {
+  const nDirty = dirtyClips.size + dirtyCuts.size;
+  let msg = "";
+  if (isCutsTab(activeTab)) {
+    const tag = cutsTag(activeTab);
+    const n = allCuts().filter((x) => x.cut.tag === tag).length;
+    const acc = allCuts().filter((x) => x.cut.tag === tag && x.cut.status === "accepted").length;
+    msg = `cuts:${tag} · ${n} proposals · ${acc} accepted`;
+  } else {
+    msg = `${filteredClips().length} clips · tab=${activeTab}`;
+  }
+  if (nDirty) msg += ` · unsaved ${nDirty}`;
+  statusEl.textContent = msg;
+  statusEl.className = "status";
+}
+
+function filteredClips() {
+  return (catalog.clips || []).filter((c) => {
+    if (!sourceAllowed(c)) return false;
+    if (activeTab === "all") return true;
+    if (isCutsTab(activeTab)) return false;
+    return (c.tags || []).includes(activeTab);
+  });
+}
+
+function renderTabs() {
+  tabsEl.innerHTML = "";
+  for (const t of catalog.tabs || []) {
+    // recompute n for freeze tabs under filter; cuts from proposals
+    let n = t.n;
+    if (t.id === "all") {
+      n = (catalog.clips || []).filter(sourceAllowed).length;
+    } else if (isCutsTab(t.id)) {
+      const tag = cutsTag(t.id);
+      n = allCuts().filter((x) => x.cut.tag === tag).length;
+    } else {
+      n = (catalog.clips || []).filter(
+        (c) => sourceAllowed(c) && (c.tags || []).includes(t.id)
+      ).length;
+      if (!n) continue;
+    }
+    if (!isCutsTab(t.id) && t.id !== "all" && !n) continue;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className =
+      "tab" +
+      (t.id === activeTab ? " active" : "") +
+      (isCutsTab(t.id) ? " cuts" : "");
+    btn.innerHTML = `${escapeHtml(t.label)}<span class="n">${n}</span>`;
+    btn.onclick = () => {
+      activeTab = t.id;
+      render();
+    };
+    tabsEl.appendChild(btn);
+  }
+}
+
+function renderClipCard(c) {
+  if (c.notes == null) c.notes = "";
+  if (!c.confidence) c.confidence = "M";
+  const card = document.createElement("div");
+  card.className = "card";
+  const chips = (c.tags || [])
+    .map((t) => `<span class="chip tag">${escapeHtml(t)}</span>`)
+    .join("");
+  const dur = c.duration_s != null ? `${Number(c.duration_s).toFixed(1)}s` : "";
+  card.innerHTML = `
+    <div class="meta">
+      <b>${escapeHtml(c.id)}</b>
+      <span class="chip">${escapeHtml(c.source)}</span>
+      ${chips}
+      <span class="chip">${escapeHtml(dur)}</span>
+    </div>
+    <audio controls preload="none" src="${escapeHtml(c.wav)}"></audio>
+    <div class="text">${formatText(c.text)}</div>
+    ${c.caption ? `<div class="caption">caption: <code>${escapeHtml(c.caption)}</code></div>` : ""}
+  `;
+  const edit = document.createElement("div");
+  edit.className = "edit-row";
+  const labC = document.createElement("label");
+  labC.textContent = "confidence";
+  const sel = document.createElement("select");
+  for (const v of ["H", "M", "L"]) {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = v;
+    if (v === (c.confidence || "").toUpperCase()) o.selected = true;
+    sel.appendChild(o);
+  }
+  sel.onchange = () => { c.confidence = sel.value; markClipDirty(c.id); };
+  labC.appendChild(sel);
+  const labN = document.createElement("label");
+  labN.textContent = "notes";
+  const ta = document.createElement("textarea");
+  ta.value = c.notes || "";
+  ta.oninput = () => { c.notes = ta.value; markClipDirty(c.id); };
+  labN.appendChild(ta);
+  edit.append(labC, labN);
+  card.appendChild(edit);
+  return card;
+}
+
+function renderCutCard(clip, cut) {
+  if (!cut.status) cut.status = "proposed";
+  if (cut.notes == null) cut.notes = "";
+  const card = document.createElement("div");
+  card.className = "card " + (cut.status === "accepted" ? "accepted" : cut.status === "rejected" ? "rejected" : "");
+  const dur = clip.duration_s != null ? `${Number(clip.duration_s).toFixed(1)}s` : "";
+  const frac = cut.approx_word_frac != null ? `~${Math.round(cut.approx_word_frac * 100)}% into words` : "";
+  const nw = (cut.n_words_left != null)
+    ? `${cut.n_words_left}+${cut.n_words_right}w`
+    : "";
+  const cutWav = cut.cut_wav || "";
+  const playSrc = cutWav || clip.wav;
+  const t0 = cut.t_start_s != null ? Number(cut.t_start_s).toFixed(2) : "";
+  const t1 = cut.t_end_s != null ? Number(cut.t_end_s).toFixed(2) : "";
+  const timeChip = (t0 !== "" && t1 !== "") ? `${t0}–${t1}s` : "";
+  const alignChip = cut.align_ok === true ? "align✓" : cut.align_ok === false ? "align✗" : "no-slice";
+  card.innerHTML = `
+    <div class="meta">
+      <b>${escapeHtml(cut.cut_id)}</b>
+      <span class="chip tag">${escapeHtml(cut.tag)}</span>
+      <span class="chip">${escapeHtml(clip.source)}</span>
+      <span class="chip">src ${escapeHtml(clip.id)}</span>
+      <span class="chip">${escapeHtml(dur)}</span>
+      ${nw ? `<span class="chip">${escapeHtml(nw)}</span>` : ""}
+      ${timeChip ? `<span class="chip">${escapeHtml(timeChip)}</span>` : ""}
+      <span class="chip">${escapeHtml(alignChip)}</span>
+      ${frac ? `<span class="chip">${escapeHtml(frac)}</span>` : ""}
+      <span class="chip">${escapeHtml(cut.status)}</span>
+    </div>
+    <audio controls preload="none" src="${escapeHtml(playSrc)}"></audio>
+    <div class="cut-cap">${escapeHtml(cut.caption_inline || "")}</div>
+    <div class="caption">${cutWav ? "Playing CUT slice." : "No cut wav yet — full clip."} Catalog tag only (no retag).</div>
+    <div class="caption">full transcript:</div>
+    <div class="text">${formatText(clip.text)}</div>
+  `;
+
+  const edit = document.createElement("div");
+  edit.className = "edit-row";
+  const labCap = document.createElement("label");
+  labCap.textContent = "caption_inline (edit)";
+  const inp = document.createElement("textarea");
+  inp.className = "cap";
+  inp.value = cut.caption_inline || "";
+  inp.oninput = () => {
+    cut.caption_inline = inp.value;
+    const preview = card.querySelector(".cut-cap");
+    if (preview) preview.textContent = inp.value;
+    markCutDirty(cut.cut_id);
+  };
+  labCap.appendChild(inp);
+
+  const labN = document.createElement("label");
+  labN.textContent = "cut notes";
+  const ta = document.createElement("textarea");
+  ta.placeholder = "QA: window too wide/narrow? stack leftover? (do not retag)";
+  ta.value = cut.notes || "";
+  ta.oninput = () => {
+    cut.notes = ta.value;
+    markCutDirty(cut.cut_id);
+  };
+  labN.appendChild(ta);
+  edit.append(labCap, labN);
+
+  const btns = document.createElement("div");
+  btns.className = "btns";
+  const bAcc = document.createElement("button");
+  bAcc.type = "button";
+  bAcc.className = "good" + (cut.status === "accepted" ? " active" : "");
+  bAcc.textContent = "Accept cut";
+  bAcc.onclick = () => {
+    cut.status = "accepted";
+    markCutDirty(cut.cut_id);
+    render();
+  };
+  const bRej = document.createElement("button");
+  bRej.type = "button";
+  bRej.className = "bad" + (cut.status === "rejected" ? " active" : "");
+  bRej.textContent = "Reject";
+  bRej.onclick = () => {
+    cut.status = "rejected";
+    markCutDirty(cut.cut_id);
+    render();
+  };
+  const bReset = document.createElement("button");
+  bReset.type = "button";
+  bReset.textContent = "Reset";
+  bReset.onclick = () => {
+    cut.status = "proposed";
+    markCutDirty(cut.cut_id);
+    render();
+  };
+  btns.append(bAcc, bRej, bReset);
+
+  card.append(edit, btns);
+  return card;
+}
+
+function render() {
+  renderTabs();
+  panel.innerHTML = "";
+  if (isCutsTab(activeTab)) {
+    const tag = cutsTag(activeTab);
+    hintEl.textContent =
+      `[${tag}] catalog cuts. Accept=sanity not retag. Plays cut wav when sliced; else full clip.`;
+    const rows = allCuts().filter((x) => x.cut.tag === tag);
+    if (!rows.length) {
+      panel.innerHTML = '<div class="empty">No cut proposals. Run scripts/iv_caption_split.py</div>';
+    } else {
+      for (const { clip, cut } of rows) {
+        panel.appendChild(renderCutCard(clip, cut));
+      }
+    }
+  } else {
+    hintEl.textContent = "Browse by freeze tag. Use cuts:* tabs for sigh/whisper caption splits.";
+    const clips = filteredClips();
+    if (!clips.length) {
+      panel.innerHTML = '<div class="empty">No clips for this tab / filter.</div>';
+    } else {
+      for (const c of clips) panel.appendChild(renderClipCard(c));
+    }
+  }
+  refreshStatus();
+}
+
+async function save() {
+  const body = {};
+  if (dirtyClips.size) {
+    body.updates = (catalog.clips || [])
+      .filter((c) => dirtyClips.has(c.id))
+      .map((c) => ({ id: c.id, confidence: c.confidence || "", notes: c.notes || "" }));
+  }
+  if (dirtyCuts.size) {
+    const cuts = [];
+    for (const c of catalog.clips || []) {
+      for (const cut of c.cuts || []) {
+        if (!dirtyCuts.has(cut.cut_id)) continue;
+        cuts.push({
+          cut_id: cut.cut_id,
+          status: cut.status || "proposed",
+          caption_inline: cut.caption_inline || "",
+          notes: cut.notes || "",
+        });
+      }
+    }
+    body.cut_updates = cuts;
+  }
+  if (!body.updates && !body.cut_updates) {
+    statusEl.textContent = "Nothing to save";
+    return;
+  }
+  const r = await fetch("/api/scale/indicvoices", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(await r.text());
+  const res = await r.json();
+  dirtyClips.clear();
+  dirtyCuts.clear();
+  statusEl.textContent = `Saved clips=${res.updated || 0} cuts=${res.cut_updated || 0}`;
+  statusEl.className = "status ok";
+}
+
+async function load() {
+  const r = await fetch("/api/scale/indicvoices");
+  if (!r.ok) throw new Error(await r.text());
+  catalog = await r.json();
+  if (catalog.error) throw new Error(catalog.error);
+  // default to cuts_sigh if present
+  const ids = (catalog.tabs || []).map((t) => t.id);
+  if (!ids.includes(activeTab)) {
+    activeTab = ids.includes("cuts_sigh") ? "cuts_sigh" : "all";
+  }
+  dirtyClips.clear();
+  dirtyCuts.clear();
+  render();
+}
+
+document.getElementById("saveBtn").onclick = () => {
+  save().catch((e) => {
+    statusEl.textContent = String(e);
+    statusEl.className = "status err";
+  });
+};
+srcIv.onchange = render;
+srcIvr.onchange = render;
+load().catch((e) => {
+  statusEl.textContent = String(e);
+  statusEl.className = "status err";
+});
+</script>
+</body>
+</html>
