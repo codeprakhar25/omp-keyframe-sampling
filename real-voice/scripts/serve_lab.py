@@ -274,6 +274,18 @@ class Handler(SimpleHTTPRequestHandler):
             self._json(200, {"ok": True, "path": str(fp.relative_to(ROOT))})
             return
 
+        if path == "/api/scale/audit_v8":
+            if not isinstance(data, dict) or "clips" not in data:
+                self._json(400, {"error": "need {clips: [...]}"})
+                return
+            SCALE.mkdir(parents=True, exist_ok=True)
+            fp = SCALE / "audit_v8_manifest.json"
+            fp.write_text(
+                json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            )
+            self._json(200, {"ok": True, "path": str(fp.relative_to(ROOT))})
+            return
+
         if path == "/api/scale/eval_orpheus":
             if not isinstance(data, dict) or "pairs" not in data:
                 self._json(400, {"error": "need {pairs: [...]}"})
