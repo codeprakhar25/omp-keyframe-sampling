@@ -1,0 +1,22 @@
+{
+  "id": "hiacc",
+  "name": "HiACC",
+  "link": "https://zenodo.org/records/15551669",
+  "hours_hindi": "—",
+  "hours_hinglish": "5.24h",
+  "conversational": "yes",
+  "native_labels": "CS annotations; adult + child; read + spontaneous",
+  "fit": "P0 keep",
+  "tag_match": "yes-manual",
+  "tags_available": [
+    "sigh",
+    "excited",
+    "pause",
+    "teasing",
+    "thinking",
+    "emphasis"
+  ],
+  "tag_how": "Hand-label spontaneous CS; small but closest public chat-like Hinglish. MAYBE EXCITED?",
+  "what_i_think": "ok so we have new type which is a child voice.\n\n-- very good data\n-- various speakers too (good amount, age in adult varies-22 to 42, children- 10-14)\n-- we can get some tags(confirming later)\n-- good voice\n-- conversational not in one flow but yes it is conversational\n-- pause is there as mix it up with hindi-hinglish\n-- 20 sec is the highest duration of a video here\n-- children pauses\n-- kindof anxious/nervous feeling sometimes as questions being asked and someone is replying not very sure though...",
+  "notes": "Not pulled yet. Zenodo — sip when annotation pilot needs spontaneous CS.\n\ngood voice really useful for us good tags\n\ndata of Q&A, "
+}
