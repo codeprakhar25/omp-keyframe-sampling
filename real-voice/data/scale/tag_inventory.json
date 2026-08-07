@@ -1,0 +1,240 @@
+{
+  "source": "data/scale/train/train.jsonl",
+  "n_rows": 227,
+  "targets": {
+    "emotion": 40,
+    "event": 25,
+    "bonus_laugh": 10
+  },
+  "emotion": [
+    {
+      "tag": "angry",
+      "n": 10,
+      "target": 40,
+      "gap": 30,
+      "ok": false
+    },
+    {
+      "tag": "sad",
+      "n": 12,
+      "target": 40,
+      "gap": 28,
+      "ok": false
+    },
+    {
+      "tag": "excited",
+      "n": 12,
+      "target": 40,
+      "gap": 28,
+      "ok": false
+    },
+    {
+      "tag": "fear",
+      "n": 9,
+      "target": 40,
+      "gap": 31,
+      "ok": false
+    },
+    {
+      "tag": "surprise",
+      "n": 8,
+      "target": 40,
+      "gap": 32,
+      "ok": false
+    },
+    {
+      "tag": "disgust",
+      "n": 8,
+      "target": 40,
+      "gap": 32,
+      "ok": false
+    }
+  ],
+  "event": [
+    {
+      "tag": "pause",
+      "n": 57,
+      "target": 25,
+      "gap": 0,
+      "ok": true
+    },
+    {
+      "tag": "thinking",
+      "n": 69,
+      "target": 25,
+      "gap": 0,
+      "ok": true
+    },
+    {
+      "tag": "inhaling",
+      "n": 32,
+      "target": 25,
+      "gap": 0,
+      "ok": true
+    },
+    {
+      "tag": "sigh",
+      "n": 30,
+      "target": 25,
+      "gap": 0,
+      "ok": true
+    },
+    {
+      "tag": "whispering",
+      "n": 14,
+      "target": 25,
+      "gap": 11,
+      "ok": false
+    }
+  ],
+  "bonus": [
+    {
+      "tag": "laugh",
+      "n": 4,
+      "target": 10,
+      "gap": 6,
+      "ok": false
+    }
+  ],
+  "none": 30,
+  "tag1": {
+    "thinking": 58,
+    "none": 30,
+    "inhaling": 26,
+    "sigh": 22,
+    "pause": 19,
+    "whispering": 14,
+    "sad": 12,
+    "excited": 11,
+    "angry": 10,
+    "fear": 9,
+    "surprise": 8,
+    "disgust": 8
+  },
+  "any_slot": {
+    "thinking": 69,
+    "pause": 57,
+    "inhaling": 32,
+    "sigh": 30,
+    "none": 30,
+    "whispering": 14,
+    "excited": 12,
+    "sad": 12,
+    "angry": 10,
+    "fear": 9,
+    "surprise": 8,
+    "disgust": 8,
+    "laugh": 4
+  },
+  "top_combos": [
+    {
+      "tags": [
+        "thinking"
+      ],
+      "n": 41
+    },
+    {
+      "tags": [
+        "none"
+      ],
+      "n": 29
+    },
+    {
+      "tags": [
+        "pause",
+        "thinking"
+      ],
+      "n": 18
+    },
+    {
+      "tags": [
+        "sigh"
+      ],
+      "n": 15
+    },
+    {
+      "tags": [
+        "pause"
+      ],
+      "n": 12
+    },
+    {
+      "tags": [
+        "inhaling",
+        "pause"
+      ],
+      "n": 10
+    },
+    {
+      "tags": [
+        "inhaling"
+      ],
+      "n": 10
+    },
+    {
+      "tags": [
+        "excited"
+      ],
+      "n": 9
+    },
+    {
+      "tags": [
+        "sad"
+      ],
+      "n": 9
+    },
+    {
+      "tags": [
+        "angry"
+      ],
+      "n": 8
+    },
+    {
+      "tags": [
+        "fear"
+      ],
+      "n": 8
+    },
+    {
+      "tags": [
+        "whispering"
+      ],
+      "n": 7
+    },
+    {
+      "tags": [
+        "disgust"
+      ],
+      "n": 6
+    },
+    {
+      "tags": [
+        "pause",
+        "sigh"
+      ],
+      "n": 5
+    },
+    {
+      "tags": [
+        "inhaling",
+        "thinking"
+      ],
+      "n": 5
+    }
+  ],
+  "by_source": {
+    "iv": 110,
+    "rasa": 56,
+    "ivr": 39,
+    "hiacc": 22
+  },
+  "unknown_tags": [],
+  "summary": {
+    "emo_ok": 0,
+    "emo_total": 6,
+    "event_ok": 4,
+    "event_total": 5,
+    "emo_gap_total": 181,
+    "event_gap_total": 11
+  }
+}
