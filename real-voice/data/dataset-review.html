@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dataset review — Hinglish TTS wedge</title>
+<style>
+  :root {
+    --bg: #f6f1e8; --ink: #1c1916; --muted: #5c5348; --line: #d9cfc0;
+    --card: #fffdf8; --accent: #0f6b5c; --warn: #8a4b12;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 15px/1.45 "IBM Plex Sans", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: radial-gradient(800px 360px at 8% -8%, #e7f2ef 0%, transparent 55%), var(--bg);
+  }
+  main { max-width: 820px; margin: 0 auto; padding: 28px 18px 72px; }
+  h1 { font-size: 1.35rem; margin: 0 0 6px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin: 0 0 18px; max-width: 62ch; }
+  .sub a { color: var(--accent); }
+  .bar {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: end;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 16px;
+  }
+  .bar label { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); flex: 1; min-width: 200px; }
+  select, input[type="text"], input[type="url"], textarea {
+    font: inherit; color: var(--ink); border: 1px solid var(--line); border-radius: 7px;
+    padding: 8px 10px; background: #fff; width: 100%;
+  }
+  textarea { min-height: 96px; resize: vertical; }
+  textarea.tall { min-height: 140px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    border: 1px solid var(--line); background: #fff; border-radius: 7px;
+    padding: 8px 12px; cursor: pointer; font: inherit;
+  }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button:hover { filter: brightness(0.97); }
+  .status { font-size: 0.85rem; color: var(--muted); margin: 8px 0 0; min-height: 1.2em; }
+  .status.ok { color: var(--accent); }
+  .status.err { color: #9b2c2c; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 12px;
+  }
+  .card h2 {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); margin: 0 0 12px; font-weight: 650;
+  }
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .lab {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.92rem; font-weight: 600; margin-bottom: 5px;
+  }
+  .eye {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 999px; border: 1px solid var(--line);
+    background: #fff; color: var(--muted); cursor: help; font-size: 12px; line-height: 1;
+    position: relative; flex: 0 0 auto;
+  }
+  .eye:hover, .eye:focus { color: var(--accent); border-color: var(--accent); outline: none; }
+  .eye[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%);
+    width: max-content; max-width: 260px; padding: 7px 9px; border-radius: 7px;
+    background: #1c1916; color: #f6f1e8; font-size: 0.75rem; font-weight: 400;
+    line-height: 1.35; opacity: 0; pointer-events: none; transition: opacity .12s;
+    z-index: 5; text-transform: none; letter-spacing: 0;
+  }
+  .eye:hover::after, .eye:focus::after { opacity: 1; }
+  .prefill { font-size: 0.72rem; color: var(--warn); font-weight: 500; margin-left: 4px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tags label {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px;
+    background: #fff; font-size: 0.85rem; cursor: pointer;
+  }
+  .tags input { accent-color: var(--accent); }
+  .expect {
+    font-size: 0.85rem; color: var(--muted); background: #f3eee4;
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 14px;
+  }
+  .locked { opacity: 0.92; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Dataset review</h1>
+  <p class="sub">
+    Pick a dataset → edit what you think + tag match → Save writes <code>data/reviews/&lt;id&gt;.json</code>
+    (I can read that). Prefills = known facts. Eye ⓘ = what the field means.
+    Needs server: <code>.venv/bin/python scripts/serve_lab.py</code> ·
+    <a href="datasets.html">listen page</a>
+  </p>
+
+  <div class="bar">
+    <label>Dataset
+      <select id="picker"></select>
+    </label>
+    <div class="actions">
+      <button type="button" class="primary" id="saveBtn">Save</button>
+      <button type="button" id="reloadBtn">Reload file</button>
+      <button type="button" id="exportBtn">Download JSON</button>
+    </div>
+  </div>
+  <p class="status" id="status">Loading…</p>
+
+  <div class="expect" id="expect">
+    <strong>What we expect from reviews:</strong>
+    For each P0 set — can it support ~5–6 candidate tags (native or hand)?
+    Fill gut + notes. Skip hunting new datasets here.
+  </div>
+
+  <form id="form"></form>
+</main>
+<script>
+const statusEl = document.getElementById("status");
+const picker = document.getElementById("picker");
+const form = document.getElementById("form");
+let meta = null;
+let current = null;
+let ids = [];
+
+function setStatus(msg, kind="") {
+  statusEl.textContent = msg;
+  statusEl.className = "status " + kind;
+}
+
+function eye(help) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "eye";
+  b.setAttribute("data-tip", help);
+  b.setAttribute("aria-label", help);
+  b.textContent = "ⓘ";
+  return b;
+}
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+function fieldRow(field, value) {
+  const wrap = document.createElement("div");
+  wrap.className = "field";
+  const lab = document.createElement("div");
+  lab.className = "lab";
+  lab.append(document.createTextNode(field.label));
+  lab.appendChild(eye(field.help));
+  if (field.prefill) {
+    const s = document.createElement("span");
+    s.className = "prefill";
+    s.textContent = "prefill";
+    lab.appendChild(s);
+  }
+  wrap.appendChild(lab);
+
+  let input;
+  if (field.type === "select") {
+    input = document.createElement("select");
+    input.dataset.id = field.id;
+    for (const opt of field.options) {
+      const o = document.createElement("option");
+      o.value = opt; o.textContent = opt;
+      if (String(value ?? "") === opt) o.selected = true;
+      input.appendChild(o);
+    }
+  } else if (field.type === "textarea") {
+    input = document.createElement("textarea");
+    input.dataset.id = field.id;
+    if (field.id === "notes") input.classList.add("tall");
+    input.value = value ?? "";
+    input.placeholder = field.id === "what_i_think" ? "Your gut…" : "Free notes…";
+  } else if (field.type === "tags") {
+    input = document.createElement("div");
+    input.className = "tags";
+    input.dataset.id = field.id;
+    const selected = new Set(Array.isArray(value) ? value : []);
+    for (const tag of meta.candidate_tags) {
+      const lab2 = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = tag;
+      cb.checked = selected.has(tag);
+      lab2.append(cb, document.createTextNode(tag));
+      input.appendChild(lab2);
+    }
+  } else {
+    input = document.createElement("input");
+    input.type = field.type === "url" ? "url" : "text";
+    input.dataset.id = field.id;
+    input.value = value ?? "";
+    if (field.prefill) input.classList.add("locked");
+  }
+  wrap.appendChild(input);
+  return wrap;
+}
+
+function renderForm(data) {
+  form.innerHTML = "";
+  const facts = document.createElement("div");
+  facts.className = "card";
+  facts.innerHTML = "<h2>Facts (prefilled — edit if wrong)</h2>";
+  const judgment = document.createElement("div");
+  judgment.className = "card";
+  judgment.innerHTML = "<h2>Your judgment + tags</h2>";
+  const notes = document.createElement("div");
+  notes.className = "card";
+  notes.innerHTML = "<h2>Notes</h2>";
+
+  for (const field of meta.fields) {
+    const row = fieldRow(field, data[field.id]);
+    if (field.id === "notes" || field.id === "what_i_think") notes.appendChild(row);
+    else if (field.prefill && !["fit"].includes(field.id)) facts.appendChild(row);
+    else judgment.appendChild(row);
+  }
+  // fit lives in judgment conceptually but was prefill — move fit into judgment if in facts
+  form.append(facts, judgment, notes);
+}
+
+function collect() {
+  const data = {
+    id: current.id,
+    name: current.name,
+  };
+  for (const field of meta.fields) {
+    if (field.type === "tags") {
+      const box = form.querySelector(`.tags[data-id="${field.id}"]`);
+      data[field.id] = [...box.querySelectorAll("input:checked")].map(x => x.value);
+    } else {
+      const el = form.querySelector(`[data-id="${field.id}"]`);
+      data[field.id] = el ? el.value : "";
+    }
+  }
+  return data;
+}
+
+async function loadList() {
+  const res = await api("/api/reviews");
+  ids = res.ids;
+  picker.innerHTML = "";
+  for (const id of ids) {
+    const o = document.createElement("option");
+    o.value = id; o.textContent = id;
+    picker.appendChild(o);
+  }
+}
+
+async function loadOne(id) {
+  current = await api("/api/reviews/" + id);
+  picker.value = id;
+  renderForm(current);
+  setStatus(`Loaded reviews/${id}.json`, "ok");
+}
+
+async function save() {
+  const data = collect();
+  try {
+    const res = await api("/api/reviews/" + data.id, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    current = data;
+    setStatus(`Saved ${res.path}`, "ok");
+  } catch (e) {
+    // file:// or server down — download fallback
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = data.id + ".json";
+    a.click();
+    setStatus("Server save failed — downloaded JSON. Put it in data/reviews/", "err");
+  }
+}
+
+document.getElementById("saveBtn").onclick = save;
+document.getElementById("reloadBtn").onclick = () => loadOne(picker.value);
+document.getElementById("exportBtn").onclick = () => {
+  const data = collect();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  a.download = data.id + ".json";
+  a.click();
+};
+picker.onchange = () => loadOne(picker.value);
+
+(async () => {
+  try {
+    meta = await api("/api/meta");
+    await loadList();
+    await loadOne(ids.includes("rasa") ? "rasa" : ids[0]);
+  } catch (e) {
+    setStatus("Start server: .venv/bin/python scripts/serve_lab.py  — then open http://127.0.0.1:8765/dataset-review.html", "err");
+  }
+})();
+</script>
+</body>
+</html>
