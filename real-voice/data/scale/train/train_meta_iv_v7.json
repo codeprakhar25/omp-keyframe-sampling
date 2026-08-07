@@ -1,0 +1,11 @@
+{
+  "model_id": "SPRINGLab/Indic-Mio",
+  "codec_id": "Aratako/MioCodec-25Hz-24kHz",
+  "epochs": 2,
+  "lora_r": 16,
+  "n_train": 23675,
+  "adapter": "/mio/out/adapter_iv_v7",
+  "pack": "iv_hindi_v7_align_ok",
+  "p01_codec_rt": "PASS",
+  "resumed_from": "/mio/out/adapter_iv_v7/checkpoint-2960"
+}

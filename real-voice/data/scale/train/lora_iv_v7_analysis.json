@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "model_id": "SPRINGLab/Indic-Mio",
+    "codec_id": "Aratako/MioCodec-25Hz-24kHz",
+    "epochs": 2,
+    "lora_r": 16,
+    "n_train": 23675,
+    "adapter": "/mio/out/adapter_iv_v7",
+    "pack": "iv_hindi_v7_align_ok",
+    "p01_codec_rt": "PASS",
+    "resumed_from": "/mio/out/adapter_iv_v7/checkpoint-2960"
+  },
+  "pack_n_train": 23675,
+  "by_tag_train": {
+    "inhaling": 6688,
+    "breathing": 5860,
+    "thinking": 3248,
+    "tsk": 2600,
+    "gasp": 1418,
+    "throat_clearing": 1222,
+    "ugh": 881,
+    "sigh": 582,
+    "cough": 545,
+    "laugh": 430,
+    "whispering": 104,
+    "sniffle": 97
+  },
+  "global_step": 5920,
+  "epoch": 2.0,
+  "loss_first10_mean": 9.244854888916015,
+  "loss_last10_mean": 4.773726234436035,
+  "loss_min": 4.631635665893555,
+  "loss_max": 15.820510864257812,
+  "n_logs": 592
+}
