@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hinglish / Hindi speech data lab</title>
+<style>
+  :root {
+    --bg: #f6f1e8; --ink: #1c1916; --muted: #5c5348; --line: #d9cfc0;
+    --card: #fffdf8; --accent: #0f6b5c; --warn: #8a4b12; --good: #0b4f44; --bad: #6b2f1f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 15px/1.45 "IBM Plex Sans", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: radial-gradient(900px 400px at 10% -10%, #e7f2ef 0%, transparent 55%), var(--bg);
+  }
+  main { max-width: 1120px; margin: 0 auto; padding: 28px 18px 64px; }
+  h1 { font-size: 1.4rem; margin: 0 0 6px; letter-spacing: -0.02em; }
+  h2 { font-size: 1.05rem; margin: 28px 0 10px; }
+  .sub { color: var(--muted); margin: 0 0 18px; max-width: 70ch; }
+  .note {
+    background: #fff7e8; border: 1px solid #efd7a8; color: var(--warn);
+    padding: 10px 12px; border-radius: 8px; margin: 0 0 16px;
+  }
+  .note a, a { color: var(--accent); }
+  table {
+    width: 100%; border-collapse: collapse; background: var(--card);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 8px;
+  }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; vertical-align: top; text-align: left; }
+  th { background: #efe7da; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  .tag { display: inline-block; font-size: 0.72rem; padding: 2px 7px; border-radius: 999px; margin: 0 3px 3px 0; background: #e5f3ef; color: var(--good); }
+  .tag.no { background: #f1e6e2; color: var(--bad); }
+  .tag.maybe { background: #efe8d6; color: #6a4d12; }
+  .tag.skip { background: #ececec; color: #555; }
+  .tag.hi { background: #dceee9; }
+  [contenteditable="true"] { min-height: 1.35em; outline: none; border-radius: 4px; }
+  [contenteditable="true"]:focus { box-shadow: inset 0 0 0 1px var(--accent); background: #f3faf8; }
+  .hint { font-size: 0.8rem; color: var(--muted); margin: 4px 0 12px; }
+  .cards { display: grid; gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .card header { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 4px; }
+  .card .ds { font-weight: 650; }
+  .card .meta { color: var(--muted); font-size: 0.85rem; }
+  .card .text { margin: 8px 0; white-space: pre-wrap; }
+  audio { width: 100%; margin-top: 6px; }
+  .findings strong { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 2px; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 0; }
+  button { border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 6px 10px; cursor: pointer; font: inherit; }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Hindi / Hinglish speech data lab</h1>
+  <p class="sub">For immersive Hinglish conversational TTS. Yellow cells editable · Save keeps notes in this browser. Audio in <code>data/samples/</code>.</p>
+
+  <div class="note">
+    <strong>IndicVoices (raw):</strong> still <em>gated 403</em> for this HF token — accept at
+    <a href="https://huggingface.co/datasets/ai4bharat/IndicVoices" target="_blank" rel="noreferrer">HF</a>.
+    <strong>Rasa:</strong> access OK · 7 Hindi clips pulled · styles include <code>CONV</code>, Ekman, commands.
+    <strong>IV-R:</strong> open for us · best spontaneous Hindi proxy until raw IV unlocks.
+  </div>
+
+  <h2>0. Hindi / Hinglish hours (what we care about)</h2>
+  <p class="hint">Approx from cards + shard scans. “Conv” = conversational / dialogue-like, not lecture CS.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Dataset</th>
+        <th>Hindi hrs</th>
+        <th>Hinglish / CS hrs</th>
+        <th>Conversational-ish</th>
+        <th>Emotion / style labels</th>
+        <th>Fit for our wedge</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Rasa (Hindi)</td>
+        <td class="num"><strong>~50.8h</strong> (F 27.05 + M 23.78)</td>
+        <td class="num">~0 (mono Hindi)</td>
+        <td class="num">CONV style present (studio “natural conversation” scripts) — not podcast interrupt</td>
+        <td><span class="tag hi">yes</span> HAPPY/SAD/ANGER/FEAR/… + BOOK/NEWS/WIKI/CONV/ALEXA…</td>
+        <td><span class="tag">high</span> expressive SFT gold</td>
+      </tr>
+      <tr>
+        <td>IndicVoices-R Hindi</td>
+        <td class="num">~99 train shards · est. on order <strong>~100h+</strong> Hindi (full sum TBD)</td>
+        <td class="num">light loanwords only</td>
+        <td class="num">mostly <strong>Extempore</strong> (~93% corpus-wide), not 2-speaker chat</td>
+        <td><span class="tag no">no</span></td>
+        <td><span class="tag">high</span> natural Hindi prior</td>
+      </tr>
+      <tr>
+        <td>IndicVoices raw</td>
+        <td class="num">per-lang not on card · total 23.7k h all langs</td>
+        <td class="num">limited</td>
+        <td class="num">~15% conversational ≈ <strong>~3.5k h all-langs</strong>; Hindi slice unknown until access</td>
+        <td><span class="tag no">no</span></td>
+        <td><span class="tag maybe">high when ungated</span></td>
+      </tr>
+      <tr>
+        <td>MUCS-Hinglish</td>
+        <td class="num">—</td>
+        <td class="num"><strong>~95h</strong> (90 train + 5 test)</td>
+        <td class="num">lecture / technical — CS yes, chat no</td>
+        <td><span class="tag maybe">EN/HI ratio only</span></td>
+        <td><span class="tag">high</span> for CS prosody (Idea 2)</td>
+      </tr>
+      <tr>
+        <td>Hinglish aggregate</td>
+        <td class="num">mixed inside ~2264h</td>
+        <td class="num">subset tagged <code>&lt;hi-en&gt;</code> (many hrs lecture)</td>
+        <td class="num">mostly read / tutorial</td>
+        <td><span class="tag no">no</span></td>
+        <td><span class="tag maybe">medium</span> filter hard</td>
+      </tr>
+      <tr>
+        <td>HiACC</td>
+        <td class="num">—</td>
+        <td class="num"><strong>5.24h</strong></td>
+        <td class="num">yes (adult+child spontaneous)</td>
+        <td><span class="tag maybe">CS tags</span></td>
+        <td><span class="tag">high</span> small gold</td>
+      </tr>
+      <tr>
+        <td>IndicTTS-Hindi (SPRINGLab)</td>
+        <td class="num">studio Hindi (tens of hrs; clean read)</td>
+        <td class="num">~0</td>
+        <td class="num">no</td>
+        <td><span class="tag no">no</span></td>
+        <td><span class="tag maybe">low–med</span> acoustic prior only</td>
+      </tr>
+      <tr>
+        <td>Common Voice Hindi</td>
+        <td class="num">read; tens of hrs validated</td>
+        <td class="num">~0</td>
+        <td class="num">no</td>
+        <td><span class="tag no">no</span></td>
+        <td><span class="tag skip">skip for v1</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="hint" contenteditable="true" data-field="hours_note">Your note on hours / gaps…</p>
+
+  <h2>1. Core sets (from your list) — evaluated</h2>
+  <table id="datasets">
+    <thead>
+      <tr>
+        <th>Dataset</th>
+        <th>Where</th>
+        <th>Contains</th>
+        <th>Keep?</th>
+        <th>Findings (you)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-id="indicvoices">
+        <td><a href="https://huggingface.co/datasets/ai4bharat/IndicVoices" target="_blank" rel="noreferrer">IndicVoices</a></td>
+        <td>HF gated 403</td>
+        <td>22 langs · read 8% / extempore 76% / conv 15% · multi-speaker natural</td>
+        <td><span class="tag">keep</span> when access</td>
+        <td contenteditable="true" data-field="findings">blocked · accept HF access</td>
+      </tr>
+      <tr data-id="indicvoices_r">
+        <td><a href="https://huggingface.co/datasets/ai4bharat/indicvoices_r" target="_blank" rel="noreferrer">IndicVoices-R</a></td>
+        <td>HF · samples ✓</td>
+        <td>TTS-restored · Hindi Extempore samples · SNR/pitch meta · disfluency</td>
+        <td><span class="tag">keep</span></td>
+        <td contenteditable="true" data-field="findings">rural extempore · natural repairs · good prior</td>
+      </tr>
+      <tr data-id="hinglish_agg">
+        <td><a href="https://huggingface.co/datasets/agarwalayushi/hinglish" target="_blank" rel="noreferrer">Hinglish aggregate</a></td>
+        <td>HF open · samples ✓</td>
+        <td>~2264h merge · first shards = Spoken Tutorial lecture CS</td>
+        <td><span class="tag maybe">filter</span></td>
+        <td contenteditable="true" data-field="findings">lecture CS ≠ chat · use filtered only</td>
+      </tr>
+      <tr data-id="mucs">
+        <td><a href="https://huggingface.co/datasets/dianavdavidson/MUCS-Hinglish" target="_blank" rel="noreferrer">MUCS-Hinglish</a></td>
+        <td>HF open · samples ✓</td>
+        <td>~95h lectures · EN/HI word ratios per clip</td>
+        <td><span class="tag">keep</span> Idea 2</td>
+        <td contenteditable="true" data-field="findings">best public CS-boundary signal</td>
+      </tr>
+      <tr data-id="hiacc">
+        <td><a href="https://zenodo.org/records/15551669" target="_blank" rel="noreferrer">HiACC</a></td>
+        <td>Zenodo</td>
+        <td>5.24h adult+child Hinglish · spontaneous + read · CS annotated</td>
+        <td><span class="tag">keep</span></td>
+        <td contenteditable="true" data-field="findings">download later · small gold</td>
+      </tr>
+      <tr data-id="hingcos">
+        <td>IITG-HingCoS</td>
+        <td>paper (~25h)</td>
+        <td>classic CS ASR · access friction</td>
+        <td><span class="tag skip">deprioritize</span></td>
+        <td contenteditable="true" data-field="findings">skip until HiACC + MUCS exhausted</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. Also useful — evaluated (Rasa / IndicTTS / CV)</h2>
+  <table id="extra">
+    <thead>
+      <tr>
+        <th>Dataset</th>
+        <th>Hindi detail</th>
+        <th>What we heard / schema</th>
+        <th>Keep?</th>
+        <th>Findings (you)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-id="rasa">
+        <td><a href="https://huggingface.co/datasets/ai4bharat/Rasa" target="_blank" rel="noreferrer">AI4Bharat Rasa</a></td>
+        <td class="num">~50.8h Hindi · style field</td>
+        <td>Pulled BOOK / INDIC / PROPER NOUN / <strong>CONV</strong> / WIKI. 2-shard style mix also has HAPPY, ANGER, SAD, FEAR, SURPRISE, DISGUST, ALEXA, NEWS… Studio expressive TTS — closest public label set to Fish-style SFT for Hindi.</td>
+        <td><span class="tag">keep · top</span></td>
+        <td contenteditable="true" data-field="findings">emotion+CONV labels · not Hinglish · pair with MUCS for CS</td>
+      </tr>
+      <tr data-id="indictts">
+        <td><a href="https://huggingface.co/datasets/SPRINGLab/IndicTTS-Hindi" target="_blank" rel="noreferrer">SPRINGLab IndicTTS-Hindi</a></td>
+        <td>studio read Hindi</td>
+        <td>Samples = clean literary/read prose. No emotion tags, no CS, no conversation. Fine for vocoder / clean prior; weak alone for immersive chat.</td>
+        <td><span class="tag maybe">optional</span></td>
+        <td contenteditable="true" data-field="findings">clean only · don’t build thesis on this</td>
+      </tr>
+      <tr data-id="cvhi">
+        <td><a href="https://huggingface.co/datasets/mozilla-foundation/common_voice_17_0" target="_blank" rel="noreferrer">Common Voice Hindi</a></td>
+        <td>read crowdsourced</td>
+        <td>No samples pulled on purpose. Single-sentence read · no tags · no Hinglish conversation. Crowds noise varies.</td>
+        <td><span class="tag skip">skip v1</span></td>
+        <td contenteditable="true" data-field="findings">out of scope for expressive Hinglish chat</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="toolbar">
+    <button type="button" id="saveBtn">Save notes</button>
+    <button type="button" id="exportBtn">Export notes JSON</button>
+    <button type="button" id="clearBtn">Clear saved notes</button>
+  </div>
+  <p class="hint" id="saveStatus"></p>
+
+  <h2>3. Cut / keep (honest)</h2>
+  <table>
+    <thead><tr><th>Priority</th><th>Sets</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag">P0</span></td><td>Rasa Hindi · IV-R Hindi · MUCS-Hinglish · HiACC</td><td>labels / natural / CS / small spontaneous CS</td></tr>
+      <tr><td><span class="tag maybe">P1</span></td><td>IndicVoices raw (when ungated) · filtered Hinglish aggregate</td><td>scale + more CS if filtered</td></tr>
+      <tr><td><span class="tag skip">P2 / skip</span></td><td>Common Voice HI · IndicTTS alone · HingCoS (for now)</td><td>read-only or redundant / hard access</td></tr>
+      <tr><td><span class="tag no">missing</span></td><td>podcast / interrupt / tease tags</td><td>still need your YouTube pipeline</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. Local samples</h2>
+  <div class="cards" id="samples"></div>
+</main>
+<script>
+const CATALOG = [
+  {"file":"rasa_em_00.wav","dataset":"ai4bharat/Rasa","style":"CONV","duration_s":6.5,"sr":22050,"text":"यदि आप अधिक समय तक रहना चाहते हैं, तो मेरा सुझाव है कि आप फि…","extra":"studio conversation style — closest to chat among public labels"},
+  {"file":"rasa_00.wav","dataset":"ai4bharat/Rasa","style":"BOOK","duration_s":3.4,"sr":22050,"text":"इस कमाई से तो वाकई आप थोड़े दिनों में राजा हो जाएंगे।","extra":"narration"},
+  {"file":"rasa_01.wav","dataset":"ai4bharat/Rasa","style":"BOOK","duration_s":3.4,"sr":22050,"text":"कई महाशय तो मुझे हुज़ूर-हुज़ूर कहने लगे।","extra":"narration"},
+  {"file":"rasa_02.wav","dataset":"ai4bharat/Rasa","style":"INDIC","duration_s":8,"sr":22050,"text":"बिना किसी दुर्भावना के मात्र, उन्होंने वार्डरोब खोलकर देखना…","extra":"IndicTTS-script style"},
+  {"file":"rasa_em_01.wav","dataset":"ai4bharat/Rasa","style":"WIKI","duration_s":8,"sr":22050,"text":"कुछ गांव हैं सरस्वती, बुधुराम, बिछभंगा…","extra":"neutral wiki read"},
+  {"file":"rasa_03.wav","dataset":"ai4bharat/Rasa","style":"PROPER NOUN","duration_s":1.9,"sr":22050,"text":"आरण्यक एक्सप्रेस","extra":"name pronunciation"},
+  {"file":"rasa_em_02.wav","dataset":"ai4bharat/Rasa","style":"PROPER NOUN","duration_s":1.7,"sr":22050,"text":"जसप्रीत बुमराह","extra":"name pronunciation"},
+  {"file":"indicvoices_r_00.wav","dataset":"ai4bharat/indicvoices_r","style":"Extempore","duration_s":8,"sr":48000,"text":"हमें कृषि के लिए उपयोग में आने वाली विभिन्न…","extra":"Female · Rural Katni MP"},
+  {"file":"indicvoices_r_01.wav","dataset":"ai4bharat/indicvoices_r","style":"Extempore","duration_s":5.22,"sr":48000,"text":"हमारे यहाँ जब कटाई होती है तो हम लोग हाइवेस्टर के द्वारा…","extra":"loanword हाइवेस्टर"},
+  {"file":"indicvoices_r_02.wav","dataset":"ai4bharat/indicvoices_r","style":"Extempore","duration_s":6.7,"sr":48000,"text":"ताकि उसमें से जो उसमें से ये है कि हम लोग को…","extra":"disfluency / repair"},
+  {"file":"indictts_00.wav","dataset":"SPRINGLab/IndicTTS-Hindi","style":"read","duration_s":8,"sr":48000,"text":"प्रसिद्द कबीर अध्येता, पुरुषोत्तम अग्रवाल का यह…","extra":"studio literary read"},
+  {"file":"indictts_01.wav","dataset":"SPRINGLab/IndicTTS-Hindi","style":"read","duration_s":8,"sr":48000,"text":"किन्तु आधुनिक पांडित्य, न सिर्फ़ एक ब्राह्मण…","extra":"studio"},
+  {"file":"indictts_02.wav","dataset":"SPRINGLab/IndicTTS-Hindi","style":"read","duration_s":8,"sr":48000,"text":"उस पर, इन चार कवियों का गहरा असर है","extra":"studio"},
+  {"file":"mucs_hinglish_00.wav","dataset":"dianavdavidson/MUCS-Hinglish","style":"lecture CS","duration_s":8,"sr":16000,"text":"दोस्तों bash में nested और multilevel if statement…","extra":"EN ratio ~0.47"},
+  {"file":"mucs_hinglish_01.wav","dataset":"dianavdavidson/MUCS-Hinglish","style":"lecture CS","duration_s":3.55,"sr":16000,"text":"इस tutorial में हम निम्न के बारे में सीखेंगे","extra":"EN ratio ~0.11"},
+  {"file":"hinglish_agg_00.wav","dataset":"agarwalayushi/hinglish","style":"lecture CS","duration_s":8,"sr":16000,"text":"<hi-en> दोस्तों bash में nested…","extra":"same family as MUCS"}
+];
+
+const KEY = "realvoice-dataset-notes-v2";
+function loadNotes(){ try{return JSON.parse(localStorage.getItem(KEY)||"{}");}catch{return{};} }
+function saveNotes(o){ localStorage.setItem(KEY, JSON.stringify(o)); document.getElementById("saveStatus").textContent="Saved "+new Date().toLocaleTimeString(); }
+function collect(){
+  const notes=loadNotes();
+  document.querySelectorAll("tr[data-id]").forEach(tr=>{
+    notes[tr.dataset.id]=notes[tr.dataset.id]||{};
+    const el=tr.querySelector('[data-field="findings"]');
+    if(el) notes[tr.dataset.id].findings=el.innerText.trim();
+  });
+  const hn=document.querySelector('[data-field="hours_note"]');
+  if(hn) notes.hours_note=hn.innerText.trim();
+  notes.samples=notes.samples||{};
+  document.querySelectorAll(".card[data-file]").forEach(card=>{
+    notes.samples[card.dataset.file]=card.querySelector(".findings [contenteditable]").innerText.trim();
+  });
+  return notes;
+}
+function applyNotes(){
+  const notes=loadNotes();
+  document.querySelectorAll("tr[data-id]").forEach(tr=>{
+    const v=notes[tr.dataset.id]?.findings;
+    if(v!=null) tr.querySelector('[data-field="findings"]').innerText=v;
+  });
+  if(notes.hours_note) document.querySelector('[data-field="hours_note"]').innerText=notes.hours_note;
+}
+
+const root=document.getElementById("samples");
+CATALOG.forEach(s=>{
+  const el=document.createElement("article");
+  el.className="card"; el.dataset.file=s.file;
+  el.innerHTML=`<header><span class="ds">${s.dataset}</span><span class="meta">${s.file} · ${s.style||""} · ${s.duration_s}s</span></header>
+    <div class="meta">${s.extra||""}</div>
+    <div class="text">${s.text}</div>
+    <audio controls preload="metadata" src="samples/${s.file}"></audio>
+    <div class="findings"><strong>Your note</strong><div contenteditable="true">CS? emotion? useful for tags?</div></div>`;
+  root.appendChild(el);
+});
+applyNotes();
+const notes=loadNotes();
+if(notes.samples){
+  document.querySelectorAll(".card[data-file]").forEach(card=>{
+    const v=notes.samples[card.dataset.file];
+    if(v!=null) card.querySelector(".findings [contenteditable]").innerText=v;
+  });
+}
+document.getElementById("saveBtn").onclick=()=>saveNotes(collect());
+document.getElementById("exportBtn").onclick=()=>{
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(collect(),null,2)],{type:"application/json"}));
+  a.download="dataset-findings.json"; a.click();
+};
+document.getElementById("clearBtn").onclick=()=>{ localStorage.removeItem(KEY); location.reload(); };
+</script>
+</body>
+</html>
