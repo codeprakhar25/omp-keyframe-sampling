@@ -1,0 +1,36 @@
+# repo root ignores data/ globally; this experiment's labels and manifests are source
+!/data/
+
+# secrets / env
+.env
+.venv/
+__pycache__/
+*.pyc
+.huggingface/
+
+# audio never enters git — regenerate via scripts/pull_*.py or pull from Modal volume
+*.wav
+*.mp3
+*.flac
+*.ogg
+data/scale/train/wavs/
+data/scale/eval_pairs/
+data/scale/eval_pairs_base/
+data/scale/eval_pairs_orpheus/
+
+# model weights + optimizer state — live on Modal volumes, not here
+*.safetensors
+*.pt
+*.pth
+*.bin
+data/scale/train/adapter*/adapter/tokenizer.json
+data/scale/train/adapter*/adapter/tokenizer_config.json
+data/scale/train/adapter*/adapter/chat_template.jinja
+
+# oversized derived artifact (46 MB) — regenerate: modal_iv_hindi_split.py --action run
+data/scale/iv_hindi_cut_proposals.json
+
+# working notes stay local; README.md carries the shared state
+*.md
+!README.md
+!**/README.md
