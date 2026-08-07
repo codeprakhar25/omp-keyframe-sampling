@@ -1,0 +1,33 @@
+{
+  "source_id": "sc080",
+  "duration_s": 2.656,
+  "n_ref_words": 5,
+  "n_aligned_words": 5,
+  "words": [
+    {
+      "word": "जी",
+      "start": 0.262,
+      "end": 0.463
+    },
+    {
+      "word": "हाँ",
+      "start": 0.885,
+      "end": 1.489
+    },
+    {
+      "word": "पूरा",
+      "start": 1.569,
+      "end": 1.811
+    },
+    {
+      "word": "घुमा",
+      "start": 1.851,
+      "end": 2.072
+    },
+    {
+      "word": "दीजिएगा",
+      "start": 2.133,
+      "end": 2.475
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "source_id": "sc121",
+  "duration_s": 2.848,
+  "n_ref_words": 7,
+  "n_aligned_words": 7,
+  "words": [
+    {
+      "word": "फिर",
+      "start": 0.0,
+      "end": 0.1
+    },
+    {
+      "word": "भी",
+      "start": 0.181,
+      "end": 0.281
+    },
+    {
+      "word": "पानी",
+      "start": 0.421,
+      "end": 0.662
+    },
+    {
+      "word": "नहीं",
+      "start": 0.702,
+      "end": 0.882
+    },
+    {
+      "word": "निकलता",
+      "start": 0.923,
+      "end": 1.384
+    },
+    {
+      "word": "है",
+      "start": 1.444,
+      "end": 2.407
+    },
+    {
+      "word": "और",
+      "start": 2.467,
+      "end": 2.728
+    }
+  ]
+}
