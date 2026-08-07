@@ -1,0 +1,7 @@
+{
+  "test": "P0.1 MioCodec round-trip",
+  "verdict": "PASS",
+  "ear": "events audible in rt_own and rt_neutral; emotion/style also preserved per listener",
+  "implication": "content stream carries events \u2192 proceed pack \u2192 LoRA",
+  "date": "2026-08-07"
+}

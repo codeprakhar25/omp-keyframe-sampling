@@ -1,0 +1,167 @@
+{
+  "algo": "P0.1 MioCodec round-trip",
+  "codec_id": "Aratako/MioCodec-25Hz-24kHz",
+  "sr": 24000,
+  "seed": 7,
+  "sample_plan": {
+    "whispering": 4,
+    "sigh": 2,
+    "inhaling": 2,
+    "thinking": 2
+  },
+  "neutral_ref": {
+    "cut_id": "hi_fdb98f3b75_tsk_t16",
+    "tag": "tsk",
+    "source_id": "hi_fdb98f3b75",
+    "caption_inline": "के लिए अनेक प्रकार के कार्य करते हैं [tsk] क्योंकी ये लोग अपना",
+    "file": "_neutral_ref_hi_fdb98f3b75_tsk_t16_orig.wav"
+  },
+  "listen_guide": {
+    "orig": "ground-truth slice",
+    "rt_own": "content tokens + SAME clip global emb",
+    "rt_neutral": "content tokens + NEUTRAL speaker global emb",
+    "verdict": "survive both → train OK; own only → event in global emb, drop whisper this pass; die both → content stream blind, rethink"
+  },
+  "rows": [
+    {
+      "i": 0,
+      "cut_id": "hi_cc88150e29_whispering_t1",
+      "tag": "whispering",
+      "source_id": "hi_cc88150e29",
+      "cut_dur_s": 2.623,
+      "caption_inline": "मिल्लत [whispering] कहाँ से आप आएँगी",
+      "n_codes": 66,
+      "files": {
+        "orig": "00_whispering_hi_cc88150e29_whispering_t1_orig.wav",
+        "rt_own": "00_whispering_hi_cc88150e29_whispering_t1_rt_own.wav",
+        "rt_neutral": "00_whispering_hi_cc88150e29_whispering_t1_rt_neutral.wav"
+      }
+    },
+    {
+      "i": 1,
+      "cut_id": "hi_9e1eb01da6_whispering_t4",
+      "tag": "whispering",
+      "source_id": "hi_9e1eb01da6",
+      "cut_dur_s": 2.293,
+      "caption_inline": "जी मैम आपको [whispering] ऐसे रूम हमारे यहाँ मिल जाएंगे",
+      "n_codes": 57,
+      "files": {
+        "orig": "01_whispering_hi_9e1eb01da6_whispering_t4_orig.wav",
+        "rt_own": "01_whispering_hi_9e1eb01da6_whispering_t4_rt_own.wav",
+        "rt_neutral": "01_whispering_hi_9e1eb01da6_whispering_t4_rt_neutral.wav"
+      }
+    },
+    {
+      "i": 2,
+      "cut_id": "hi_ea9e126d5c_whispering_t13",
+      "tag": "whispering",
+      "source_id": "hi_ea9e126d5c",
+      "cut_dur_s": 2.585,
+      "caption_inline": "के बारे में बात करती हूँ पूछताछ करती [whispering] हूँ",
+      "n_codes": 65,
+      "files": {
+        "orig": "02_whispering_hi_ea9e126d5c_whispering_t13_orig.wav",
+        "rt_own": "02_whispering_hi_ea9e126d5c_whispering_t13_rt_own.wav",
+        "rt_neutral": "02_whispering_hi_ea9e126d5c_whispering_t13_rt_neutral.wav"
+      }
+    },
+    {
+      "i": 3,
+      "cut_id": "hi_becb307880_whispering_t2",
+      "tag": "whispering",
+      "source_id": "hi_becb307880",
+      "cut_dur_s": 2.672,
+      "caption_inline": "अच्छा समान [whispering] अच्छा समान",
+      "n_codes": 67,
+      "files": {
+        "orig": "03_whispering_hi_becb307880_whispering_t2_orig.wav",
+        "rt_own": "03_whispering_hi_becb307880_whispering_t2_rt_own.wav",
+        "rt_neutral": "03_whispering_hi_becb307880_whispering_t2_rt_neutral.wav"
+      }
+    },
+    {
+      "i": 4,
+      "cut_id": "hi_c96b585f82_sigh_t8",
+      "tag": "sigh",
+      "source_id": "hi_c96b585f82",
+      "cut_dur_s": 2.505,
+      "caption_inline": "और प्राइवेसी का होना तो बहोत ही [sigh] जरूरी है",
+      "n_codes": 63,
+      "files": {
+        "orig": "04_sigh_hi_c96b585f82_sigh_t8_orig.wav",
+        "rt_own": "04_sigh_hi_c96b585f82_sigh_t8_rt_own.wav",
+        "rt_neutral": "04_sigh_hi_c96b585f82_sigh_t8_rt_neutral.wav"
+      }
+    },
+    {
+      "i": 5,
+      "cut_id": "hi_79fc137769_sigh_t20",
+      "tag": "sigh",
+      "source_id": "hi_79fc137769",
+      "cut_dur_s": 2.484,
+      "caption_inline": "ले आएँगे अपने साथ में फिर उन्हें भी [sigh] लगवा देना",
+      "n_codes": 62,
+      "files": {
+        "orig": "05_sigh_hi_79fc137769_sigh_t20_orig.wav",
+        "rt_own": "05_sigh_hi_79fc137769_sigh_t20_rt_own.wav",
+        "rt_neutral": "05_sigh_hi_79fc137769_sigh_t20_rt_neutral.wav"
+      }
+    },
+    {
+      "i": 6,
+      "cut_id": "hi_bc3ac8e129_inhaling_t7",
+      "tag": "inhaling",
+      "source_id": "hi_bc3ac8e129",
+      "cut_dur_s": 2.501,
+      "caption_inline": "कर सकते हैं कपड़ा का बिजनेस [inhaling] कर सकते हैं",
+      "n_codes": 63,
+      "files": {
+        "orig": "06_inhaling_hi_bc3ac8e129_inhaling_t7_orig.wav",
+        "rt_own": "06_inhaling_hi_bc3ac8e129_inhaling_t7_rt_own.wav",
+        "rt_neutral": "06_inhaling_hi_bc3ac8e129_inhaling_t7_rt_neutral.wav"
+      }
+    },
+    {
+      "i": 7,
+      "cut_id": "hi_0034ce286d_inhaling_t12",
+      "tag": "inhaling",
+      "source_id": "hi_0034ce286d",
+      "cut_dur_s": 2.502,
+      "caption_inline": "बेच देता है [inhaling] इसी तरह हर खेती में",
+      "n_codes": 63,
+      "files": {
+        "orig": "07_inhaling_hi_0034ce286d_inhaling_t12_orig.wav",
+        "rt_own": "07_inhaling_hi_0034ce286d_inhaling_t12_rt_own.wav",
+        "rt_neutral": "07_inhaling_hi_0034ce286d_inhaling_t12_rt_neutral.wav"
+      }
+    },
+    {
+      "i": 8,
+      "cut_id": "hi_dfce742809_thinking_t50",
+      "tag": "thinking",
+      "source_id": "hi_dfce742809",
+      "cut_dur_s": 2.502,
+      "caption_inline": "गरीब आदमी की आवाज दबा [thinking] दबा दी जाती है",
+      "n_codes": 63,
+      "files": {
+        "orig": "08_thinking_hi_dfce742809_thinking_t50_orig.wav",
+        "rt_own": "08_thinking_hi_dfce742809_thinking_t50_rt_own.wav",
+        "rt_neutral": "08_thinking_hi_dfce742809_thinking_t50_rt_neutral.wav"
+      }
+    },
+    {
+      "i": 9,
+      "cut_id": "hi_01d114d60a_thinking_t9",
+      "tag": "thinking",
+      "source_id": "hi_01d114d60a",
+      "cut_dur_s": 2.502,
+      "caption_inline": "बच्चे जाते हैं [thinking] जब भी कोई फंक्सन पड़ता है",
+      "n_codes": 63,
+      "files": {
+        "orig": "09_thinking_hi_01d114d60a_thinking_t9_orig.wav",
+        "rt_own": "09_thinking_hi_01d114d60a_thinking_t9_rt_own.wav",
+        "rt_neutral": "09_thinking_hi_01d114d60a_thinking_t9_rt_neutral.wav"
+      }
+    }
+  ]
+}
