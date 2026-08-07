@@ -1,0 +1,18 @@
+{
+  "id": "mucs_hinglish",
+  "name": "MUCS-Hinglish",
+  "link": "https://huggingface.co/datasets/dianavdavidson/MUCS-Hinglish",
+  "hours_hindi": "—",
+  "hours_hinglish": "~95h (90 train + 5 test)",
+  "conversational": "lecture",
+  "native_labels": "EN/HI word ratios, speaker_id — no emotion",
+  "fit": "P0 keep",
+  "tag_match": "hard",
+  "tags_available": [
+    "pause",
+    "emphasis"
+  ],
+  "tag_how": "Idea 2: label CS boundary pauses/emphasis. Weak for laugh/tease/interrupt.",
+  "what_i_think": "complete data of here is that of the conversation of a teacher teaching like \n-- something about the basics of development and more\n-- avg. duration should be less than 10sec\n-- Multilingual and Code-Switching\n-- Technical / Teaching lectures all\n-- different various speakers are there I mean there are many... both male and female\n-- code switching\n-- Real hindi not what we usually speak..\n-- I feel like the speakers are of quite good people. What I mean by that is, the average age of the person speaking is quite high. \n-- Another thing is, it feels like old data, almost. Like the flow in which it is spoken, and also the words that are being used here.\n\n",
+  "notes": "Samples mucs_hinglish_*.wav. Technical lecture CS — not friend banter.\n\nWhat can we get from this and what you hear manually currently honestly\n\n-- I am not really sure if anything is getting changed here, which code is being switched from eng to hindi or vice versa, means it seems to be continuous just i would say a slight more pause in there in between I guess this might not be the right person right now. Where do we know the language? I'm pretty sure how to conclude this, but I would say not a major difference, other than the slight pause.\n-- But as I see or hear it more, I feel like there is a difference while code-switching, especially in English from the Hindi language. There are also differences when the words are somewhat diff/difficult.\n"
+}
