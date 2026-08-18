@@ -25,6 +25,7 @@ from .answerers import build_answerer, make_text_judge
 from .media import load_frames
 from .metrics import exact_match, hit_at_k, llm_judge, recall_at_k
 from .selectors import EmbeddingSelector, FullDumpSelector, Selector, UniformSelector
+from harness.text import question_stem
 
 
 def build_selector(name: str, model_id: str | None = None, longest_edge: int | None = None,
@@ -99,7 +100,7 @@ def run_condition(
     for item in items:
         frames = load_frames(item, dump_fps=dump_fps, max_frames=max_dump_frames)
         selector._item = item  # transcript-gated selector reads subtitle path here; others ignore
-        selected = selector.select(frames, item["question"], k)
+        selected = selector.select(frames, question_stem(item), k)
 
         t0 = time.time()
         ans = answerer.answer(item["question"], selected)
