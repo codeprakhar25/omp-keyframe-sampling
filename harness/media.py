@@ -10,7 +10,7 @@ import base64
 import io
 import os
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Iterator, List, Optional
 
 from PIL import Image
 
@@ -37,7 +37,16 @@ def load_frames(item: dict, dump_fps: float = 1.0, max_frames: int = 64) -> List
     raise ValueError(f"unknown media_type: {mtype!r}")
 
 
-def _load_video_frames(path: str, dump_fps: float, max_frames: int) -> List[Frame]:
+def iter_video_frames(path: str, dump_fps: float, max_frames: int) -> Iterator[Frame]:
+    """Yield candidate frames ONE at a time instead of building the whole list.
+
+    Byte-identical to the old _load_video_frames sampling (same target_set, same
+    grab/retrieve/cvtColor/Image.fromarray, same order) -- only `yield` replaces the
+    list append. The point is peak RAM: a caller that encodes-and-frees per batch never
+    holds a whole video in memory. A 1435-frame 3600s-labelled clip at native res is
+    ~4GB as a list; that x11 shards blew a 57.7GB cgroup on 2026-07-16 (free(1) reports
+    the HOST's 251GB inside the container, so the shard count was sized 4x too high).
+    """
     try:
         import cv2
     except ImportError as e:  # pragma: no cover - depends on optional dep
@@ -45,13 +54,19 @@ def _load_video_frames(path: str, dump_fps: float, max_frames: int) -> List[Fram
             "opencv-python is required for media_type 'video' (pip install opencv-python)"
         ) from e
 
+    # Cap OpenCV/ffmpeg decode threads. Default, cv2 spawns ~16 h264 decode threads PER
+    # process; with N parallel embed shards that is 16*N + torch's own pool (which grabs all
+    # cores) = 400+ threads oversubscribing 112 cores -> the box thrashes and decode throughput
+    # collapses to ~zero (observed 2026-07-16 at 4 and 12 shards). CV2_THREADS keeps each shard
+    # to a small slice so N shards SHARE the cores. Pair with OMP/MKL_NUM_THREADS for torch.
+    cv2.setNumThreads(int(os.getenv("CV2_THREADS", "2")))
+
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
         raise RuntimeError(f"cannot open video: {path}")
     native_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
 
-    frames: List[Frame] = []
     if total > 0:
         # Spread the budget across the WHOLE clip. When the request exceeds max_frames the
         # cap becomes a *coarser fps* (honest full-dump ~ model-knob), NOT a truncation to the
@@ -61,36 +76,59 @@ def _load_video_frames(path: str, dump_fps: float, max_frames: int) -> List[Fram
 
         want = max(1, int(round((total / native_fps) * max(dump_fps, 1e-6))))
         n_take = min(want, max_frames) if max_frames else want
-        target = sorted({int(x) for x in np.linspace(0, total - 1, n_take)})
-        target_set = set(target)
+        target_set = {int(x) for x in np.linspace(0, total - 1, n_take)}
         src_idx = out_idx = 0
-        while len(frames) < n_take and cap.grab():
-            if src_idx in target_set:
-                ok, bgr = cap.retrieve()
-                if ok:
-                    rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-                    frames.append(Frame(index=out_idx, image=Image.fromarray(rgb), seconds=src_idx / native_fps))
-                    out_idx += 1
-            src_idx += 1
-        cap.release()
-        return frames
+        taken = 0
+        try:
+            while taken < n_take and cap.grab():
+                if src_idx in target_set:
+                    ok, bgr = cap.retrieve()
+                    if ok:
+                        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+                        yield Frame(index=out_idx, image=Image.fromarray(rgb), seconds=src_idx / native_fps)
+                        out_idx += 1
+                        taken += 1
+                src_idx += 1
+        finally:
+            cap.release()
+        return
 
     # fallback: unknown length -> sequential step sampling (old behaviour)
     step = max(int(round(native_fps / max(dump_fps, 1e-6))), 1)
     src_idx = out_idx = 0
-    while cap.grab():
-        if src_idx % step == 0:
-            ok, bgr = cap.retrieve()
-            if not ok:
-                break
-            rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-            frames.append(Frame(index=out_idx, image=Image.fromarray(rgb), seconds=src_idx / native_fps))
-            out_idx += 1
-            if max_frames and len(frames) >= max_frames:
-                break
-        src_idx += 1
-    cap.release()
-    return frames
+    try:
+        while cap.grab():
+            if src_idx % step == 0:
+                ok, bgr = cap.retrieve()
+                if not ok:
+                    break
+                rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+                yield Frame(index=out_idx, image=Image.fromarray(rgb), seconds=src_idx / native_fps)
+                out_idx += 1
+                if max_frames and out_idx >= max_frames:
+                    break
+            src_idx += 1
+    finally:
+        cap.release()
+
+
+def _load_video_frames(path: str, dump_fps: float, max_frames: int) -> List[Frame]:
+    # Materialise the generator. Existing callers get the exact same list they always did.
+    return list(iter_video_frames(path, dump_fps, max_frames))
+
+
+def iter_frames(item: dict, dump_fps: float = 1.0, max_frames: int = 64) -> Iterator[Frame]:
+    """Streaming twin of load_frames: yields Frame instead of returning a list.
+
+    Video streams frame-by-frame (the whole point). Images are already on disk as
+    separate files, so there is no giant in-RAM decode to avoid -- just replay the
+    list path lazily to keep one code path for callers.
+    """
+    mtype = item.get("media_type", "video")
+    if mtype == "video":
+        yield from iter_video_frames(item["media_path"], dump_fps, max_frames)
+    else:
+        yield from load_frames(item, dump_fps=dump_fps, max_frames=max_frames)
 
 
 def _frame_second(fname: str) -> Optional[int]:
