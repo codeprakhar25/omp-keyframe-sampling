@@ -529,8 +529,8 @@ class TranscriptGatedSelector(EmbeddingSelector):
         top = torch.topk(fscores, min(k, len(cand))).indices.tolist()
         picked = sorted(cand[t] for t in top)
         return [frames[i] for i in picked]
-
-
+#  
+# 
 class SmolVLMSelector(Selector):
     """Condition C2: a small *generative* VLM scores each frame by reasoning about whether
     it answers the question (P("yes")), instead of embedding-matching like SigLIP.
