@@ -18,10 +18,9 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import os
 import random
 from collections import defaultdict
-
-from huggingface_hub import hf_hub_download
 
 LETTERS = ["A", "B", "C", "D", "E"]
 
@@ -39,6 +38,11 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--split", default="lvb_val.json")
     ap.add_argument("--per-bin", type=int, default=10, help="questions per duration group")
+    ap.add_argument("--bins", default=None,
+                    help="comma list of duration groups to keep, e.g. '15,60' (default: all)")
+    ap.add_argument("--keep-text-qs", action="store_true",
+                    help="keep subtitle-dependent categories ('T' in question_category); "
+                         "pair with gpt_mcqa.py --subtitles-dir so the answerer sees them")
     ap.add_argument("--distinct-videos", action="store_true",
                     help="one question per video (fewer videos to extract/decode)")
     ap.add_argument("--seed", type=int, default=0)
@@ -47,18 +51,24 @@ def main() -> None:
     args = ap.parse_args()
     random.seed(args.seed)
 
-    p = hf_hub_download("longvideobench/LongVideoBench", args.split, repo_type="dataset")
+    if os.path.exists(args.split):
+        p = args.split  # local copy (curl with HF_TOKEN works without huggingface_hub)
+    else:
+        from huggingface_hub import hf_hub_download
+        p = hf_hub_download("longvideobench/LongVideoBench", args.split, repo_type="dataset")
     data = json.load(open(p))
 
-    # frames-answerable only: drop subtitle/text-dependent categories ('T' in question_category)
+    bins = set(args.bins.split(",")) if args.bins else None
+    # default: frames-answerable only (drop 'T' categories); --keep-text-qs keeps them
     pool = defaultdict(list)
     seen_videos = set()
     for d in data:
         qcat = str(d.get("question_category", ""))
-        if "T" in qcat:
+        if "T" in qcat and not args.keep_text_qs:
             continue
         pos = parse_list(d.get("position"))
-        if not pos:
+        if not pos and not args.keep_text_qs:
+            # frames-only protocol needs a visual keyframe; text-Qs may lack one
             continue
         cand = parse_list(d.get("candidates"))
         cc = d.get("correct_choice")
@@ -69,6 +79,8 @@ def main() -> None:
         if cc >= len(cand):
             continue
         dg = str(d.get("duration_group"))
+        if bins and dg not in bins:
+            continue
         pool[dg].append(d)
 
     manifest = []
@@ -95,7 +107,8 @@ def main() -> None:
                 "media_type": "video",
                 "media_path": f"{args.videos_dir}/{d['video_path']}",
                 "video_file": d["video_path"],
-                "question": question,
+                "question": question,          # answerer prompt: stem + options + instruction
+                "question_stem": d.get("question", "").strip(),  # scorer query: stem only (see harness/text.py)
                 "gold_answer": f"{LETTERS[cc]}) {cand[cc]}",
                 "gold_letter": LETTERS[cc],
                 "candidates": cand,
