@@ -119,7 +119,7 @@ def omp_indices(query: np.ndarray, emb: np.ndarray, k: int) -> List[int]:
     picked frame embeddings (Gram-Schmidt, textbook OMP — no residual renorm); repeat.
     Each pick must explain a query component the previous picks did not.
 
-    query: L2-normed SigLIP/LongCLIP text embedding [d]; emb: L2-normed SigLIP/LongCLIP image
+    query: L2-normed SigLIP text embedding [d]; emb: L2-normed SigLIP image
     embeddings [n, d]. Returns sorted indices.
     """
     n = emb.shape[0]
@@ -228,3 +228,92 @@ def focus_indices(scores: Sequence[float], times: Sequence[float], k: int,
         if i not in selected:
             selected.append(i)
     return sorted(set(selected))
+
+
+def aks_indices(scores: Sequence[float], times: Sequence[float], k: int,
+                t1: float = 0.8, t2: float = -100.0, all_depth: int = 5) -> List[int]:
+    """AKS ADA / meanstd recursion from official ncTimTang/AKS ``frame_select.py``.
+
+    Faithful port of their judge-and-split: MinMax-normalize scores, recursively
+    bipartition segments whose top-k mean is not sufficiently above the segment
+    mean (mean_diff <= t1 or std <= t2) until ``all_depth``, then take
+    ``k / 2**depth`` top frames per leaf (heapq), union, sort.
+
+    Defaults match their CLI (t1=0.8, t2=-100, all_depth=5). Their argparse
+    mistakenly types t1 as int; we keep float 0.8 as in their default literal.
+    """
+    import heapq
+    n = len(scores)
+    if n == 0:
+        return []
+    if k >= n:
+        return list(range(n))
+    score = np.asarray(scores, dtype=np.float64)
+    # official: normalized_data = (score - min) / (max - min)
+    lo, hi = float(score.min()), float(score.max())
+    if hi - lo < 1e-12:
+        # flat scores -> uniform-ish: take linspace indices
+        return sorted(set(int(i) for i in np.linspace(0, n - 1, k)))[:k]
+    norm = (score - lo) / (hi - lo)
+    fns0 = list(range(n))  # local frame indices (official uses frame ids)
+
+    def meanstd(len_scores, dic_scores, num, fns, thr1, thr2, depth_lim):
+        split_scores, split_fn = [], []
+        no_split_scores, no_split_fn = [], []
+        for dic_score, fn in zip(dic_scores, fns):
+            sc = np.asarray(dic_score["score"], dtype=np.float64)
+            depth = dic_score["depth"]
+            if len(sc) == 0:
+                continue
+            if len(sc) == 1:
+                # cannot split; keep leaf (official assumes longer pools)
+                no_split_scores.append(dic_score)
+                no_split_fn.append(fn)
+                continue
+            mean = float(np.mean(sc))
+            std = float(np.std(sc))
+            top_n = heapq.nlargest(min(num, len(sc)), range(len(sc)), sc.__getitem__)
+            top_score = [sc[t] for t in top_n]
+            mean_diff = float(np.mean(top_score)) - mean
+            mid = len(sc) // 2
+            can_split = mid > 0 and mid < len(sc)
+            if mean_diff > thr1 and std > thr2:
+                no_split_scores.append(dic_score)
+                no_split_fn.append(fn)
+            elif depth < depth_lim and can_split:
+                split_scores.append(dict(score=sc[:mid], depth=depth + 1))
+                split_scores.append(dict(score=sc[mid:], depth=depth + 1))
+                split_fn.append(fn[:mid])
+                split_fn.append(fn[mid:])
+            else:
+                no_split_scores.append(dic_score)
+                no_split_fn.append(fn)
+        if split_scores:
+            all_split_score, all_split_fn = meanstd(
+                len_scores, split_scores, num, split_fn, thr1, thr2, depth_lim)
+        else:
+            all_split_score, all_split_fn = [], []
+        return no_split_scores + all_split_score, no_split_fn + all_split_fn
+
+    segs, seg_fns = meanstd(n, [dict(score=norm, depth=0)], k, [fns0], t1, t2, all_depth)
+    out = []
+    for s, f in zip(segs, seg_fns):
+        f_num = int(k / (2 ** s["depth"]))
+        if f_num <= 0:
+            continue
+        sc = s["score"]
+        topk = heapq.nlargest(min(f_num, len(sc)), range(len(sc)), sc.__getitem__)
+        out.extend(int(f[t]) for t in topk)
+    # de-dupe preserve order then sort; pad if short
+    seen, uniq = set(), []
+    for i in out:
+        if i not in seen:
+            seen.add(i); uniq.append(i)
+    if len(uniq) < k:
+        order = list(np.argsort(-score))
+        for i in order:
+            if int(i) not in seen:
+                seen.add(int(i)); uniq.append(int(i))
+            if len(uniq) >= k:
+                break
+    return sorted(uniq[:k])
