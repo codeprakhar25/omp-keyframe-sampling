@@ -1,0 +1,29 @@
+dataset_path: longvideobench/LongVideoBench
+dataset_kwargs:
+  token: True
+  cache_dir: datasets/longvideobench
+  video: True
+  force_download: False
+  local_files_only: False
+task: longvideobench_val_picks_omp_sig_3600s_k32
+# SigLIP-so400m OMP-32 picks, 3600s bin. Reads $LVB_PICKS_OMP_SIG_K32.
+# Control = longvideobench_val_i_3600s_k32 (same frames pathway), NOT native-video _v.
+test_split: validation
+process_docs: !function picks_utils.filter_3600s
+doc_to_visual: !function picks_utils.longvideobench_doc_to_visual_picks_omp_sig_k32
+doc_to_text: !function utils.longvideobench_doc_to_text
+doc_to_target: "correct_choice"
+generation_kwargs:
+  max_new_tokens: 32
+  temperature: 0
+  do_sample: False
+process_results: !function utils.longvideobench_process_results
+metric_list:
+  - metric: lvb_acc
+    aggregation: !function utils.longvideobench_aggregate_results
+    higher_is_better: true
+
+lmms_eval_specific_kwargs:
+  default:
+    pre_prompt: ""
+    post_prompt: "Answer with the option's letter from the given choices directly.\n"
