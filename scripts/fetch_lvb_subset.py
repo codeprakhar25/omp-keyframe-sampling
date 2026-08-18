@@ -35,7 +35,9 @@ def part_names(n: int = 31):
 
 def stream_extract(members, out_dir, n_parts, token):
     os.makedirs(out_dir, exist_ok=True)
-    members_file = os.path.join(out_dir, "_members.txt")
+    # PID-unique so two fetches (different manifests, same out_dir) can't clobber
+    # each other's member list
+    members_file = os.path.join(out_dir, f"_members.{os.getpid()}.txt")
     with open(members_file, "w") as f:
         for m in members:
             f.write(f"videos/{m}\n")
@@ -52,6 +54,21 @@ echo "TAR_RC=${{PIPESTATUS[1]}}"
     env = dict(os.environ, HF_TOKEN=token)
     print(f"streaming {n_parts} parts, extracting {len(members)} members -> {out_dir} ...")
     r = subprocess.run(["bash", "-c", cmd], env=env)
+    return r.returncode
+
+
+def fetch_subtitles(out_dir, token):
+    """subtitles.tar is one small (~117MB) unsplit file — pull and extract it whole."""
+    os.makedirs(out_dir, exist_ok=True)
+    cmd = f"""
+set -o pipefail
+curl -sL -H "Authorization: Bearer $HF_TOKEN" "{BASE}/subtitles.tar" \
+  | tar -x -C {out_dir} --strip-components=1
+"""
+    env = dict(os.environ, HF_TOKEN=token)
+    print(f"fetching subtitles.tar -> {out_dir} ...")
+    r = subprocess.run(["bash", "-c", cmd], env=env)
+    print(f"subtitles rc={r.returncode}, files={len(os.listdir(out_dir))}")
     return r.returncode
 
 
@@ -97,6 +114,8 @@ def main() -> None:
     ap.add_argument("--out-dir", default="data/videos")
     ap.add_argument("--n-parts", type=int, default=31)
     ap.add_argument("--skip-download", action="store_true", help="only resolve gold from already-extracted videos")
+    ap.add_argument("--subtitles-dir", default=None,
+                    help="also fetch subtitles.tar (whole, ~117MB) into this dir, e.g. data/subtitles")
     args = ap.parse_args()
 
     token = os.environ.get("HF_TOKEN")
@@ -106,9 +125,17 @@ def main() -> None:
     data = json.load(open(args.manifest))
     members = sorted({m["video_file"] for m in data})
 
+    if args.subtitles_dir:
+        fetch_subtitles(args.subtitles_dir, token)
+
     if not args.skip_download:
-        rc = stream_extract(members, args.out_dir, args.n_parts, token)
-        print(f"stream_extract rc={rc}")
+        # skip members already on disk (e.g. overlap with an earlier subset)
+        missing = [m for m in members if not os.path.exists(os.path.join(args.out_dir, m))]
+        print(f"members: {len(members)} total, {len(members) - len(missing)} already present, "
+              f"{len(missing)} to extract")
+        if missing:
+            rc = stream_extract(missing, args.out_dir, args.n_parts, token)
+            print(f"stream_extract rc={rc}")
 
     present = [m for m in members if os.path.exists(os.path.join(args.out_dir, m))]
     print(f"videos present: {len(present)}/{len(members)}")
