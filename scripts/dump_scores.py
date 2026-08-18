@@ -19,6 +19,8 @@ import json
 import os
 
 from harness.media import load_frames
+from harness.manifest import check_gold_reliable
+from harness.text import question_stem
 
 
 def build_scorer(model_id: str):
@@ -44,27 +46,49 @@ def main() -> None:
     ap.add_argument("--max-frames", type=int, default=3600, help="cap so long-bin items aren't truncated")
     ap.add_argument("--bins", nargs="+", default=None,
                     help="restrict to these length_bin values (e.g. 600 3600); default = all")
-    ap.add_argument("--gold-reliable-only", action="store_true", default=True)
+    ap.add_argument("--gold-reliable-only", action=argparse.BooleanOptionalAction, default=True,
+                    help="--no-gold-reliable-only keeps items without resolved gold spans "
+                         "(e.g. subtitle-dependent questions that have no visual keyframe)")
     ap.add_argument("--out", default="results/scores/scores.jsonl")
+    ap.add_argument("--resume", action="store_true",
+                    help="append to --out, skipping ids already present AND items whose "
+                         "video file is missing or modified <120s ago (mid-download)")
     args = ap.parse_args()
 
     manifest = json.load(open(args.manifest, "r", encoding="utf-8"))
+    # refuse a filter that would silently drop every item (see harness/manifest.py)
+    check_gold_reliable(manifest, args.gold_reliable_only, args.manifest)
     bins = set(args.bins) if args.bins else None
+
+    import time
+    done_ids = set()
+    if args.resume and os.path.exists(args.out):
+        done_ids = {json.loads(l)["id"] for l in open(args.out) if l.strip()}
+        print(f"resume: {len(done_ids)} ids already scored")
     score_fn = build_scorer(args.model)  # first torch import happens here
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     n = 0
-    with open(args.out, "w", encoding="utf-8") as f:
+    with open(args.out, "a" if args.resume else "w", encoding="utf-8") as f:
         for item in manifest:
             b = str(item.get("length_bin", "all")).replace("s", "")
             if bins and b not in bins:
                 continue
             if args.gold_reliable_only and not item.get("gold_reliable"):
                 continue
+            if args.resume:
+                if item.get("id") in done_ids:
+                    continue
+                mp = item.get("media_path", "")
+                if item.get("media_type") == "video":
+                    if not os.path.exists(mp):
+                        continue
+                    if time.time() - os.path.getmtime(mp) < 120:
+                        continue  # tar may still be writing this file
             frames = load_frames(item, dump_fps=args.dump_fps, max_frames=args.max_frames)
             if not frames:
                 continue
-            scores = score_fn(frames, item["question"])
+            scores = score_fn(frames, question_stem(item))
             row = {
                 "id": item.get("id"),
                 "length_bin": b,
