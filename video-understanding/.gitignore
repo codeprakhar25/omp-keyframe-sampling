@@ -1,0 +1,8 @@
+.azure_backup.env
+
+# LaTeX build artifacts
+paper/*.blg
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl

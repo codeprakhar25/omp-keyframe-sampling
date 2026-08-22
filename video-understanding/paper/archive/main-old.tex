@@ -1,0 +1,587 @@
+% Video MLLM frame selection / token budget — measurement paper
+% Spine (locked): T1 matched selectors → Claim A half-budget → Claim B reinvest.
+% OMP is a reference rule, not a proposed method. arXiv-first, then ARR Oct 12.
+\documentclass[11pt]{article}
+\usepackage[preprint]{acl}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{url}
+
+\graphicspath{{../figures/}}
+
+\title{A Controlled Study of Frame Selection and Visual Token Budget\\in Video MLLMs}
+
+\author{Prakhar Khatri \\ Independent Researcher \\ \texttt{prakharkhatri123@gmail.com}}
+
+\begin{document}
+\maketitle
+
+% ============================================================================
+% ABSTRACT  — draft 2: same context as draft 1; fewer numbers; OMP as a result
+% ============================================================================
+\begin{abstract}
+Video MLLMs spend a fixed visual-token budget on which frames they keep and how finely each frame is encoded.
+Uniform sampling is still the default; adaptive selectors (top-$k$, AKS, FOCUS, LDDR) report large gains over it, but the tables are hard to compare because the scorer, the prompt, and the answerer all change from paper to paper.
+We freeze a LongCLIP stem-only scorer and one evaluation harness, and re-run the main training-free rules at $k{=}8$ on LongVideoBench, Video-MME, and LVBench.
+
+Under that control, classical Orthogonal Matching Pursuit (OMP) is a strong selector: ${+}5.7$ / ${+}5.9$ / ${+}11.8$\,pp over uniform on the three benchmarks, and a statistical tie with LDDR's stage-1 MinMax rule.
+It is a 1993 algorithm used here as a cheap reference, not a method we introduce.
+On Video-MME the gap over plain top-$k$ is large (${+}5.2$\,pp); on LongVideoBench it is small.
+
+Holding the same timestamps, cutting each frame to about half the visual tokens usually matches full-resolution accuracy (LongVideoBench / LVBench; Video-MME is slightly down, ${-}0.44$\,pp).
+Reinvesting that budget into more frames at lower resolution ($k{=}16$ at $\sim$50\%) beats eight full-resolution frames by ${+}2.4$\,pp on LongVideoBench's long bins and ${+}3.0$\,pp on LVBench, including when the extra frames are uniform rather than OMP-selected.
+Primary numbers are Qwen3-VL-8B; InternVL3 and GPT-5-mini are used as checks.
+We report paired deltas, not leaderboard scores.
+\end{abstract}
+
+% ============================================================================
+% 1. INTRODUCTION  — spine A; table first; OMP is a row, not an invention
+% ============================================================================
+\section{Introduction}
+
+A video MLLM does two things before it answers: it keeps a small set of frames, then encodes each at some resolution.
+Both decisions spend the same budget---visual tokens.
+The default is still uniform sampling.
+Adaptive selectors sit on top of that default---CLIP top-$k$, AKS, FOCUS, LDDR's stage-1 DPP, and a growing set of segment-then-diversify rules---and, separately, a line of work that prunes or reallocates tokens inside the frames that were kept.
+Those papers often report large gains over uniform sampling.
+The tables are hard to read against each other: each one brings its own scorer, prompt template, and answerer, so a gap on LongVideoBench in one paper is not the same experiment as a gap on Video-MME in another.
+
+This paper freezes the comparison.
+We use one LongCLIP scorer, the question stem only (answer options never enter selection), one evaluation harness, and $k{=}8$ as the primary frame budget.
+We re-run uniform sampling, top-$k$, AKS, FOCUS (as a dense-score replay), classical Orthogonal Matching Pursuit~(OMP), and LDDR's MinMax stage-1 selector on LongVideoBench, Video-MME, and LVBench.
+The primary answerer is Qwen3-VL-8B; InternVL3 and GPT-5-mini are checks, not a second leaderboard.
+
+The first result is the matched table.
+Under that control, OMP is a strong selector: clearly above uniform on long video, and a statistical tie with LDDR's stage-1 rule.
+OMP is \citet{pati1993omp}'s 1993 greedy pursuit, used here as a cheap reference row---not an algorithm we propose.
+The rest of the paper then holds timestamps fixed and varies only how many tokens each frame is allowed to cost.
+Cutting resolution to about half the tokens usually matches full-resolution accuracy.
+Spending the saved tokens on more frames at lower resolution ($k{=}16$ at $\sim$50\%) beats eight sharper frames at the same cost, including when those extra frames are uniform rather than OMP-selected.
+How large the original selection gain is still depends on which answerer reads the frames and which benchmark asks the question; we report that after the main tables, not as the lead.
+
+\paragraph{Contributions.}
+\begin{itemize}
+\item A matched selector comparison at $k{=}8$ under one LongCLIP stem scorer: OMP vs.\ uniform, top-$k$, AKS, FOCUS replay, and LDDR stage-1, with paired deltas on three long-video benches.
+\item On fixed timestamps, about half the visual tokens usually preserve accuracy (LongVideoBench, LVBench); Video-MME is the exception ($-0.44$\,pp).
+\item At matched token cost, more frames at lower resolution outperform fewer full-resolution frames, including on uniform picks---so the reinvest effect is a property of the budget, not of OMP.
+\end{itemize}
+
+% ============================================================================
+% 2. RELATED WORK
+% ============================================================================
+\section{Related Work}
+
+\paragraph{Frame selection.}
+Uniform sampling is the default in most video-MLLM pipelines.
+Query-aware alternatives score frames against the question with a frozen dual encoder---CLIP~\citep{radford2021clip}, Long-CLIP~\citep{zhang2024longclip}, SigLIP~\citep{zhai2023siglip}, or BLIP-2 ITM~\citep{li2023blip2}---and keep the top $k$.
+Structure on top of those scores comes in a few recurring forms.
+AKS~\citep{tang2025aks} adds temporal coverage by recursively splitting the timeline.
+FOCUS~\citep{zhu2025focus} treats short clips as arms in a combinatorial bandit.
+LDDR~\citep{chen2026lddr}, AdaRD-Key~\citep{adardkey2025}, and Adaptive Greedy~\citep{adaptivegreedy2026} use DPP- or submodular-style diversity.
+A recent pattern is segment, then anchor, then diversify: QCA~\citep{peng2026qca} allocates a per-segment quota from query relevance and content deviation; EFS~\citep{chen2026efs} segments with DINO / PySceneDetect and refines with adaptive MMR.
+
+Those papers report clear gains over uniform sampling.
+They also illustrate the comparison problem.
+Published tables mix scorers (BLIP-2 for QCA, CLIP for EFS, LongCLIP for LDDR's standardization, and whatever each cited baseline used), and they rarely report paired tests or an equal-token control.
+QCA and EFS moreover operate at much larger $k$ than we do (QCA's headline is 64 frames), a regime where our own curve has already flattened.
+Under a matched LongCLIP scorer, coverage forcing and MMR are the two mechanisms that lose hardest against OMP in our ablation.
+That does not refute their stack results.
+It does mean those numbers cannot settle which \emph{selection rule} is responsible.
+
+We use Orthogonal Matching Pursuit~\citep{pati1993omp} as the oldest cheap member of the diversity family---not as a contribution.
+LDDR already uses a related residual / orthogonalization idea in its \emph{allocation} stage; we use OMP only to pick timestamps.
+
+\paragraph{Token budgets and pruning.}
+The second lever is how many tokens each retained frame may cost.
+LDDR is the closest prior that couples both levers: a Group-DPP importance score drives resolution, giving more tokens to informative non-redundant frames.
+AdaCodec~\citep{adacodec2026} learns a retain/compress/drop code, but needs training.
+A parallel line prunes or reallocates tokens after frames are chosen---AdaptToken~\citep{adapttoken2026} uses answerer entropy for group budgets; Vista-LLM~\citep{vistallm2026} and MoPrune~\citep{moprune2026} prune query- or motion-aware tokens before the LLM; AdaAlloc~\citep{an2026adalloc} (concurrent) splits a fixed budget between a low-resolution global overview and high-resolution local evidence.
+Those systems optimize \emph{where} tokens go under a cap.
+Claims later in this paper ask a narrower question: holding timestamps fixed, how much does spatial fidelity matter, and does buying more frames with the saved budget help?
+We do not claim to outperform AdaAlloc-style allocators; a reconstruction of LDDR's stage-2 importance already beats our residual-proportional rule.
+
+\paragraph{Positioning.}
+On published absolute accuracy, LDDR remains ahead, and we do not challenge that---our LDDR row is stage-1 selection only, not their full dynamic-resolution pipeline.
+What we claim is a measurement under matched controls: which training-free rule wins when the scorer is shared, whether a token cut on fixed timestamps is free, and whether extra frames at lower resolution beat fewer sharp ones at the same cost.
+
+% ============================================================================
+% 3. METHOD
+% ============================================================================
+\section{Method}
+\label{sec:method}
+
+% Fig.1 floats to top of this page (~p.2 in ACL 2-col). Do not put on page 1.
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_protocol.pdf}
+\caption{Experimental protocol.
+(a)~A 1\,fps pool is scored once with LongCLIP on the question stem (options never enter selection).
+Every rule in the $k{=}8$ comparison consumes that cached vector, so Table~\ref{tab:t1} isolates the selection rule.
+(b)~Timestamps are then frozen and the same visual-token budget is spent two ways: eight full-resolution frames vs.\ sixteen frames at about half resolution.
+FOCUS$^\star$ is a dense-score replay of the FOCUS schedule, not the paper's budgeted ITM scorer.}
+\label{fig:protocol}
+\end{figure*}
+
+\subsection{Scorer and frame pool}
+Videos are decoded at 1\,fps.
+Each frame and the question \emph{stem} are encoded with Long-CLIP~\citep{zhang2024longclip}; answer options never enter the scorer.
+That choice matches CLIP-family practice in AKS~\citep{tang2025aks} and avoids a documented failure mode: when the scorer reads the fused ``question + options'' string, ranking can anti-correlate with the stem and move about 40\% of the picked frames on LongVideoBench-600\,s.
+Embeddings are cached once.
+Every selection rule in this paper---including the published ones we re-implement---consumes that same score vector, so Table~\ref{tab:t1} isolates the \emph{rule}, not the originating paper's encoder.
+
+\subsection{OMP as the reference selector}
+Let $E\in\mathbb{R}^{N\times d}$ be L2-normalized frame embeddings and $q$ the stem embedding.
+Classical OMP~\citep{pati1993omp} picks greedily by residual correlation:
+\begin{equation}
+\begin{aligned}
+b_r &= \arg\max_i \; e_i^\top q_{r-1}, \\
+q_r &= q_{r-1} - \mathrm{Proj}_{\mathrm{span}\{e_{b_1},\ldots,e_{b_r}\}}(q_{r-1}).
+\end{aligned}
+\end{equation}
+for $r=1,\ldots,k$, and emits the timestamps of $\{b_r\}$.
+Training-free; $O(kNd)$ with Gram--Schmidt.
+
+The sparse-recovery reading---that successive picks reconstruct $q$ from a dictionary of frames---does not hold in this frozen dual-encoder space, and we do not claim it.
+Direct traces show the residual norm falls by only $\sim$3.3\% over eight picks, and residual-correlation is numerically inert after pick $\sim$5 (Figure~\ref{fig:residual}).
+What the projection step does here is \emph{decorrelation}: after pick $r$, frames collinear with an already-selected frame are suppressed.
+We keep the OMP formula because it is the cheapest exact way to obtain that suppression (one Gram--Schmidt step, no tuned diversity coefficient), not because the residual is being driven to zero.
+
+\subsection{Resolution on fixed timestamps}
+Selection is frozen to a timestamp set (OMP seconds unless we say otherwise).
+Per-frame resolution follows residual mass at pick time (resprop / D):
+\begin{equation}
+w_r = s_r / s_1, \qquad
+\mathrm{frac}_r = \mathrm{floor} + (1-\mathrm{floor})\, w_r^{\gamma},
+\end{equation}
+with $\gamma$ chosen so the mean visual budget hits a target (0.53 or 0.50).
+Frames are resized with PIL; for Qwen3-VL we disable the processor's own resize (\texttt{do\_resize=False}).
+We also run a \emph{flat} split at the same mean fraction and a reconstruction of LDDR's stage-2 importance~\citep{chen2026lddr} (``GD'') on identical OMP-8 frames, so allocation \emph{shape} is tested rather than assumed.
+GPT-5-mini compression is a pixel ratio after a \texttt{max\_side} cap, not a Qwen token count; we report accuracy deltas only and never equate the two.
+
+\subsection{Matched-scorer baselines}
+All of the following use the LongCLIP stem scores above, at $k{=}8$ unless noted.
+\begin{itemize}
+\item \textbf{Uniform:} $k$ frames at the stock stride of the lmms-eval LongVideoBench loader.
+\item \textbf{Top-$k$:} the $k$ highest cosine scores, no diversity step.
+\item \textbf{AKS:} the ADA coverage rule of \citet{tang2025aks}, ported onto our scores.
+\item \textbf{FOCUS$\star$:} Algorithm~2 of \citet{zhu2025focus} \emph{replayed} on the dense LongCLIP vector.
+This is a test of the FOCUS \emph{schedule}, not a reproduction of the paper's budgeted ITM scorer (Appendix~\ref{app:focus}).
+\item \textbf{LDDR-select:} MinMax (linear DPP) stage-1 only~\citep{chen2026lddr}, not the full Group-DPP + 1024-tokens-per-frame pipeline.
+\end{itemize}
+Answerers and decoding are in \S\ref{sec:setup}.
+
+% ============================================================================
+% 4. EXPERIMENTAL SETUP
+% ============================================================================
+\section{Experimental Setup}
+\label{sec:setup}
+
+We evaluate on three long-video QA benchmarks: LongVideoBench~\citep{wu2024longvideobench} (official val, $n{=}1337$, duration bins 15/60/600/3600\,s), Video-MME~\citep{fu2025videomme} (short/medium/long, $n{=}2700$), and LVBench~\citep{lvbench2025} ($n{=}1549$).
+The primary answerer is Qwen3-VL-8B-Instruct~\citep{qwen3vl2025} through lmms-eval~\citep{zhang2024lmmseval}, greedy decoding, temperature 0, subtitles off.
+InternVL3~\citep{zhu2025internvl3} at 2B and 8B is a second open family; GPT-5-mini is a closed check (LDDR Appendix~F.3 prompt, \texttt{effort=low}, no system message, no timestamps in the prompt).
+All selector rows share the LongCLIP stem scores of \S\ref{sec:method}; $k{=}8$ is the primary budget and $k{=}16$ is used only for the equal-token reinvest.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lp{0.58\columnwidth}@{}}
+\toprule
+Benches & LongVideoBench (1337); Video-MME (2700); LVBench (1549) \\
+Primary answerer & Qwen3-VL-8B, lmms-eval, greedy, subs off \\
+Other answerers & InternVL3 2B / 8B; GPT-5-mini \\
+Scorer & LongCLIP, stem only \\
+Primary $k$ & 8 (selector table); 16 for the equal-token reinvest \\
+\bottomrule
+\end{tabular}
+\caption{Evaluation grid. Absolute scores are not the claim; every main comparison is a paired delta under this grid.}
+\label{tab:setup}
+\end{table}
+
+We report accuracy and paired McNemar tests~\citep{mcnemar1947} on per-question correct/incorrect outcomes.
+Claim~A (half tokens $\approx$ full resolution) is an equivalence claim, so we also report 90\% intervals and two one-sided tests~\citep{schuirmann1987} rather than treating a non-significant McNemar as proof of a null.
+Environment: headline selector and Claim~A numbers are from one GPU family; the allocation-shape and some reinvest controls sit on a second machine and are not mixed into the same table (see Limitations).
+
+% ============================================================================
+% 5. RESULTS
+% ============================================================================
+\section{Results}
+\label{sec:results}
+
+\subsection{Matched selector comparison at $k{=}8$}
+\label{sec:t1}
+
+Table~\ref{tab:t1} is the comparison the rest of the paper sits on.
+Uniform, top-$k$, AKS, FOCUS$^\star$, OMP, and LDDR-select all read the same LongCLIP stem scores.
+Under that control, OMP is a strong selector: ${+}5.7$ / ${+}5.9$ / ${+}11.8$\,pp over uniform on LongVideoBench, Video-MME, and LVBench (McNemar $p{=}5.9{\times}10^{-4}$ at LongVideoBench 3600\,s; $p{=}5.1{\times}10^{-10}$ and $p{=}9.5{\times}10^{-17}$ on the other two benches).
+LDDR's MinMax stage-1 rule is a statistical tie with OMP wherever we tested it ($p{=}.70$ / $p{=}.57$).
+The gap over plain top-$k$ is small on LongVideoBench (${+}2.0$\,pp, ns at most bins) and large on Video-MME (${+}5.2$\,pp, $p{=}4.4{\times}10^{-11}$) and LVBench (${+}3.2$\,pp, $p{=}.0075$).
+
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+Method & LongVideoBench & Video-MME & LVBench \\
+\midrule
+Uniform & .5654 ($-$5.69) & .5637 ($-$5.85) & .3454 ($-$11.81) \\
+Top-$k$ & .6028 ($-$1.95) & .5704 ($-$5.18) & .4319 ($-$3.16) \\
+\textbf{OMP} (ref.) & \textbf{.6223} & \textbf{.6222} & .4635 \\
+AKS & .6021 ($-$2.02) & .5785 ($-$4.37) & .4280 ($-$3.55) \\
+FOCUS$^\star$ & .5819 ($-$4.04) & .5578 ($-$6.44) & .3983 ($-$6.52) \\
+LDDR-select & \textbf{.6320} (${+}0.97$) & .6193 ($-$0.29) & \textbf{.4693} (${+}0.58$) \\
+\bottomrule
+\end{tabular}
+\caption{Selector comparison at $k{=}8$ on Qwen3-VL-8B. Accuracies; parentheses are $\Delta$ vs.\ OMP in pp.
+FOCUS$^\star$ is a dense LongCLIP replay of the FOCUS schedule, not the paper's budgeted ITM scorer (Appendix~\ref{app:focus}).
+LDDR-select is stage-1 MinMax only.}
+\label{tab:t1}
+\end{table*}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig2_long_video_effect.pdf}
+\caption{The selection gain on LongVideoBench is a long-video effect.
+At 15\,s, uniform, top-$k$, and OMP are identical (.7249): there is no selection problem.
+The OMP--uniform gap is significant only at 600\,s and 3600\,s.
+LDDR-select tracks OMP.}
+\label{fig:longvideo}
+\end{figure}
+
+Figure~\ref{fig:longvideo} splits LongVideoBench by duration.
+At 15\,s the three cheap rules coincide; the gain appears at 600\,s (${+}7.8$\,pp, $p{=}.0022$) and 3600\,s (${+}7.5$\,pp, $p{=}5.9{\times}10^{-4}$).
+Selection is worth something where the 1\,fps pool is much larger than $k$, not as a general ``better frames'' story.
+Slicing the same runs by LongVideoBench's official question-type tags (\texttt{T*} vs.\ the rest) does \emph{not} isolate a temporal regime; the 600\,s and 3600\,s bins even reverse, and the interaction is non-significant (Appendix~\ref{app:qtype}).
+
+On Video-MME the picture is sharper and less convenient: top-$k$, AKS, and FOCUS$^\star$ are all non-significant vs.\ uniform; only OMP and LDDR-select separate.
+``Any query-relevant rule beats uniform'' is a LongVideoBench / LVBench result, not a Video-MME one.
+We do not have a mechanism for that split and do not average it away.
+
+GPT-5-mini, fed the same picks, preserves the ranking: OMP .6200 / .6880 on LongVideoBench / Video-MME vs.\ LDDR-select .6305 / .6874, again a tie, with AKS and FOCUS$^\star$ behind.
+LVBench GPT numbers exist only as a summary (the per-item file was not archived); we treat that ranking as qualitative.
+Absolutes differ across answerers; the claim is the matched delta.
+
+\subsection{Claim A: half the tokens on fixed timestamps}
+\label{sec:claim-a}
+
+We now freeze the timestamps (OMP-8 unless noted) and change only per-frame resolution.
+Table~\ref{tab:t2} reports D@53\% vs.\ full resolution.
+On LongVideoBench and LVBench the cut is a wash (${+}0.30$ / ${+}0.39$\,pp).
+GPT-5-mini on LVBench is the same (${+}0.26$\,pp, $p{=}.84$, $n{=}1549$) under a pixel-ratio of about 0.70, which is \emph{not} a Qwen token count.
+Video-MME is the exception: ${-}0.44$\,pp. We do not average that cell away, and we do not yet have a paired McNemar on those Video-MME compression files.
+
+\begin{table}[t]
+\centering
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccc}
+\toprule
+Answerer / bench & full & D@53\% & $\Delta$ (pp) \\
+\midrule
+Qwen / LongVideoBench & .6223 & .6253 & ${+}0.30$ \\
+Qwen / Video-MME & .6222 & .6178 & $-0.44$ \\
+Qwen / LVBench & .4635 & .4674 & ${+}0.39$ \\
+GPT-5-mini / LVBench & .4900 & .4926 & ${+}0.26$ ($p{=}.84$) \\
+\bottomrule
+\end{tabular}}
+\caption{Claim~A. Same timestamps, about half the visual tokens. Deltas are not a SOTA claim.
+GPT LVBench is paired McNemar on recovered per-item files ($n{=}1549$).}
+\label{tab:t2}
+\end{table}
+
+A non-significant McNemar does not prove two arms are the same, so Table~\ref{tab:t2b} uses TOST on the paired difference.
+Equivalence at $\alpha{=}.05$ holds if the 90\% CI sits inside a stated margin.
+On pooled LongVideoBench ($n{=}976$) the Qwen cut is equivalent at ${\pm}3$\,pp ($p{=}.0022$) and misses ${\pm}2$\,pp ($p{=}.054$).
+InternVL3's harsher 3$\times$ tile cut on the same videos clears ${\pm}2$\,pp ($p{=}.022$).
+Per-bin cells at $n{\le}564$ cannot support a tight margin; we do not claim one.
+The $\pm$3\,pp band was chosen after the runs, not pre-registered---we report $\pm$2 / $\pm$3 / $\pm$4 so the reader can apply their own.
+
+\begin{table}[t]
+\centering
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+Arm & $n$ & $\Delta$ (pp) & 90\% CI & ${\pm}3$\,pp \\
+\midrule
+Qwen, LVB pooled, D@53 & 976 & ${+}0.72$ & $[-0.60,+2.03]$ & equiv ($p{=}.0022$) \\
+InternVL3-8B, 3$\times$ cut, pooled & 976 & $-0.10$ & $[-1.66,+1.45]$ & ${\pm}2$ also equiv \\
+\bottomrule
+\end{tabular}}
+\caption{TOST for Claim~A. Positive $\Delta$ favours the compressed arm. Qwen misses ${\pm}2$\,pp ($p{=}.054$).}
+\label{tab:t2b}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_claim_a.pdf}
+\caption{LongVideoBench 3600\,s, fixed OMP-8 timestamps.
+Eight budget points from 32\% to 100\% sit inside the full-resolution 95\% interval.
+The flat-split control at 50\% lands on D@50: \emph{our} residual-proportional rule does not beat a uniform half.
+That is not a claim that no allocation rule matters (LDDR's stage-2 reconstruction does; reported with the allocation-shape experiment).}
+\label{fig:claim-a}
+\end{figure}
+
+Figure~\ref{fig:claim-a} is the shape the single intervals sit on: no monotone drop as tokens are cut.
+The same half-budget cut on \emph{uniform} timestamps is also a wash in a same-environment pair; that control currently lives on a second GPU stack and is not mixed into Table~\ref{tab:t2} (Limitations).
+
+The defensible statement of Claim~A is equivalence within ${\pm}3$\,pp on LongVideoBench and LVBench, not identity, and not ``free on every benchmark.''
+
+\subsection{Claim B: spend the saved tokens on more frames}
+\label{sec:claim-b}
+
+Table~\ref{tab:t3} spends the Claim~A surplus on extra frames at lower resolution: $k{=}16$ at $\sim$50\% vs.\ $k{=}8$ full.
+The two arms are matched on visual tokens (measured ratio $0.984$--$0.996$); the reinvest arm is slightly \emph{under} budget, so a gain is conservative.
+On LVBench the lift is ${+}3.04$\,pp ($p{=}9{\times}10^{-4}$).
+On LongVideoBench overall it is ${+}2.24$\,pp; pooling the two long bins where selection exists ($n{=}976$) gives ${+}2.36$\,pp ($p{=}.0346$), same sign in both bins.
+Video-MME is ${+}1.56$\,pp.
+GPT-5-mini on LVBench tracks Qwen (${+}2.39$\,pp, $p{=}.039$).
+
+\begin{table}[t]
+\centering
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccc}
+\toprule
+Answerer / bench & $k{=}8$ full & $k{=}16$ @50\% & $\Delta$ (pp) \\
+\midrule
+Qwen / LVBench & .4635 & .4939 & ${+}3.04$ ($p{=}.0009$) \\
+Qwen / Video-MME & .6222 & .6378 & ${+}1.56$ \\
+Qwen / LongVideoBench & .6223 & .6447 & ${+}2.24$ \\
+GPT-5-mini / LVBench & .4900 & .5139 & ${+}2.39$ ($p{=}.039$) \\
+\bottomrule
+\end{tabular}}
+\caption{Claim~B. Equal-or-lower visual tokens; more frames at lower resolution.
+LongVideoBench long-bin pool: .5820 vs.\ .6055, ${+}2.36$\,pp, $p{=}.0346$.
+GPT LVBench: ${+}2.39$\,pp, $p{=}.039$, $n{=}1549$.}
+\label{tab:t3}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.78\columnwidth]{fig_claim_b.pdf}
+\caption{LongVideoBench, 600\,s$+$3600\,s pooled.
+$k{=}16$ at $\sim$50\% resolution vs.\ $k{=}8$ full resolution at a measured token ratio ${\le}1$.}
+\label{fig:claim-b}
+\end{figure}
+
+On LVBench, sixteen \emph{full}-resolution frames (twice the tokens) are .4861 vs.\ .4635 for eight full---${+}2.26$\,pp---while sixteen at half resolution is .4939.
+The extra frames carry the gain, not extra pixels.
+A selector $\times$ budget interaction on LongVideoBench is ${+}1.02$\,pp and non-significant ($p{=}.4435$); uniform picks also reinvest at ${+}1.13$\,pp (ns).
+With 206 discordant pairs the test only rules out a \emph{large} interaction, so this is absence of evidence that OMP is required, not proof that the selector never matters.
+Claim~B is therefore stated as a property of the budget.
+Those interaction numbers currently sit on a second GPU stack (Limitations) and are not mixed into Table~\ref{tab:t1}.
+
+\subsection{Why OMP does not reconstruct the query}
+\label{sec:mechanism}
+
+If the Gram--Schmidt step were sparse recovery, successive picks would drive $\|q_r\|$ down and residual correlation would keep ranking frames.
+Neither happens.
+On LongVideoBench-600\,s the residual fraction $\|q_r\|/\|q_0\|$ is $0.972$ after pick~1 and $0.967$ after pick~8---about 3.3\% of the query is ever removed, and pick~1 accounts for 85.6\% of that sliver.
+Residual cosine with the chosen frame is already $\sim$0 by pick~8 (Figure~\ref{fig:residual}a).
+The dictionary is coherent (mean within-video pairwise cosine $0.714$) and the query is nearly orthogonal to it (mean $0.175$, sd $0.022$; max $0.231$): all of the ranking signal sits in a $0.06$ band on top of a constant.
+That is a bound on this LongCLIP stem space, not a failure of OMP's formula.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{fig1_residual_inert.pdf}
+\caption{Geometry of the LongCLIP stem scores on LongVideoBench-600\,s ($n{=}411$).
+(a)~Residual correlation dies; residual \emph{norm} barely moves.
+The trace is logged only at picks 1, 8 and 16; the line is piecewise linear, not a dense pick-by-pick log, and the ``inert by pick~$\sim$5'' marker is from a separate denser residual-correlation check.
+(b)~Summary statistics of the two cosine distributions (mean $\pm$ sd; max marked), not histograms of per-frame samples.
+Coherent frames, near-orthogonal query: the projection step can only decorrelate already-selected directions.}
+\label{fig:residual}
+\end{figure*}
+
+Frame-frame geometry makes the same point for diversity terms.
+The raw Gram of the 1\,fps pool has participation ratio $1.98$; the top eigendirection carries 70.5\% of the mass on \emph{every} video in the bin---a shared cone of the encoder, not clip content.
+A log-det rule choosing eight frames from a rank-2 cloud is over-determined.
+Setting a DPP's query-weight $\beta{=}0$ (pure volume, query-blind) on the 600\,s bin is indistinguishable from uniform (${+}0.97$\,pp, $p{=}.75$) and significantly worse than OMP (${-}6.80$\,pp, $p{=}.0072$).
+Any $\beta{\ge}0.5$ jumps onto a plateau that is a statistical tie with OMP; none of the diversity knobs in the coverage-gated variant sweep (including LDDR-select, $\alpha$-orthogonalization, residual floors) significantly beat OMP in either long bin (Appendix~\ref{app:negatives}).
+OMP and greedy DPP-MAP are not the same algorithm---they coincide at the first pick only---so their empirical tie is a result: once residual ranking is flat, ``relevant and mutually decorrelated'' subsets look alike.
+
+\subsection{Same picks, different answerer}
+\label{sec:internvl}
+
+Table~\ref{tab:internvl} re-runs the \emph{same} OMP vs.\ uniform timestamps, the same 24-tile budget, and the same harness on InternVL3.
+This is a check that T1 is not a Qwen artifact, not a second leaderboard.
+
+The 2B model gains on every Video-MME duration bin.
+The 8B model in the same family gains only on short (${+}5.44$\,pp); medium and long are real nulls ($+0.33$ / $+0.11$\,pp) with 213 and 191 discordant pairs---the arms saw different frames and still tied on accuracy.
+That is not a general ``8B saturates'' claim: the same 8B posts its largest selection gain anywhere on LVBench (${+}10.14$\,pp, $p{=}1.2{\times}10^{-13}$).
+The effect is an interaction of benchmark and capacity.
+Duration even flips sign: InternVL3-8B's LongVideoBench gain grows with duration, its Video-MME gain decays.
+A paper that stopped at InternVL3-8B / Video-MME long would have published a null; the same paper stopping at 2B would have published a positive.
+Claim~A's 3$\times$ tile cut and Claim~B's reinvest still replicate on this family.
+
+\begin{table}[t]
+\centering
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrr}
+\toprule
+Benchmark & $n$ & IVL3-2B $\Delta$ & IVL3-8B $\Delta$ \\
+\midrule
+Video-MME short & 900 & ${+}6.00$ ($p{=}1.2{\times}10^{-4}$) & ${+}5.44$ ($p{=}1.9{\times}10^{-4}$) \\
+Video-MME medium & 900 & ${+}3.33$ ($p{=}.046$) & ${+}0.33$ ($p{=}.891$) \\
+Video-MME long & 900 & ${+}4.22$ ($p{=}.0062$) & ${+}0.11$ ($p{=}1.000$) \\
+LVBench & 1549 & ${+}9.04$ ($p{=}7.2{\times}10^{-11}$) & ${+}10.14$ ($p{=}1.2{\times}10^{-13}$) \\
+LongVideoBench val & 1337 & ${+}4.71$ ($p{=}1.6{\times}10^{-4}$) & ${+}6.51$ ($p{<}10^{-4}$) \\
+\bottomrule
+\end{tabular}}
+\caption{OMP vs.\ uniform, identical picks and tile budget, InternVL3.
+Deltas in percentage points. Video-MME overall: 2B ${+}4.52$, 8B ${+}1.96$.}
+\label{tab:internvl}
+\end{table}
+
+\section{Discussion}
+\label{sec:discussion}
+
+If the visual-token budget is fixed, the lever that moved accuracy was how many timestamps the answerer sees, not how sharp each frame is.
+On frozen OMP-8 picks, cutting each frame to about half the tokens matches full-resolution accuracy within a ${\pm}3$\,pp TOST band on LongVideoBench and LVBench---not identity, and not ``free on every benchmark'': the same cut is ${-}0.44$\,pp on Video-MME, and pooled Qwen misses ${\pm}2$\,pp.
+Spending the surplus on more frames at lower resolution ($k{=}16$ at ${\sim}$50\%) beats eight full-resolution frames at matched cost, including when the extra frames are uniform rather than OMP-selected (Figure~\ref{fig:claim-b}).
+That is the systems move: a 50\% cut is how you buy coverage of the timeline, not a claim that pixels never matter.
+We also do not claim a new selector, or that we beat LDDR's full pipeline.
+LDDR-select ties OMP at $k{=}8$; Claim~B does not need OMP; the residual is not reconstructing the query.
+
+Selection itself is a long-video problem.
+Figure~\ref{fig:longvideo} already shows the split: at 15\,s, uniform, top-$k$, and OMP are the same accuracy; the gain lives in the 600\,s and 3600\,s bins, where $k{=}8$ is sparse.
+LongVideoBench's public taxonomy is useful as a stress test, not as a finding we own.
+Coverage-style papers often target temporally referred questions.
+Official \texttt{T*} tags looked, at 600\,s, like those items do not benefit from selection; at 3600\,s the sign reversed, and the interaction is non-significant in both long bins (Appendix~\ref{app:qtype}).
+Do not build a temporal-versus-scene router on one duration slice.
+Duration is the split we would trust; wording is not.
+
+A single benchmark--answerer cell is not a portable conclusion either.
+The same OMP timestamps that lift InternVL3-2B on every Video-MME duration bin leave InternVL3-8B flat on medium and long, while that 8B gains ${+}10.14$\,pp on LVBench (\S\ref{sec:internvl}).
+Selector ranking is bench-dependent in the same way: on Video-MME, top-$k$, AKS, and FOCUS$^\star$ do not separate from uniform; only OMP and LDDR-select do.
+The residual / rank-2 Gram account in \S\ref{sec:mechanism} was measured on LongVideoBench, and we do not treat ``any query-relevant rule beats uniform'' as a universal statement.
+A paper that stopped at one cell would have published a positive or a null from identical frames.
+Report at least two answerer scales, and more than one long-video bench, before claiming that selection works---or that it does not.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+Under one LongCLIP stem scorer and one harness, classical OMP is a strong $k{=}8$ row against uniform on long video, and a statistical tie with LDDR's stage-1 rule.
+It is \citet{pati1993omp}'s 1993 algorithm used as a cheap reference, not a method we introduce.
+Holding timestamps fixed, about half the visual tokens usually match full-resolution accuracy on LongVideoBench and LVBench: a bounded equivalence, not a free lunch on every bench.
+Reinvesting that surplus into more frames at lower resolution beats fewer sharper frames at the same cost, including when the extra frames are uniform.
+If the visual budget is fixed, prefer a few decorrelated query-relevant frames and buy more of them by cutting resolution---and report at least two answerer scales, on more than one long-video bench, before claiming that selection works, or that it does not.
+
+\section{Limitations}
+\label{sec:limitations}
+
+\emph{Comparison, not a full-stack bakeoff.}
+FOCUS$^\star$ replays Algorithm~2 of \citet{zhu2025focus} on our dense LongCLIP scores.
+It is a test of that schedule, not a reproduction of their budgeted ITM scorer, and a FOCUS-paper underperformance claim would need their protocol.
+InternVL3 checks OMP against uniform only; OMP vs.\ top-$k$ / AKS / LDDR-select remains Qwen-only.
+The GD allocation arm reconstructs LDDR stage-2 importance from the paper, not their code: sign is likely robust, magnitude is not, and that result is not mixed into Tables~\ref{tab:t1}--\ref{tab:t3}.
+
+\emph{Claim~A is a bound, and Video-MME is open.}
+TOST supports ${\pm}3$\,pp on pooled Qwen LongVideoBench ($n{=}976$); it misses ${\pm}2$\,pp ($p{=}.054$).
+Those margins were chosen after the runs.
+Video-MME compression is ${-}0.44$\,pp and has no paired test.
+The 3600\,s $k{=}32$ arm was discarded after a sharding bug and not re-run, so the long-bin budget curve stops at $k{=}16$.
+
+\emph{Mechanism is this encoder, mostly this duration.}
+Residual traces, Gram participation ratio ${\sim}2$, and $\beta{=}0$ DPP are LongVideoBench-600\,s in frozen LongCLIP stem space.
+The 3600\,s bin has no cached LongCLIP frame embeddings, so the rank-2 measurement was not repeated where selection matters most.
+We do not claim the geometry for SigLIP, BLIP-ITM, or video-native scorers.
+Video-MME's selector ranking (top-$k$ non-significant vs.\ uniform) is already the counterexample inside this paper.
+
+\emph{Harness and accounting.}
+Headline T1 / Claim~A / Claim~B tables sit on one GPU family; allocation-shape and some reinvest controls sit on a second (different architecture and PyTorch build).
+Measured drift is a few tenths of a point.
+Those control cells stay out of Tables~\ref{tab:t1}--\ref{tab:t3}.
+GPT-5-mini compression is a pixel ratio after a \texttt{max\_side} cap, not a Qwen token count.
+LVBench GPT Claim~A/B pairs were recovered ($n{=}1549$); the T1 selector ranking for that answerer remains summary-archived.
+No MLVU.
+The scorer is vision-only with subtitles off, so subtitle-anchored questions are unreachable by every arm.
+
+\section{Ethical Considerations}
+\label{sec:ethics}
+
+All experiments run existing public video-QA benchmarks (LongVideoBench, Video-MME, LVBench) through frozen open or API models.
+We do not collect new human annotations, personal data, or videos.
+Frames used at inference are already in those evaluation sets; this paper does not redistribute video files.
+Selector scores are computed from question stems only (answer options never enter the scorer).
+No dual-use tooling is released beyond the measurement harness.
+
+% ============================================================================
+\bibliography{references}
+
+\appendix
+\section{FOCUS$\star$ is a schedule replay}
+\label{app:focus}
+
+Every T1 row, including FOCUS$^\star$, consumes the same 1\,fps LongCLIP stem-score vector.
+We mark the row with a star because that is not how \citet{zhu2025focus} spend compute.
+
+FOCUS selects frames by treating 16\,s clips as arms in a combinatorial bandit (their Algorithm~2 / \S2.4).
+The official story is *budgeted online scoring*: most frames are never scored; ITM pulls buy information.
+Our study already scores every frame, so an ``arm pull'' only *reveals* an already-computed cosine to the bandit.
+The schedule is theirs; the cost story is not, and the scorer is LongCLIP with a sigmoid map onto $[0,1]$, not BLIP-2 ITM.
+Hyperparameters match their defaults: clip length 16\,s, $q{=}3$ coarse pulls per clip, $\alpha{=}0.25$, pull budget $0.5$ of the pool, $m{\approx}k/4$ surviving clips.
+Unobserved frames inside a clip remain eligible; we interpolate reward from the nearest observed frame rather than RBF (their public code is richer on that point).
+The RNG is seeded per item so the row is deterministic.
+
+Dropping FOCUS from Table~\ref{tab:t1} would hide a negative under a matched scorer (${-}4.0$ / ${-}6.4$ / ${-}6.5$\,pp vs.\ OMP).
+Presenting it without a star would overclaim fidelity.
+We do not claim the FOCUS paper fails under its ITM protocol.
+
+\section{Question type is not a selector regime}
+\label{app:qtype}
+
+LongVideoBench already publishes question-type tags.
+We did not re-annotate the benchmark.
+We only asked whether OMP's gain over uniform is different on temporal-referred items (\texttt{T*}; 35.9\% of the 600\,s bin, 39.4\% of 3600\,s) than on the rest---because coverage-style selectors in the literature target that slice.
+
+\begin{table}[h]
+\centering
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llrccc}
+\toprule
+Bin & slice & $n$ & uniform & OMP & $\Delta$ (McNemar) \\
+\midrule
+600\,s & temporal \texttt{T*} & 148 & .5608 & .5811 & ${+}2.03$\,pp, $p{=}.74$ ns \\
+600\,s & non-temporal & 264 & .5492 & .6591 & ${+}10.98$\,pp, $p{=}5.2{\times}10^{-4}$ \\
+3600\,s & temporal \texttt{T*} & 222 & .4369 & .5270 & ${+}9.01$\,pp, $p{=}.013$ \\
+3600\,s & non-temporal & 342 & .4942 & .5585 & ${+}6.43$\,pp, $p{=}.021$ \\
+\bottomrule
+\end{tabular}}
+\caption{OMP vs.\ uniform on official LongVideoBench tags. Reading 600\,s alone suggests temporal questions are unwinnable; 3600\,s reverses. The interaction test is ns in both long bins.}
+\label{tab:qtype}
+\end{table}
+
+The practical read is duration, not wording: hour-scale videos with $k{=}8$ are sparse; 15\,s clips are not.
+We do not claim a question-type routing rule.
+
+\section{The variant sweep is a set of ties}
+\label{app:negatives}
+
+Figure~\ref{fig:negatives} plots coverage-gated re-runs at $k{=}8$ on LongVideoBench 600\,s and 3600\,s that change only the picking rule on the same LongCLIP scores.
+Most orthogonalization knobs ($\alpha$-orth, residual floors) sit a few points from OMP with mixed sign.
+MMR loses.
+Query-blind DPP ($\beta{=}0$) collapses onto uniform.
+None of DPP variants A/B/C significantly beats OMP in either bin (largest cell $p{=}.22$).
+LDDR-select is likewise a tie here ($p{=}1.00$ / $.18$), matching the three-benchmark T1 tests.
+We do not promote the single highest 600\,s cell ($\beta{=}0.5$ centred, $p{=}.098$ vs OMP): it is one bin, uncorrected, and the 3600\,s pool was not re-encoded in LongCLIP.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig4_negative_sweep.pdf}
+\caption{Coverage-gated selector variants vs.\ OMP at $k{=}8$.
+Markers are 600\,s and 3600\,s separately.
+A query-weighted DPP can land a couple of points above OMP; those cells are ns.
+The $\pm$1.5\,pp shade is a visual aid, not a test.}
+\label{fig:negatives}
+\end{figure}
+
+\end{document}
+
