@@ -106,18 +106,37 @@ protagonist.
 
 **Accepted and done:** the AKS porting failure is now a named result rather than a
 silent correction, in the abstract, a contribution bullet, and a Discussion
-paragraph, framed as the reviewer suggested — the finding is not the bug but how
+paragraph, framed as the reviewer suggested: the finding is not the bug but how
 completely aggregate accuracy hid it (99.5% of frames changed, 0.07 points moved on
-LVBench). **The abstract now leads with the three evaluation results** — the port
-failure, the 0.07-to-3.74-point cross-harness disagreement, and the prompt-boundary
-shift — before any selector number, with every previous number and caveat retained.
+LVBench).
 
-**Not done:** the paper has not been restructured around that lead. Section order,
-the Results ordering, and the title still follow the select/compress/reinvest
-sequence. This is an author scope decision for the October 12 cycle, not a
-disagreement with the reviewer: a full reframe means a new introduction, a
-reordered Results, and probably a new title. It is recorded as the largest known
-open item.
+**Where we disagree.** We tried the reviewer's structure — an abstract leading with
+the evaluation findings — and reverted it. Two reasons.
+
+First, it creates an abstract/body mismatch. The body *is* a select/compress/reinvest
+study: three interventions, three tables, a mechanism section, a transfer section.
+The evaluation findings occupy one Discussion paragraph and one appendix. An abstract
+promising an evaluation-methodology paper over that body misdescribes the work.
+
+Second, the AKS result is a finding about **our own implementation**, not about the
+world. It is genuinely useful — a reader learns that aggregate accuracy can conceal a
+baseline that is not implementing its method — but leading with it invites the reading
+that the paper's headline contribution is that the authors had a bug. That is a worse
+description of the work than the prescription framing the reviewer objected to.
+
+**What we did instead**, which we think is better than either version: the study
+leads, and the evaluation findings close the abstract as the *payoff of the
+matched-control design* rather than as a competing thesis. Holding four axes fixed is
+the paper's method; showing how much rides on holding them is what that method buys.
+Positioned that way the AKS port failure, the cross-harness disagreement, and the
+prompt-boundary shift are evidence **for** the paper's argument rather than a
+replacement for it, and the closing line makes the point the reviewer actually wanted
+made: those margins are the size of the effects being compared.
+
+**Still not done:** the paper is not restructured around the evaluation findings, and
+the title is unchanged. Given the above we no longer think a full reframe is the right
+move; if it happens it should be a deliberate choice to write a different paper, not a
+repositioning of this one.
 
 ---
 
