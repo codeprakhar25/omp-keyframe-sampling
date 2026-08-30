@@ -211,6 +211,7 @@ Those are also \emph{better} frames.
 % revision-log entry there. Compressed here for the ACL page limit: the arXiv
 % version reports the control arm's own contrasts (+2.18 p=.23, +1.70 p=.42).
 On that bin, with the fused query, OMP reaches .6699 against .6311 for the stem (${+}3.88$ points, $p{=}.033$) and top-$k$ reaches .6408 against .6068 (${+}3.40$, $p{=}.087$).
+A pre-registered replication on the 3600\,s bin agrees in sign and magnitude: .5691 against .5461 (${+}2.30$ points, $n{=}564$, $p{=}.18$), with the fused query moving roughly 69\% of the selected frames. Neither long bin resolves the shift alone, but two disjoint video sets agree, so we read the prompt boundary as a level shift on long video rather than a property of one bin.
 Those are better frames, but not because of the options: a control that swaps in an unrelated video's options, matched on length, already reaches .6529---56\% of the gain---so the effect is not specific to the answer set, and neither contrast separates at this sample size.
 We nonetheless score with the stem alone, following the official AKS implementation, which passes the question without candidates to its CLIP and BLIP branches~\citep{tang2025aks}.
 Every selector in this paper is therefore evaluated in a deliberately conservative configuration, and the gap above is the price of that choice rather than a hazard it avoids.

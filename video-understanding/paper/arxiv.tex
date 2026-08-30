@@ -251,6 +251,12 @@ Scoring against the fused question-and-options string instead of the stem alone 
 % options add was null (p=.7568, Spearman +0.02). See prereg/2026-08-22_fused_query.md.
 Those are also better frames, though not because of the options themselves.
 On that bin, with the fused query, OMP reaches .6699 against .6311 for the stem (${+}3.88$ points, $p{=}.033$, 33 rescued against 17 broken) and top-$k$ reaches .6408 against .6068 (${+}3.40$, $p{=}.087$).
+% REV-2026-08-30 [3600-REPLICATION] pre-registered before the run in
+% prereg/2026-08-30_fused_query_3600s.md. Criterion fixed in advance was direction
+% and magnitude, not significance: n=564 cannot resolve a ~3pt shift, and the 600s
+% OMP contrast was itself p=.134. Comparator is lmmseval_matrix_clean/k8_3600.
+A pre-registered replication on the 3600\,s bin gives the same picture: OMP reaches .5691 against .5461 for the stem (${+}2.30$ points, $n{=}564$, 46 rescued against 33 broken, $p{=}.18$), with the fused query moving roughly 69\% of the selected frames.
+Neither long bin resolves the shift on its own at these sample sizes, but the sign and magnitude agree across two disjoint video sets, so we read the prompt boundary as a level shift affecting long videos generally rather than a property of the 600\,s bin.
 A control arm isolates what the answer options contribute.
 Replacing each item's options with those of a different video---unrelated in content, matched on length, and perturbing 54\% of OMP's picks against the real options' 53\%---reaches .6529, recovering 56\% of the gain; the item's own options add a further 1.70 points beyond that, which is not significant ($p{=}.42$).
 Neither the control against the stem (${+}2.18$, $p{=}.23$) nor the fused query against the control separates at this sample size, so we do not claim a mechanism.
