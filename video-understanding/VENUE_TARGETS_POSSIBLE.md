@@ -213,3 +213,57 @@ media."
 ### The rule that holds everywhere
 
 Post the preprint; never publicly state it is under review at a named venue.
+
+---
+
+## 2026-08-30 — ARR lock reopened, ICLR 2027 found open
+
+The Oct 12 ARR lock was made before three facts were known. All three are now
+verified and they change the ranking. **No decision taken yet — user's call.**
+
+**1. The Oct 12 cycle does not lead to ACL.** Per the ARR dates page, that cycle's
+participating venues are **NAACL 2027 and COLING 2027**, commitment date
+Dec 20 2026. ACL 2027 takes ARR submissions in **January 2027**.
+
+**2. ARR takes ~10 weeks to a meta-review, and a meta-review is not a decision.**
+Measured across three completed cycles: Mar 16 to May 21 (9.6 wks), May 25 to
+Jul 30 (9.4 wks), Aug 3 to Oct 8 (9.4 wks). The Oct 2026 cycle ends Dec 20.
+
+**3. ICLR 2027 is open, direct-submission, and resolves sooner.**
+https://iclr.cc/Conferences/2027/CallForPapers
+
+| | ARR Oct 12 | ICLR 2027 |
+|---|---|---|
+| Abstract | — | Sep 18 2026 |
+| Paper | Oct 12 2026 | Sep 25 2026 |
+| Reviews | ~Dec 17 | Nov 5 2026 |
+| Author-reviewer discussion | in-cycle | Nov 5-18 2026 |
+| Decision | not in this cycle | **Dec 16 2026** |
+
+ICLR decides four days before the ARR cycle ends, and an ICLR rejection on
+Dec 16 still leaves the January ARR cycle open, which is the one feeding
+ACL 2027.
+
+**The cost of the ICLR route:** ICLR keeps every submission public with author
+names attached, including rejected and withdrawn ones. Our five-seat panel
+returned MAJOR REVISION from all five seats, so a public rejection is a live
+risk. ARR and TMLR rejections are private.
+
+**Also settled: direct submission to the ACL family no longer exists.**
+"Starting from 2024, all main *ACL conferences used ARR exclusively."
+NeurIPS, ICLR, CVPR, AAAI and TMLR all remain direct-submission. No venue
+requires institutional affiliation; the only affiliation-sensitive gate in the
+pipeline is arXiv endorsement.
+
+### Standing recommendation
+
+1. **ICLR 2027** if the paper can be made worth a public record by Sep 25
+   (reformat to ICLR 9-page style + close the panel items; no new runs needed).
+2. **TMLR** if 26 days is too tight. Its criterion is evidence quality and
+   reader interest "even if the contribution or significance of the work is
+   modest" -- written for a paper strong on evidence and modest on novelty.
+   Rolling, private, ~9 weeks, no preprint penalty.
+3. **ARR Oct 12** third: slowest to a decision, lands at NAACL/COLING rather
+   than ACL, and is the only option that charges for preprinting.
+
+All three forbid parallel submission. Picking one determines the arXiv call.
