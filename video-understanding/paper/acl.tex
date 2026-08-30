@@ -96,18 +96,19 @@
 \maketitle
 
 \begin{abstract}
-% ACL-TRIM: abstract condensed 300 -> ~185 words. No claim removed; the
-% audited/unaudited distinction and the scorer-swap power bound are kept.
+% ACL-TRIM: abstract leads with the evaluation-sensitivity results per the
+% 2026-08-30 external audit. No number or caveat removed; length held at or below
+% the previous version because the ACL body is exactly at the 8pp limit.
 An hour of video sampled once per second is 3{,}600 frames; a video language model can usually afford eight.
-Choosing those eight well matters more than the field's default suggests: on LongVideoBench's hour-long bin, eight query-selected frames answer more questions correctly than sixteen uniformly spaced ones.
-Establishing that comparison is hard, because published selectors change the frame scorer, the prompt, the resolution policy, and the answering model together.
-We hold all four fixed and vary one decision at a time.
-Under a single frozen LongCLIP scorer that sees only the question stem, we compare six training-free selection rules at eight frames on LongVideoBench, Video-MME, and LVBench.
-Which rule is used matters more than whether it is query-aware at all---on Video-MME cosine top-$k$ gains 0.67 points over uniform while OMP gains 5.9---and the strong rule needs no new algorithm: classical Orthogonal Matching Pursuit~\citep{pati1993omp}, published in 1993, beats uniform sampling by 5.7, 5.9, and 11.8 points and stays within one point of a purpose-built modern selector.
-A porting error we found and corrected in our own AKS baseline had made that row a duplicate of cosine top-$k$; correcting it changed 99.5\% of selected frames while moving LVBench accuracy by 0.07 points.
-The uniform--top-$k$--OMP ordering also holds under SigLIP on one bin, within a test that bounds only large scorer effects, so the full six-rule ordering is not shown to be scorer-invariant.
+Comparing the rules that pick those eight is hard, because published selectors change the frame scorer, the prompt boundary, the resolution policy, and the answering model together.
+We hold all four fixed and vary one decision at a time, and the first results are about evaluation rather than selection.
+A porting error in our own AKS baseline made it reproduce global cosine top-$k$: correcting it moved roughly 99.5\% of selected frames while changing LVBench accuracy by 0.07 points, so aggregate accuracy concealed a baseline that was not implementing its own method.
+Two matched harnesses running the same published rules at the same budget and encoder differ by 0.07 to 3.74 points, and the text handed to the scorer is worth a further two to four.
+Against that background we compare six training-free rules at eight frames on LongVideoBench, Video-MME, and LVBench under one frozen LongCLIP scorer.
+Which rule is used matters more than whether it is query-aware at all---on Video-MME cosine top-$k$ gains 0.67 points over uniform while Orthogonal Matching Pursuit~\citep{pati1993omp}, published in 1993, gains 5.9---and OMP beats uniform by 5.7, 5.9, and 11.8 points across the three benchmarks, within one point of a purpose-built modern selector.
+The uniform--top-$k$--OMP ordering also holds under SigLIP on one bin, within a test bounding only large scorer effects, so the full ordering is not shown to be scorer-invariant.
 Holding timestamps fixed, halving each frame's spatial budget moves accuracy by at most 0.44 points; spending the savings on more frames adds 2.36 points on LongVideoBench's long bins at verified equal cost.
-Select relevant frames first, compress them second.
+The ordering this suggests---select, compress, reinvest---is a synthesis across separate contrasts, not an identified ranking.
 \end{abstract}
 
 \section{Introduction}

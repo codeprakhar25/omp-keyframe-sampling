@@ -109,22 +109,18 @@
 
 \begin{abstract}
 An hour of video sampled once per second is 3{,}600 frames; a video language model can usually afford eight.
-Choosing those eight well matters more than the field's default suggests: on LongVideoBench's hour-long bin, eight query-selected frames answer more questions correctly than sixteen uniformly spaced ones, a 6.9-point gain on half the frames.
-Establishing that comparison is harder than it looks, because published selectors change the frame scorer, the prompt, the resolution policy, and the answering model all at once.
+Which eight it gets is decided by a selection rule, and comparing those rules is harder than it looks, because published selectors change the frame scorer, the prompt boundary, the resolution policy, and the answering model all at once.
 We hold all four fixed and vary one decision at a time.
-Under a single frozen LongCLIP scorer that sees only the question stem, we compare six training-free selection rules at eight frames on LongVideoBench, Video-MME, and LVBench.
-Which rule is used matters more than whether it is query-aware at all: on Video-MME plain cosine top-$k$ gains only 0.67 points over uniform sampling while classical Orthogonal Matching Pursuit~\citep{pati1993omp}, published in 1993, gains 5.9.
-Across the three benchmarks OMP beats uniform sampling by 5.7, 5.9, and 11.8 points and stays within one point of LDDR's purpose-built stage-1 selector, without a new algorithm.
-% REV-2026-08-21 [R5] "leaves it unchanged" -> "leaves the ordering intact". The
-% swap test has MDE ~7.9pt, larger than the 7.8pt main effect, so it bounds only
-% large scorer effects; it is not evidence of no effect.
-A porting error we found and corrected in our own AKS baseline shows how little of this a leaderboard number reveals: it had made that row a duplicate of cosine top-$k$, and correcting it changed 99.5\% of selected frames while moving LVBench accuracy by 0.07 points.
-The uniform--top-$k$--OMP ordering also holds under SigLIP on LongVideoBench-600\,s, where replacing the scorer replaces most of the selected frames; that check covers three of the six rules in one bin and bounds only scorer effects larger than roughly five points, so it does not establish that the full ordering is scorer-invariant.
-We then hold the selected timestamps fixed and cut each frame's spatial budget roughly in half: accuracy moves by at most 0.44 points, and on pooled long LongVideoBench videos a two-one-sided-test interval places the difference inside $\pm3$ points but not $\pm2$---a margin chosen after seeing the runs, so descriptive rather than confirmatory.
-% REV-2026-08-21 [M7] the LVBench figure is NOT token-audited; equal cost is the
-% premise of "reinvestment", so the two are no longer presented as one class.
-Spending those recovered tokens on sixteen lower-resolution frames instead of eight sharp ones adds a further 2.36 points on LongVideoBench's long bins, where we verify that the two arms cost the same, and 3.04 on LVBench under the same resize rule but without a separate token audit.
-The practical ordering these interventions suggest---select first, compress second, reinvest the savings---is a synthesis across separate contrasts rather than an experimentally identified ranking.
+The first thing that produces is a set of results about evaluation rather than about selection.
+A porting error in our own AKS baseline made it reproduce global cosine top-$k$; correcting it moved roughly 99.5\% of the selected frames while changing LVBench accuracy by 0.07 points, so aggregate accuracy concealed a baseline that was not implementing its own method.
+Two matched harnesses running the same published rules at the same budget with the same encoder differ by 0.07 to 3.74 points, a range that covers most of the gaps such comparisons are built on.
+The text handed to the scorer is worth a further two to four points across two long bins.
+Against that background we compare six training-free selection rules at eight frames on LongVideoBench, Video-MME, and LVBench under a single frozen LongCLIP scorer that sees only the question stem.
+Which rule is used matters more than whether it is query-aware at all: on Video-MME cosine top-$k$ gains 0.67 points over uniform sampling while classical Orthogonal Matching Pursuit~\citep{pati1993omp}, published in 1993, gains 5.9.
+Across the three benchmarks OMP beats uniform sampling by 5.7, 5.9, and 11.8 points and stays within one point of LDDR's purpose-built stage-1 selector, and on LongVideoBench's hour-long bin eight query-selected frames answer more questions correctly than sixteen uniformly spaced ones, a 6.9-point gain on half the frames.
+The uniform--top-$k$--OMP ordering also holds under SigLIP on LongVideoBench-600\,s, within a test that bounds only scorer effects larger than roughly five points, so the full six-rule ordering is not shown to be scorer-invariant.
+Holding those timestamps fixed and halving each frame's spatial budget moves accuracy by at most 0.44 points, with a two-one-sided-test interval inside $\pm3$ points but not $\pm2$ at a margin chosen after seeing the runs; spending the recovered tokens on sixteen lower-resolution frames instead of eight sharp ones adds 2.36 points on LongVideoBench's long bins at audited equal cost, and 3.04 on LVBench under the same resize rule without a separate token audit.
+The practical ordering these interventions suggest---select first, compress second, reinvest the savings---is a synthesis across separate contrasts rather than an experimentally identified ranking, and how far it travels beyond this harness is what the evaluation results above bound.
 \end{abstract}
 
 \section{Introduction}
