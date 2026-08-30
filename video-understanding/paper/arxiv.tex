@@ -124,7 +124,7 @@ We then hold the selected timestamps fixed and cut each frame's spatial budget r
 % REV-2026-08-21 [M7] the LVBench figure is NOT token-audited; equal cost is the
 % premise of "reinvestment", so the two are no longer presented as one class.
 Spending those recovered tokens on sixteen lower-resolution frames instead of eight sharp ones adds a further 2.36 points on LongVideoBench's long bins, where we verify that the two arms cost the same, and 3.04 on LVBench under the same resize rule but without a separate token audit.
-The resulting advice is ordered: select relevant frames first, compress them second, and use the savings to see more of the video.
+The practical ordering these interventions suggest---select first, compress second, reinvest the savings---is a synthesis across separate contrasts rather than an experimentally identified ranking.
 \end{abstract}
 
 \section{Introduction}
@@ -263,7 +263,7 @@ Neither the control against the stem (${+}2.18$, $p{=}.23$) nor the fused query 
 What the control does rule out is that the effect belongs to the answer set: a scorer query built from the wrong options moves accuracy about as far as one built from the right ones.
 We nonetheless score with the stem alone, following the official AKS implementation, which passes the question without candidates to its CLIP and BLIP branches~\citep{tang2025aks}.
 Every selector in this paper is therefore evaluated in a deliberately conservative configuration, and the gap above is the price of that choice rather than a hazard it avoids.
-The consequence for reading the literature is the substantive one: the text handed to the scorer is an uncontrolled axis worth close to four accuracy points---and, on the evidence above, one that does not require the substituted text to be relevant---so a comparison that is inconsistent about it is measuring the prompt rather than the selector.
+The consequence for reading the literature is the substantive one: the text handed to the scorer is an uncontrolled axis worth roughly two to four accuracy points across the two long bins---and, on the evidence above, one that does not require the substituted text to be relevant---so a comparison inconsistent about it is measuring the prompt rather than the selector.
 
 \subsection{Selection rules}
 
@@ -672,7 +672,7 @@ LDDR is the one prior study that standardises every baseline to a single encoder
 Table~\ref{tab:published} places that cell beside our own.
 Our gains are smaller in eight of the nine comparable cells, by 0.07 to 3.74 points.
 We do not read this as either harness being wrong.
-The uniform baselines themselves differ---most starkly on LVBench, 28.08 against our 34.54---so the two harnesses are not measuring from the same floor, and a lower floor leaves more room for a selector to gain.
+The uniform baselines themselves differ---most starkly on LVBench, 28.08 against our 34.54---so the two harnesses are not measuring from the same floor. A lower floor plausibly leaves more room for a selector to gain, though we did not test that and offer it as a hypothesis rather than an explanation.
 Prompt template, candidate-pool construction, decoding path, and answer parsing all differ and none of them is specified tightly enough in either paper for a reader to reconcile the two.
 % REV-2026-08-30 [AKS-FIX] Both halves of this sentence inverted once AKS was
 % corrected: AKS is now closest on Video-MME (0.07) and LDDR on LongVideoBench.
@@ -693,7 +693,7 @@ The corrected row also reproduces the published Video-MME gain to within 0.07 po
 
 The disagreement is itself the measurement.
 Two carefully controlled harnesses, running the same published rules at the same budget with the same encoder, differ by as little as 0.07 and as much as 3.74 points---a range that covers most of the gaps published selector comparisons are built on.
-That bounds how much weight any cross-paper selector number can carry, including the numbers this paper's own argument targets, and it is why every claim we make is a paired contrast inside one harness rather than a comparison against a published figure.
+Two harnesses cannot bound the disagreement in general, but they are enough to show that cross-paper selector deltas of this size are fragile, including the numbers this paper's own argument targets, and it is why every claim we make is a paired contrast inside one harness rather than a comparison against a published figure.
 It also means Table~\ref{tab:published} should be read as a measurement of harness disagreement, not as a reproduction verdict on any of these methods.
 
 \paragraph{Joint allocation systems deserve decomposed reporting.}
@@ -702,7 +702,7 @@ Our controls find no value in a simple priority-proportional resolution rule, a 
 Future methods would be considerably easier to build on if they reported separate timestamp, resolution, and frame-count interventions alongside the joint result.
 
 \paragraph{The mechanism suggests where to look next.}
-OMP works here for a reason its original derivation does not predict.
+OMP appears to work here in a way its original derivation does not predict.
 The text query is nearly orthogonal to the frame-embedding cone, so the residual barely shrinks and sparse reconstruction never really happens; what remains useful is relevance plus decorrelation.
 This has two consequences.
 Late picks can extend multi-scene coverage after the text residual flattens, which is a genuine benefit.

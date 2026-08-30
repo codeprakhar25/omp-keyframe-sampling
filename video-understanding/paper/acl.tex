@@ -202,7 +202,7 @@ On that bin, with the fused query, OMP reaches .6699 against .6311 for the stem 
 A pre-registered replication on the 3600\,s bin agrees in sign and magnitude: .5691 against .5461 (${+}2.30$ points, $n{=}564$, $p{=}.18$), with the fused query moving roughly 69\% of the selected frames. Neither long bin resolves the shift alone, but two disjoint video sets agree, so we read the prompt boundary as a level shift on long video rather than a property of one bin.
 Those are better frames, but not because of the options: a control that swaps in an unrelated video's options, matched on length, already reaches .6529---56\% of the gain---so the effect is not specific to the answer set, and neither contrast separates at this sample size.
 We nonetheless score with the stem alone, following the official AKS implementation, which passes the question without candidates to its CLIP and BLIP branches~\citep{tang2025aks}; every selector here is therefore in a deliberately conservative configuration, and the gap above is the price of that choice.
-The consequence for reading the literature is the substantive one: the text handed to the scorer is an uncontrolled axis worth close to four accuracy points, so a comparison inconsistent about it is measuring the prompt rather than the selector.
+The consequence for reading the literature is the substantive one: the text handed to the scorer is an uncontrolled axis worth roughly two to four accuracy points across the two long bins, so a comparison inconsistent about it is measuring the prompt rather than the selector.
 
 \subsection{Selection rules}
 
@@ -605,7 +605,7 @@ LDDR is the one prior study that standardises every baseline to a single encoder
 Table~\ref{tab:published} places that cell beside our own.
 Our gains are smaller in eight of the nine comparable cells, by 0.07 to 3.74 points.
 We do not read this as either harness being wrong.
-The uniform baselines themselves differ---most starkly on LVBench, 28.08 against our 34.54---so the two harnesses are not measuring from the same floor, and a lower floor leaves more room for a selector to gain.
+The uniform baselines themselves differ---most starkly on LVBench, 28.08 against our 34.54---so the two harnesses are not measuring from the same floor. A lower floor plausibly leaves more room for a selector to gain, though we did not test that and offer it as a hypothesis rather than an explanation.
 Prompt template, candidate-pool construction, decoding path, and answer parsing all differ and none of them is specified tightly enough in either paper for a reader to reconcile the two.
 % REV-2026-08-30 [AKS-FIX] Both halves of this sentence inverted once AKS was
 % corrected: AKS is now closest on Video-MME (0.07) and LDDR on LongVideoBench.
@@ -626,7 +626,7 @@ The corrected row also reproduces the published Video-MME gain to within 0.07 po
 
 The disagreement is itself the measurement.
 Two carefully controlled harnesses, running the same published rules at the same budget with the same encoder, differ by as little as 0.07 and as much as 3.74 points---a range that covers most of the gaps published selector comparisons are built on.
-That bounds how much weight any cross-paper selector number can carry, including the numbers this paper's own argument targets, and it is why every claim we make is a paired contrast inside one harness rather than a comparison against a published figure.
+Two harnesses cannot bound the disagreement in general, but they are enough to show that cross-paper selector deltas of this size are fragile, including the numbers this paper's own argument targets, and it is why every claim we make is a paired contrast inside one harness rather than a comparison against a published figure.
 It also means Table~\ref{tab:published} should be read as a measurement of harness disagreement, not as a reproduction verdict on any of these methods.
 
 \begin{figure}[h]
