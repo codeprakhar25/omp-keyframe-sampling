@@ -38,8 +38,12 @@
 %      (top-k +0.67 vs OMP +5.85; between-rule spread 5.18 excl FOCUS*).
 %      Flagged by the Devil's Advocate seat, verified, now bounded to the two
 %      benchmarks where it holds with Video-MME named as the exception.
-% TODO [R9] MDP3 and Q-Frame are in LDDR's matched table and absent from
-%      ours. Both training-free and runnable on the cached embeddings.
+% [R9] DROPPED 2026-08-29, deliberately. MDP3 and Q-Frame would each be a
+%      from-scratch port with no published number at our budget to validate
+%      against -- exactly the failure mode that produced the AKS padding bug
+%      (see [AKS-FIX] below). The residual-saturation mechanism in Sec:why
+%      covers unrun selectors better than two more unvalidated rows would.
+%      Reopen only with a validation target in hand.
 % [R10] DONE. VERIFIED against arXiv:2605.11477v1 p7 Table 2b: under one total
 %      token budget, 1024 tok/frame 59.76, 512 tok/frame 61.03, 256 tok/frame
 %      59.31 (LongVideoBench, Qwen2.5-VL-7B). Halving per-frame tokens doubles
@@ -48,11 +52,19 @@
 %      replication. What stays ours: measured token parity (0.996/0.984 vs their
 %      asserted parity), paired McNemar, and the uniform 8->16 control showing
 %      the effect does not require OMP.
-% TODO [R11] Blind/text-only floor per benchmark not run (~$2).
-% TODO [R12] Fused-query ordering check for AKS/FOCUS*/LDDR-select not
-%      run; Table 1's ordering is established at one point on an axis
-%      measured to be worth ~3.9pt (~$4).
-% TODO [R13] k=8 only; below AKS's and FOCUS's published 32-64F regime.
+% [R11] DONE 2026-08-29. Blind/text-only floor on LongVideoBench-600s:
+%      .4369 (n=412) -- 43.7% answerable with NO frames. blind->uniform +10.9,
+%      uniform->OMP +9.95. Per-benchmark floors for Video-MME and LVBench are
+%      still NOT run; the reported floor is LVB-600s only.
+% [R12] DONE 2026-08-29 (LVB-600s, n=412, all five selectors). The fused
+%      query is a LEVEL SHIFT (+2.9..+3.9 for every rule except FOCUS*, -0.49),
+%      not a re-ranking: the top three hold position. Table 1's ordering is not
+%      an artifact of the scorer's query text. Run on LVB-600s only.
+% [R13] DONE 2026-08-29. Full k=32 matrix run on LVB-600s (11 arms, n=412).
+%      No selector-vs-selector difference is significant at either budget; every
+%      selector beats uniform at k=8 but only AKS/LDDR-select/OMP do at k=32
+%      (uniform gains +6.80 from k=8->32, OMP +1.70). The ordering is
+%      unidentified at k=32, not reversed. LVB-600s only.
 % =====================================================================
 % ---------------------------------------------------------------------
 % 2026-08-22 pass. Snapshot before it: archive/arxiv.tex.pre-2026-08-22
@@ -342,7 +354,7 @@ Method & LongVideoBench & Video-MME & LVBench \\
 Uniform & .5654 ($-$5.69) & .5637 ($-$5.85) & .3454 ($-$11.81) \\
 Top-$k$ & .6028 ($-$1.95) & .5704 ($-$5.18) & .4319 ($-$3.16) \\
 \textbf{OMP} & .6223 & \textbf{.6222} & .4635 \\
-AKS & .6021 ($-$2.02) & .5785 ($-$4.37) & .4280 ($-$3.55) \\
+AKS & .5916 ($-$3.07) & .6059 ($-$1.63) & .4287 ($-$3.48) \\
 FOCUS$^\star$ & .5819 ($-$4.04) & .5578 ($-$6.44) & .3983 ($-$6.52) \\
 LDDR-select & \textbf{.6320} (${+}0.97$) & .6193 ($-$0.29) & \textbf{.4693} (${+}0.58$) \\
 \bottomrule
@@ -368,7 +380,9 @@ The gains appear once the candidate pool outgrows the budget---7.8 points at 600
 Selection is a scarcity effect, and the field's interest in it should scale with video length rather than apply uniformly.
 
 Which \emph{kind} of rule is needed is more benchmark-dependent than the headline suggests.
-On Video-MME, top-$k$, AKS, and FOCUS$^\star$ do not separate detectably from uniform sampling, while OMP and LDDR-select do; on LongVideoBench, OMP's advantage over plain top-$k$ is small and often undetectable within individual bins.
+% REV-2026-08-30 [AKS-FIX] AKS moved to the other side of this sentence: the
+% corrected rule separates from uniform on Video-MME at p=4.0e-6 (n=2700).
+On Video-MME, top-$k$ and FOCUS$^\star$ do not separate detectably from uniform sampling, while OMP, LDDR-select, and AKS do---AKS by 4.22 points ($p{=}4.0\times10^{-6}$); on LongVideoBench, OMP's advantage over plain top-$k$ is small and often undetectable within individual bins.
 The supported reading is narrow and worth stating precisely: combining query relevance with suppression of already-covered directions is consistently strong in this harness, whereas the value of any individual simpler heuristic does not transfer across benchmarks on its own.
 Whether that ordering is a property of the rules or of LongCLIP is the subject of \S\ref{sec:scorer}.
 
@@ -603,10 +617,14 @@ We read it as evidence about where their gains live.
 % That FAILS on Video-MME: top-k gains 0.67 over uniform while OMP gains 5.85, so
 % the between-rule spread (5.18 excluding FOCUS*) exceeds it. The fact was already
 % reported in Sec:selection and simply not propagated here. Now bounded.
-Once the scorer, prompt boundary, frame budget, and answerer are held fixed, the room between subset-selection rules is usually modest: on LongVideoBench and LVBench it is smaller than the distance from uniform sampling to plain top-$k$.
-Video-MME is the exception, and an instructive one.
-There top-$k$ gains only 0.67 points over uniform while OMP and LDDR-select gain close to six, so the choice of \emph{which} rule matters far more than the choice to be query-aware at all.
-The defensible generalization is therefore narrower than ``subset rules barely matter'': on two of three benchmarks the rule contributes less than the scorer and pipeline it arrives with, and on the third the rule itself is decisive.
+% REV-2026-08-30 [AKS-FIX] Bound restated again. With the corrected AKS row the
+% between-rule span is 4.04 on LongVideoBench against a 3.74 uniform->top-k
+% distance, so the claim now survives on LVBench ONLY (4.06 vs 8.65). Video-MME
+% was already broken (R14). Do not repair this by dropping AKS from the span.
+Once the scorer, prompt boundary, frame budget, and answerer are held fixed, the room between subset-selection rules is smaller than the distance from uniform sampling to plain top-$k$ on LVBench alone (4.06 points against 8.65).
+On LongVideoBench the two are comparable (4.04 against 3.74), and on Video-MME the between-rule spread dwarfs it (5.18 against 0.67).
+Video-MME is the sharpest case: there top-$k$ gains only 0.67 points over uniform while OMP, LDDR-select, and AKS each gain more than four, so the choice of \emph{which} rule matters far more than the choice to be query-aware at all.
+The defensible generalization is therefore not ``subset rules barely matter'': on one of three benchmarks the rule contributes less than the scorer and pipeline it arrives with, and on the other two the rule itself carries real weight.
 The corollary for evaluation practice is concrete: a selector comparison is only informative if the scoring stage is shared, and a paper reporting a new rule should include a classical pursuit or greedy baseline on its own scores before claiming the rule is what helped.
 
 % REV-2026-08-21 [R1] Table rebuilt from the MATCHED published cell.
@@ -627,7 +645,7 @@ Rule & pub. & ours & pub. & ours & pub. & ours \\
 \midrule
 \emph{uniform (absolute)} & 57.19 & 56.37 & 54.53 & 56.54 & 28.08 & 34.54 \\
 \midrule
-AKS$^\dagger$ & ${+}4.29$ & ${+}1.48$ & ${+}5.01$ & ${+}3.67$ & ${+}12.07$ & ${+}8.26$ \\
+AKS$^\dagger$ & ${+}4.29$ & ${+}4.22$ & ${+}5.01$ & ${+}2.62$ & ${+}12.07$ & ${+}8.33$ \\
 FOCUS$^{\star\dagger}$ & ${+}1.70$ & $-0.59$ & ${+}5.00$ & ${+}1.65$ & ${+}3.49$ & ${+}5.29$ \\
 LDDR-select & ${+}5.96$ & ${+}5.56$ & ${+}8.90$ & ${+}6.66$ & ${+}14.98$ & ${+}12.39$ \\
 OMP & --- & ${+}5.85$ & --- & ${+}5.69$ & --- & ${+}11.81$ \\
@@ -640,14 +658,16 @@ OMP & --- & ${+}5.85$ & --- & ${+}5.69$ & --- & ${+}11.81$ \\
 \paragraph{Two matched harnesses disagree by as much as the effects they measure.}
 LDDR is the one prior study that standardises every baseline to a single encoder, and it reports a cell matched to ours on answerer family, frame budget, and encoder.
 Table~\ref{tab:published} places that cell beside our own.
-Our gains are smaller in eight of the nine comparable cells, by 0.4 to 3.8 points.
+Our gains are smaller in eight of the nine comparable cells, by 0.07 to 3.74 points.
 We do not read this as either harness being wrong.
 The uniform baselines themselves differ---most starkly on LVBench, 28.08 against our 34.54---so the two harnesses are not measuring from the same floor, and a lower floor leaves more room for a selector to gain.
 Prompt template, candidate-pool construction, decoding path, and answer parsing all differ and none of them is specified tightly enough in either paper for a reader to reconcile the two.
-We also find no clean pattern in the residuals: the rule whose native encoder we did \emph{not} substitute (LDDR-select, $-0.40$ on Video-MME) reproduces closest there but not on LongVideoBench, where AKS is closer despite a substituted scorer.
+% REV-2026-08-30 [AKS-FIX] Both halves of this sentence inverted once AKS was
+% corrected: AKS is now closest on Video-MME (0.07) and LDDR on LongVideoBench.
+We also find no clean pattern in the residuals, and in particular no advantage to keeping a rule's native encoder: on Video-MME the closest reproduction is AKS$^\dagger$, within 0.07 points of the published gain despite a substituted scorer, while LDDR-select---the one rule we run on its authors' own encoder---reproduces closest on LongVideoBench (2.24) and LVBench (2.59).
 
 The disagreement is itself the measurement.
-Two carefully controlled harnesses, running the same published rules at the same budget with the same encoder, differ by 0.4 to 3.8 points---a range that covers most of the gaps published selector comparisons are built on.
+Two carefully controlled harnesses, running the same published rules at the same budget with the same encoder, differ by as little as 0.07 and as much as 3.74 points---a range that covers most of the gaps published selector comparisons are built on.
 That bounds how much weight any cross-paper selector number can carry, including the numbers this paper's own argument targets, and it is why every claim we make is a paired contrast inside one harness rather than a comparison against a published figure.
 It also means Table~\ref{tab:published} should be read as a measurement of harness disagreement, not as a reproduction verdict on any of these methods.
 

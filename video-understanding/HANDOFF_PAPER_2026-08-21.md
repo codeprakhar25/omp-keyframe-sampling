@@ -165,7 +165,13 @@ Also: AKS bib author fixed (Tian, Yunhong -> **Yunjie**), arXiv:2502.21271 added
 **R12 is the one that matters most** — it is a live threat to the main claim and cheap
 because the pipeline exists.
 
-AWS: both G-quota requests **DENIED** (new-account ramp-up). Cases 178732194600183 /
-178732194700551. Reply drafts (Deeksha at AWS Activate + case appeal at 4 vCPU not 16)
-are in the session transcript. SageMaker GPU quotas are all 0 too — not a bypass.
-Modal needs no quota and is the working path.
+AWS (updated 2026-08-24): G on-demand quota **APPROVED at 8 vCPU** in us-east-1.
+`L-DB2E81BA` = 8.0, verified from CLI. Asked for 4, AWS partially approved at 8 =
+**two g6e.xlarge in parallel** (1x L40S 48 GB each, ~$1.86/hr each). What worked was
+replying inside the already-open case 178732194600183 rather than filing a new one —
+Service Quotas refuses a second request while one reads `CASE_OPENED`, and the Support
+API is unusable on the Basic plan (`SubscriptionRequiredException`). Spot quota
+`L-3819A6DF` is still 0.0, case 178732194700551 left open and untouched. SageMaker GPU
+quotas are all 0 too — not a bypass. Modal needs no quota and is still the working path;
+AWS is a credits lane, not a critical path. If running the 2-GPU shard configuration,
+gate completion on unique qids, never line count (see `cov_gate.py`).
