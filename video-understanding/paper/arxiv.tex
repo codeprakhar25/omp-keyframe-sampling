@@ -109,16 +109,18 @@
 
 \begin{abstract}
 An hour of video sampled once per second is 3{,}600 frames; a video language model can usually afford eight.
-Choosing those eight well matters more than the field's default suggests: on hour-long videos, eight query-selected frames answer more questions correctly than sixteen uniformly spaced ones, a 6.9-point gain on half the frames.
+Choosing those eight well matters more than the field's default suggests: on LongVideoBench's hour-long bin, eight query-selected frames answer more questions correctly than sixteen uniformly spaced ones, a 6.9-point gain on half the frames.
 Establishing that comparison is harder than it looks, because published selectors change the frame scorer, the prompt, the resolution policy, and the answering model all at once.
 We hold all four fixed and vary one decision at a time.
 Under a single frozen LongCLIP scorer that sees only the question stem, we compare six training-free selection rules at eight frames on LongVideoBench, Video-MME, and LVBench.
-Query-aware selection is the dominant lever, and it does not require a new algorithm: classical Orthogonal Matching Pursuit~\citep{pati1993omp}, published in 1993, beats uniform sampling by 5.7, 5.9, and 11.8 points and stays within one point of LDDR's purpose-built stage-1 selector.
+Which rule is used matters more than whether it is query-aware at all: on Video-MME plain cosine top-$k$ gains only 0.67 points over uniform sampling while classical Orthogonal Matching Pursuit~\citep{pati1993omp}, published in 1993, gains 5.9.
+Across the three benchmarks OMP beats uniform sampling by 5.7, 5.9, and 11.8 points and stays within one point of LDDR's purpose-built stage-1 selector, without a new algorithm.
 % REV-2026-08-21 [R5] "leaves it unchanged" -> "leaves the ordering intact". The
 % swap test has MDE ~7.9pt, larger than the 7.8pt main effect, so it bounds only
 % large scorer effects; it is not evidence of no effect.
-That ordering survives a scorer swap: replacing LongCLIP with SigLIP replaces most of the selected frames and leaves the ordering intact, though the test bounds only scorer effects larger than roughly five points.
-We then hold the selected timestamps fixed and cut each frame's spatial budget roughly in half: accuracy moves by at most 0.44 points, and on pooled long LongVideoBench videos the compressed arm is statistically equivalent to full resolution within $\pm3$ points.
+A porting error we found and corrected in our own AKS baseline shows how little of this a leaderboard number reveals: it had made that row a duplicate of cosine top-$k$, and correcting it changed 99.5\% of selected frames while moving LVBench accuracy by 0.07 points.
+The uniform--top-$k$--OMP ordering also holds under SigLIP on LongVideoBench-600\,s, where replacing the scorer replaces most of the selected frames; that check covers three of the six rules in one bin and bounds only scorer effects larger than roughly five points, so it does not establish that the full ordering is scorer-invariant.
+We then hold the selected timestamps fixed and cut each frame's spatial budget roughly in half: accuracy moves by at most 0.44 points, and on pooled long LongVideoBench videos a two-one-sided-test interval places the difference inside $\pm3$ points but not $\pm2$---a margin chosen after seeing the runs, so descriptive rather than confirmatory.
 % REV-2026-08-21 [M7] the LVBench figure is NOT token-audited; equal cost is the
 % premise of "reinvestment", so the two are no longer presented as one class.
 Spending those recovered tokens on sixteen lower-resolution frames instead of eight sharp ones adds a further 2.36 points on LongVideoBench's long bins, where we verify that the two arms cost the same, and 3.04 on LVBench under the same resize rule but without a separate token audit.
@@ -136,7 +138,7 @@ The default rule is still uniform sampling: take eight frames spread evenly acro
 Our clearest single result is that this default is expensive.
 On hour-long LongVideoBench videos, eight frames chosen for their relevance to the question beat sixteen uniformly spaced frames by 6.9 points ($p{=}.0011$), and the same pattern holds one budget lower on ten-minute videos.
 Half the frames, better answers.
-Spending compute on \emph{which} frames to keep buys more than spending it on \emph{how many}.
+Spending an \emph{answerer visual-token} budget on \emph{which} frames to keep buys more than spending it on \emph{how many}; the selection stage has its own cost, which we account for in \S\ref{sec:selection} and do not include here.
 
 Many recent systems already replace uniform sampling with query-aware retrieval, temporal coverage, diversity, or learned evidence scores~\citep{tang2025aks,sun2025mdp3,zhu2025focus,wang2026evidential,peng2026qca}, and others jointly adapt frame choice and spatial resolution~\citep{zhang2025qframe,chen2026lddr,wang2026dafs} or prune tokens once frames are inside the vision stack~\citep{vistallm2026,moprune2026}.
 They report large end-to-end gains.
@@ -161,9 +163,9 @@ That is a methodological choice rather than a concession.
 An off-the-shelf rule has no hyperparameters for us to fit to these benchmarks, so a gap between it and a competing selector reflects the controlled comparison rather than unequal effort spent on our side of it.
 It also sets an informative bar: a 1993 algorithm is the least sophisticated thing that could plausibly work here, and how well it does is itself a measurement of how much the recent purpose-built selectors gain from their subset rules as opposed to their scorers and pipelines.
 
-The three interventions rank cleanly, and the ordering is the paper's main practical output.
+The three interventions rank consistently across the settings we tested, though they were estimated in separate contrasts rather than one factorial design, so the ordering is a synthesis rather than an identified effect ranking.
 Selection is the large lever: OMP improves on uniform sampling by 5.7 to 11.8 points depending on the benchmark, and can beat uniform inputs carrying twice as many frames.
-Compression is nearly free but not by itself useful: halving the per-frame budget at fixed timestamps changes accuracy by at most 0.44 points, and we establish formal $\pm3$-point equivalence on pooled long videos.
+Compression is nearly free but not by itself useful: halving the per-frame budget at fixed timestamps changes accuracy by at most 0.44 points, with a post-hoc $\pm3$-point equivalence interval on pooled long videos.
 Reinvestment converts that free budget into a real gain of two to three points.
 None of this is universal.
 The benefit depends on which model reads the frames and which benchmark asks the question, and OMP's later picks drift toward content that is visually novel but irrelevant.
@@ -172,11 +174,12 @@ We report those boundaries rather than smoothing them.
 \paragraph{Contributions.}
 \begin{itemize}
   \item \textbf{A matched comparison of six training-free selectors} under one scorer, one prompt boundary, one frame budget, and one answerer harness. OMP is a strong query-focused rule and stays within one point of LDDR's stage-1 selector.
-  \item \textbf{Evidence that selection substitutes for frame count.} OMP significantly outperforms uniform sampling while using half as many frames, in two independent long-video cross-budget contrasts.
-  \item \textbf{A decomposition of the fixed-budget allocation decision.} Roughly halving the per-frame spatial budget preserves accuracy, with formal equivalence testing rather than a bare null result; reinvesting the savings in additional keyframes then improves long-video QA.
+  \item \textbf{Evidence that selection substitutes for frame count.} OMP significantly outperforms uniform sampling while using half as many frames, in two disjoint LongVideoBench duration bins (600 and 3600\,s) that share a benchmark, scorer, answerer, and implementation.
+  \item \textbf{A decomposition of the fixed-budget allocation decision.} Roughly halving the per-frame spatial budget preserves accuracy, bounded by a two-one-sided-test interval rather than a bare null result, at a margin chosen post hoc; reinvesting the savings in additional keyframes then improves long-video QA.
   % REV-2026-08-21 [R5] deleted "and its significance"; added the power bound.
   \item \textbf{Evidence that the ranking survives a scorer swap.} Replacing LongCLIP with SigLIP changes 67--84\% of the selected frames yet leaves the selector ordering intact, within a test that bounds only scorer effects above roughly five points.
-  \item \textbf{Explicit boundaries on all three claims}, from paired tests, two answerer families, three benchmarks, a residual-geometry diagnostic, and a qualitative failure audit that identifies when query-focused diversity helps and when it drifts off-topic.
+  \item \textbf{Evidence that aggregate accuracy conceals implementation error.} A padding branch in our own AKS port made that baseline select global top-$k$ at every $k<32$. Correcting it moved roughly 99.5\% of selected frames yet changed LVBench accuracy by 0.07 points. We report the cross-arm overlap check that caught it.
+  \item \textbf{Explicit boundaries on these claims}, from paired tests, two answerer families, three benchmarks, a residual-geometry diagnostic, and a purposive failure audit. The boundaries are uneven: the scorer swap covers one bin, the equivalence result one pooled setting, and the audit is exploratory.
 \end{itemize}
 
 \section{Related Work}
@@ -342,7 +345,7 @@ The same pattern holds one budget higher: on 600\,s videos, OMP with sixteen fra
 % compute (1 fps decode + full-pool LongCLIP encode) is not counted anywhere here.
 Both contrasts compare a policy that is cheaper \emph{in answerer visual tokens} against a more expensive one, and the cheaper policy wins, which is a stronger statement than any equal-budget comparison can make.
 This accounting covers the answerer only: producing the selected set additionally requires decoding the video at 1\,fps and encoding the whole pool with LongCLIP, a cost we do not measure and which a single-query-per-video deployment would not amortise.
-Doubling the frame count is the obvious way to spend more compute on a long video, and on these benchmarks it is the worse way.
+Doubling the frame count is the obvious way to spend more compute on a long video, and in these two LongVideoBench bins it is the worse way.
 
 \begin{table*}[t]
 \centering
@@ -370,14 +373,17 @@ LDDR-select is the one rule that keeps pace, staying within a point of OMP on al
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{fig2_long_video_effect.pdf}
-\caption{OMP's gain over uniform sampling grows with video duration on LongVideoBench. At 15\,s, uniform, top-$k$, and OMP have identical accuracy (.7249); the significant gains occur at 600 and 3600\,s.}
+\caption{OMP's gain over uniform sampling appears only once the 1\,fps candidate pool outgrows the eight-frame budget. At 15\,s, uniform, top-$k$, and OMP have identical accuracy (.7249); the gain is 7.8 points at 600\,s and 7.5 at 3600\,s. The effect switches on with pool size rather than growing with duration.}
 \label{fig:longvideo}
 \end{figure}
 
 The duration split explains when any of this matters.
 On 15\,s clips, uniform sampling, top-$k$, and OMP return exactly the same accuracy (.7249): eight frames out of fifteen candidates cover the video regardless of how they are picked, so there is nothing for a selector to do.
 The gains appear once the candidate pool outgrows the budget---7.8 points at 600\,s ($p{=}.0022$) and 7.5 points at 3600\,s ($p{=}5.9\times10^{-4}$).
-Selection is a scarcity effect, and the field's interest in it should scale with video length rather than apply uniformly.
+% REV-2026-08-30 [SCOPE] the caption previously said the gain "grows with duration",
+% which the paper's own numbers contradict: 7.8 at 600s vs 7.5 at 3600s.
+Note that the gain does not keep growing after that: 7.5 at 3600\,s is if anything slightly below the 7.8 at 600\,s, so this is a threshold that switches on when the pool exceeds the budget, not a gradient in duration.
+The duration bins also differ in content and question composition, so this is an observational contrast between bins; isolating pool size from duration would require a controlled truncation experiment that we did not run.
 
 Which \emph{kind} of rule is needed is more benchmark-dependent than the headline suggests.
 % REV-2026-08-30 [AKS-FIX] AKS moved to the other side of this sentence: the
@@ -432,14 +438,14 @@ A significant result beside a non-significant one is not evidence that the two d
 
 The claim this supports is bounded.
 One alternative scorer on two duration bins does not establish scorer-invariance in general, and the two encoders share a contrastive image--text objective, so a scorer built on a different principle---an ITM head, or MLLM attention---could still reorder the table.
-What it does rule out is the specific worry that Table~\ref{tab:t1} is an artifact of LongCLIP: the ordering holds when most of the selected frames are replaced.
+What it weakens---without ruling out---is the worry that Table~\ref{tab:t1} is an artifact of LongCLIP: the ordering holds for the three rules tested when most of the selected frames are replaced.
 
 \subsection{Half the pixels change almost nothing}
 \label{sec:compression}
 
 Table~\ref{tab:t2} holds the selected timestamps fixed and changes only how many pixels each frame is worth.
 Across the three Qwen benchmark aggregates, moving to the compressed arm shifts accuracy by at most 0.44 points in either direction.
-A uniform-timestamp control on pooled LongVideoBench long videos moves by 0.31 points ($p{=}.784$), which shows the stability is a property of the compression, not something special about OMP-selected frames.
+A uniform-timestamp control on pooled LongVideoBench long videos moves by 0.31 points ($p{=}.784$), which is consistent with the stability being a property of the compression rather than of OMP-selected frames specifically; a non-significant control is not itself an equivalence result.
 
 \begin{table}[t]
 \centering
@@ -463,7 +469,7 @@ Uniform / LVB long pool & .5061 & .5092 & ${+}0.31$ ($p{=}.784$) \\
 Small differences are easy to over-read, so we bound one of them properly.
 On the pooled LongVideoBench long bins ($n{=}976$), the compressed OMP arm is 0.72 points \emph{higher} than full resolution, with a 90\% confidence interval of $[-0.60,+2.03]$.
 That interval fits inside a $\pm3$-point margin (TOST $p{=}.0022$) but narrowly fails at $\pm2$ ($p{=}.054$), so $\pm3$ is the honest statement.
-InternVL3-8B supports a stronger version under a more aggressive intervention: cutting 24 tiles to 8 moves pooled accuracy by $-0.10$ points with a 90\% interval of $[-1.66,+1.45]$, establishing equivalence at $\pm2$ points ($p{=}.022$).
+InternVL3-8B supports a stronger version under a more aggressive intervention: cutting 24 tiles to 8 moves pooled accuracy by $-0.10$ points with a 90\% interval of $[-1.66,+1.45]$, which clears a $\pm2$-point margin ($p{=}.022$).
 The remaining LVBench and Video-MME differences in Table~\ref{tab:t2} are descriptive stability checks; we do not present them as equivalence results.
 
 \begin{figure}[t]
@@ -474,7 +480,7 @@ The remaining LVBench and Video-MME differences in Table~\ref{tab:t2} are descri
 \end{figure}
 
 Compression being cheap does not mean the allocation \emph{shape} is irrelevant, and our controls separate the two.
-The residual-proportional schedule does not beat a flat split at the same mean budget (Figure~\ref{fig:claim-a}), so OMP's ranking---useful as it is for choosing frames---carries no usable signal about how to distribute pixels among them.
+The residual-proportional schedule does not beat a flat split at the same mean budget (Figure~\ref{fig:claim-a}), so OMP's ranking---useful as it is for choosing frames---did not improve accuracy detectably when used to distribute pixels among them. We ran no equivalence test on that contrast, so this is a failure to detect a difference rather than evidence of none.
 A reconstruction of LDDR's stage-2 Group-DPP importance does better, improving on the flat split by 1.84 points on the pooled long bins ($p{=}.0198$, 95\% CI $[+0.37,+3.32]$).
 That contrast comes from our own same-environment reconstruction rather than the authors' released implementation, and its 3600\,s component is not individually significant, so we treat it as indicative.
 The conclusion is therefore three-part and narrower than ``resolution does not matter'': coarse compression is close to free, a naive priority-proportional rule adds nothing, and a better-designed importance signal can add something.
@@ -537,7 +543,7 @@ The defensible claim is that temporal reinvestment works with OMP, points the sa
 \subsection{What the later picks actually add}
 \label{sec:mechanism}
 
-OMP's residual trace turns out not to behave the way its signal-processing origin predicts, and the discrepancy explains why extra frames still help.
+OMP's residual trace turns out not to behave the way its signal-processing origin predicts. We offer the following as a hypothesis consistent with that discrepancy, not as a demonstrated mechanism: nothing here intervenes on residual geometry, so the account below is observational.
 On both LongVideoBench long bins, the residual norm is 0.972 of its starting value after a single pick and 0.967 after eight, and does not fall further by sixteen.
 Almost none of the query is ever reconstructed.
 What does change is the residual's correlation with the frame being selected, which drops from .233 at pick one to .004 at pick eight and to roughly zero by pick sixteen.
@@ -549,7 +555,7 @@ Yet those later frames are not junk: they keep a cosine near .20 with the origin
 % Corrected to the dominant directions of the cone, and the known source cited.
 The picture is a text query that sits almost orthogonal to the \emph{dominant directions} of the frame-embedding cone---the modality gap of contrastive image--text encoders~\citep{liang2022modality}, visible directly in Figure~\ref{fig:residual}b---so with an effectively low-rank frame dictionary, eight greedy picks reach only those dominant directions and OMP cannot reduce the residual much whatever it selects.
 What it can do is avoid repeating itself.
-Late picks add little new query direction while adding new chances for the answerer to encounter a relevant moment, which is precisely the behaviour the reinvestment result rewards.
+Late picks add little new query direction while adding new chances for the answerer to encounter a relevant moment. That is consistent with the reinvestment result, but the two are co-occurring measurements; we did not test mediation.
 
 \begin{figure*}[t]
 \centering
@@ -572,7 +578,7 @@ It does point clearly at a design target: a relevance floor, so that spread is e
 Table~\ref{tab:internvl} hands the identical OMP and uniform timestamps to InternVL3, changing the answerer and nothing else.
 The selection gain replicates on LongVideoBench and LVBench at both model sizes.
 Video-MME does not cooperate: the 2B model benefits at every duration, while the 8B model benefits only on short videos and is flat on medium and long ones despite receiving demonstrably different frames.
-Model capacity is not the explanation, because the same 8B model gains 10.14 points on LVBench.
+Capacity alone does not account for it, since the same 8B model gains 10.14 points on LVBench; a capacity-by-benchmark interaction remains possible and one model family cannot separate the two.
 
 \begin{table}[t]
 \centering
@@ -604,7 +610,7 @@ Both halves of the select--compress--reinvest story therefore survive a change o
 Under a fixed visual-token budget, our interventions rank consistently.
 Choosing frames is the large lever: a small query-focused set beats uniform sampling, sometimes even when the uniform input carries twice as many frames.
 Compressing those frames is close to free but buys nothing on its own---it changes few predictions in every Qwen and InternVL setting we tested.
-Its value is entirely in what the savings are spent on, and spending them on temporal coverage returns a further two to three points.
+Its accuracy value lies in what the savings are spent on, and spending them on temporal coverage returns a further two to three points; compression may still be worth it for latency or memory even when the tokens are not reinvested.
 The practical ordering is therefore to fix selection first, treat resolution as the slack variable, and reinvest rather than pocket the difference.
 
 \paragraph{A 1993 algorithm is competitive with purpose-built selectors.}
@@ -624,7 +630,7 @@ We read it as evidence about where their gains live.
 Once the scorer, prompt boundary, frame budget, and answerer are held fixed, the room between subset-selection rules is smaller than the distance from uniform sampling to plain top-$k$ on LVBench alone (4.06 points against 8.65).
 On LongVideoBench the two are comparable (4.04 against 3.74), and on Video-MME the between-rule spread dwarfs it (5.18 against 0.67).
 Video-MME is the sharpest case: there top-$k$ gains only 0.67 points over uniform while OMP, LDDR-select, and AKS each gain more than four, so the choice of \emph{which} rule matters far more than the choice to be query-aware at all.
-The defensible generalization is therefore not ``subset rules barely matter'': on one of three benchmarks the rule contributes less than the scorer and pipeline it arrives with, and on the other two the rule itself carries real weight.
+The defensible generalization is therefore not ``subset rules barely matter'': on one of three benchmarks the between-rule span is the smaller quantity, and on the other two it is not. We do not apportion variance between scorer, pipeline, implementation, and answer parsing, so this compares two spans rather than attributing effects to components.
 The corollary for evaluation practice is concrete: a selector comparison is only informative if the scoring stage is shared, and a paper reporting a new rule should include a classical pursuit or greedy baseline on its own scores before claiming the rule is what helped.
 
 % REV-2026-08-21 [R1] Table rebuilt from the MATCHED published cell.
@@ -666,6 +672,19 @@ Prompt template, candidate-pool construction, decoding path, and answer parsing 
 % corrected: AKS is now closest on Video-MME (0.07) and LDDR on LongVideoBench.
 We also find no clean pattern in the residuals, and in particular no advantage to keeping a rule's native encoder: on Video-MME the closest reproduction is AKS$^\dagger$, within 0.07 points of the published gain despite a substituted scorer, while LDDR-select---the one rule we run on its authors' own encoder---reproduces closest on LongVideoBench (2.24) and LVBench (2.59).
 
+\paragraph{A baseline port that silently reproduced top-$k$.}
+Our first implementation of AKS ended in a padding branch that is absent from the authors' released code.
+Its recursive partition gives each leaf at depth $d$ a quota of $\lfloor k/2^{d}\rfloor$ frames, so at $k{=}8$ with the published depth of five every leaf is allotted zero, the recursion returns nothing, and our pad filled the entire selection from global cosine top-$k$.
+For every benchmark in an earlier draft of this paper, the AKS row was a duplicate of the top-$k$ row.
+We caught it because those two rows were the closest pair in Table~\ref{tab:t1} on all three benchmarks; a pairwise overlap check over selected frame \emph{indices} then showed 98.5\% agreement.
+What is worth reporting is not the bug but how completely aggregate accuracy hid it.
+Correcting the depth changes roughly 99.5\% of the selected frames on every benchmark, yet the aggregate moves by only $-1.05$ points on LongVideoBench and $+0.07$ on LVBench, while moving $+2.74$ on Video-MME.
+On LVBench a reader comparing accuracies alone would see two-hundredths of a point between a faithful implementation and one selecting entirely different frames for 99.5\% of questions.
+A single-number comparison cannot detect this class of error, and neither can a per-arm sanity check that only asks whether each row looks individually plausible.
+What did detect it was comparing arms against \emph{each other}: if two rules that optimise different objectives select nearly the same frames, at least one is not implementing its objective.
+We now run that overlap check by construction, and we recommend it wherever a table's rows are meant to be distinct methods.
+The corrected row also reproduces the published Video-MME gain to within 0.07 points against a 2.81-point gap under the bug, which is evidence both that the correction is right and that this harness can match a published number when the port is faithful.
+
 The disagreement is itself the measurement.
 Two carefully controlled harnesses, running the same published rules at the same budget with the same encoder, differ by as little as 0.07 and as much as 3.74 points---a range that covers most of the gaps published selector comparisons are built on.
 That bounds how much weight any cross-paper selector number can carry, including the numbers this paper's own argument targets, and it is why every claim we make is a paired contrast inside one harness rather than a comparison against a published figure.
@@ -697,8 +716,8 @@ FOCUS$^\star$ replays the published selection schedule against dense LongCLIP sc
 LDDR-select is stage 1 only, and the stage-2 allocation contrast is reconstructed from the paper rather than run from the authors' code.
 Neither row should be read as a reproduction result for the original method.
 
-\paragraph{Equivalence is established in one primary setting.}
-The formal Qwen equivalence result covers pooled LongVideoBench 600 and 3600\,s examples within a post-hoc $\pm3$-point margin, and misses $\pm2$.
+\paragraph{Equivalence margins were chosen after seeing the data.}
+The Qwen result covers pooled LongVideoBench 600 and 3600\,s examples within a $\pm3$-point margin and misses $\pm2$. Because the margin was selected after inspecting the interval rather than fixed in advance, it answers ``which margin does this sample clear'' rather than ``does the effect fall inside an independently justified bound''. We therefore report the interval and both margins and treat the result as descriptive; a confirmatory equivalence claim would need a pre-specified margin and a fresh replication. The tests are also uncorrected for multiplicity.
 Video-MME compression has no paired test, and the small LVBench differences are descriptive rather than equivalence evidence.
 The selector-by-budget interaction is underpowered for effects near one point, which is the scale at which it would matter.
 
@@ -721,9 +740,10 @@ GPT-5-mini compression uses a pixel ratio rather than Qwen token accounting, and
 \section{Conclusion}
 \label{sec:conclusion}
 
-Under matched controls, query-aware keyframe selection is the dominant decision in long-video question answering.
-Eight well-chosen frames beat sixteen uniformly spaced ones on hour-long videos, and a greedy pursuit algorithm from 1993 is enough to get that result---outperforming uniform sampling by 5.7 to 11.8 points and staying within one point of a purpose-built modern selector.
-Roughly half of the per-frame spatial budget can then be removed with little observed change, with $\pm3$-point equivalence on pooled LongVideoBench long videos, and reinvesting those tokens in additional keyframes returns a further two to three points.
+In our matched harness, which frames reach the answerer is the largest of the three allocation decisions we varied.
+Eight well-chosen frames beat sixteen uniformly spaced ones in LongVideoBench's hour-long bin, and a greedy pursuit algorithm from 1993 is enough to get that result---outperforming uniform sampling by 5.7 to 11.8 points and staying within one point of a purpose-built modern selector.
+Roughly half of the per-frame spatial budget can then be removed with little observed change, bounded within a post-hoc $\pm3$-point interval on pooled LongVideoBench long videos, and reinvesting those tokens in additional keyframes returns a further two to three points.
+How far any of this generalises beyond this harness is exactly what the evaluation-sensitivity results above bound.
 Select relevant frames first, compress them second, and use the savings to see more of the video---while remembering that how much any of this helps depends on the video's length, the benchmark, and the model doing the reading.
 
 \section{Ethical Considerations}
@@ -814,7 +834,7 @@ Two significant-versus-non-significant subgroup tests are not an interaction, so
 \end{figure}
 
 This sweep changes only the subset rule, on the same LongCLIP cache.
-MMR underperforms; query-blind DPP ($\beta{=}0$) collapses toward uniform sampling, which confirms that the diversity term carries no signal on its own; and query-weighted DPP, residual floors, and partial orthogonalization all sit in a band around OMP.
+MMR underperforms; query-blind DPP ($\beta{=}0$) collapses toward uniform sampling, which is what a diversity term carrying no query signal would look like in this one configuration; and query-weighted DPP, residual floors, and partial orthogonalization all sit in a band around OMP.
 No tested DPP variant significantly exceeds OMP in either long bin.
 
 This sweep ran in the secondary compute environment described in \S\ref{sec:limitations}; its arms are internally paired against each other and are never compared against Tables~\ref{tab:t1}--\ref{tab:t3}.
@@ -831,7 +851,7 @@ Cases were chosen to cover categories and to include both OMP-only and shared fa
 Reviewers compared the selected timestamps, the rendered frames, the question, the gold answer, and the model's prediction.
 Primary tags were missed evidence, temporal offset, answerer error despite adequate frames, and questions not answerable from visual frames at all.
 
-Both passes converged on the same dominant OMP-specific pattern: visually distinctive but irrelevant content consuming several of the eight picks---unrelated chapters in compilations, separate storylines in long narrative video, title and subscribe cards, and dark transitions.
+The most frequent tag in both passes was visually distinctive but irrelevant content consuming several of the eight picks---unrelated chapters in compilations, separate storylines in long narrative video, title and subscribe cards, and dark transitions. Because the sample is failure-conditioned, category-balanced by construction, model-assisted, and scored without blinding, inter-rater agreement, or a matched non-OMP control, we cannot call this pattern dominant, OMP-specific, or prevalent.
 The opposite failure showed up on sequence-of-scenes and cross-scene tracking questions, where dense top-$k$ sampling covered one relevant moment but omitted another required scene.
 The audit therefore motivates relevance-constrained diversity as a design direction.
 It cannot estimate population failure rates, and it cannot establish that adding frames benefits any particular question category.
