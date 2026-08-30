@@ -706,7 +706,7 @@ OMP works here for a reason its original derivation does not predict.
 The text query is nearly orthogonal to the frame-embedding cone, so the residual barely shrinks and sparse reconstruction never really happens; what remains useful is relevance plus decorrelation.
 This has two consequences.
 Late picks can extend multi-scene coverage after the text residual flattens, which is a genuine benefit.
-But unconstrained diversity also rewards irrelevant novelty, which our failure audit identifies as the dominant OMP-specific error.
+But unconstrained diversity also rewards irrelevant novelty, which is the most frequent tag in our purposive failure audit.
 Relevance floors, event-boundary constraints, and scorers with a smaller modality gap are the natural next interventions, and the residual trace gives a cheap way to check whether a proposed scorer has more query signal to offer before committing to a full evaluation.
 
 \paragraph{Conclusions should span durations and answerers.}
