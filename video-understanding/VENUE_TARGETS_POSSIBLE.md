@@ -123,3 +123,93 @@ regardless of the odds.
   ~3 pp cut, not a trim. ICLR's ~9 pp would need ~2 pp.
 - Cut strategy deliberately deferred until the venue is fixed, so the work is
   done once.
+
+---
+
+## Preprint / arXiv policy per venue — verified 2026-08-30
+
+Every venue below was read directly on 2026-08-30. Quotes are verbatim.
+Bottom line: **no venue blocks an arXiv preprint.** The only cost is at ARR.
+
+| Venue | Policy URL | Verdict |
+|---|---|---|
+| ARR / ACL | https://aclrollingreview.org/cfp | Allowed, but forfeits award eligibility + borderline priority |
+| NeurIPS 2026 main | https://neurips.cc/Conferences/2026/MainTrackHandbook | Allowed |
+| NeurIPS 2026 E&D | https://neurips.cc/Conferences/2026/CallForEvaluationsDatasets | Allowed |
+| ICLR 2027 | https://iclr.cc/Conferences/2027/CallForPapers | Allowed |
+| CVPR 2026 | https://cvpr.thecvf.com/Conferences/2026/AuthorGuidelines | Allowed |
+| TMLR | https://jmlr.org/tmlr/editorial-policies.html | Allowed |
+| AAAI | https://aaai.org/conference/aaai/aaai-26/submission-guidelines/ | Allowed (page served stale AAAI-23 text; re-check for the target year) |
+
+### ARR — the one that costs something
+
+> "Beginning February 15, 2024, there is no anonymity period or limitation on
+> posting or discussing non-anonymous preprints while the work is under peer
+> review. However, the new policy does incentivize anonymous submissions through
+> special paper awards and priority in acceptance decisions for borderline
+> papers. You will be asked to select the preprint status of the submission on
+> our submission form. If you choose the binding 'no non-anonymous preprint'
+> option, you commit to not preprinting until the metareviews are released,
+> under the penalty of desk rejection."
+
+Our 5-seat panel (2026-08-21) returned MAJOR REVISION from every seat, which is
+the band "priority in acceptance decisions for borderline papers" targets.
+Recommendation: take the binding no-preprint option for the Oct 12 cycle and
+post to arXiv when metareviews release (~Dec 2026).
+
+ARR multiple-submission ban covers "journals and refereed and archival
+conferences and workshops" — arXiv is not one of these.
+
+### NeurIPS
+
+> "The existence of non-anonymous preprints (on arXiv or other online
+> repositories, personal websites, social media) will not result in rejection.
+> If you choose to use the NeurIPS style for the preprint version, you must use
+> the 'preprint' option rather than the 'final' option. The public versions of
+> the submission should not say 'Under review at NeurIPS' or similar."
+
+> "Note: While having a nonanonymized preprint alone is not a violation of the
+> double-blind reviewing policy, aggressive advertising of papers under
+> submission may be deemed a violation."
+
+Dual submission covers archival venues only: "dual submissions to nonarchival
+workshops are permitted."
+
+Track rename CONFIRMED: the track is "Evaluations and Datasets" and is now
+double-blind by default. NeurIPS 2026 deadline was May 6 2026 (passed;
+notification Sept 24 2026), so the next window is NeurIPS 2027.
+
+### ICLR 2027
+
+> "Having papers on arxiv is allowed per the dual submission policy outlined in
+> the author guidelines."
+
+### CVPR 2026
+
+> "Under the above definition, arXiv preprints and university technical reports
+> are not considered as publications."
+
+> "Q. Can I post my submission on arXiv? A. Yes."
+
+Caveat that matters for later workshop plans: "peer-reviewed workshop papers are
+considered as publications if their length is more than four pages (excluding
+references), even if they do not appear in a proceedings." An archival workshop
+paper would block CVPR; an arXiv preprint would not.
+
+Media rule: "you should not list CVPR submissions on public websites or on
+media."
+
+### TMLR
+
+> "It is acceptable for a submission to overlap with the author's previous work
+> if it was shared at venues or tracks that are publicly declared, in writing,
+> to be non-archival, such as workshops, or on preprint servers such as arXiv
+> and bioRxiv."
+
+### AAAI
+
+> "workshops and preprint servers such as arXiv are acceptable"
+
+### The rule that holds everywhere
+
+Post the preprint; never publicly state it is under review at a named venue.
