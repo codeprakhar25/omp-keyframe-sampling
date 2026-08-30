@@ -6,6 +6,56 @@ CFP dates move.)*
 
 Last updated 2026-08-30.
 
+## DECISION — LOCKED 2026-08-30
+
+**Primary: ARR October cycle, deadline Oct 12 2026**, committing to NAACL/COLING
+2027 or ACL 2027. Chosen on fit evidence from the venues' own calls, not timing:
+
+- ARR's CFP **names this paper's type**: "reproduction study", "negative results",
+  "model analysis papers", and negative results covering "non-reproducibility or
+  non-generalizability of previously published results".
+- ICLR's call lists "datasets and benchmarks" as a topic but **does not mention
+  negative results or reproducibility studies at all**, and asks for "your most
+  complete and most exciting work" — excitement being the exact axis the
+  2026-08-21 panel said this paper does not clear.
+- ARR has a Findings fallback inside the same submission; ICLR has none.
+- ARR exempts Limitations, Ethics and References from the 8-page limit.
+
+An earlier steer in this session toward ICLR-first was **wrong** and is retracted:
+it rested on an unverified belief that ICLR's rubric is broader for empirical
+work. The CFPs say the opposite.
+
+## Can TMLR and a main conference both happen? (verified 2026-08-30)
+
+**Not in parallel.** TMLR forbids text, figures or results shared with any paper
+"submitted in parallel at another archival, peer-reviewed venue", and conferences
+forbid submitting already-published work. One at a time.
+
+**But there is a sequential route.** TMLR joined the NeurIPS/ICML/ICLR
+**Journal-to-Conference (J2C) track**. A TMLR paper carrying a J2C, Featured or
+Outstanding Certification can be presented at one of those three conferences
+*with no further peer review*. Important qualifications:
+
+- The J2C track itself is **not selective** — "all requests meeting eligibility
+  criteria are accepted until capacity limits are reached" (150 slots each).
+- The **certification is** the selective gate, and it is reportedly rare; a
+  long-serving TMLR action editor has said very few papers get forwarded.
+- **It is a presentation, not a proceedings paper**: "It shall not be considered
+  as being published in the proceedings of the chosen conference."
+- Eligibility window is at most 2 years since TMLR publication.
+
+J2C request deadlines: ICML 2026 May 3 2026 (passed) · NeurIPS 2026 Sep 26 2026 ·
+**ICLR 2027 Dec 18 2026**. Firm, no extensions.
+
+TMLR aims for a decision about **9 weeks** after submission (bodies over 12 pages
+take longer; ours is 8).
+
+**Why this supports ARR-first rather than TMLR-first.** ARR-first preserves TMLR:
+if the ARR route fails, TMLR is still open afterwards and a later J2C slot is
+still reachable. TMLR-first blocks ARR for at least the ~9-week review, and its
+conference component is a presentation rather than the proceedings line that was
+the stated goal.
+
 ## The full set
 
 | Target | Deadline | Page limit | Status |
