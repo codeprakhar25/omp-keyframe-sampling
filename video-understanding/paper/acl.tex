@@ -480,6 +480,9 @@ Absolute accuracies from these sections are therefore not comparable to Tables~\
 \paragraph{Evaluation scope is incomplete.}
 Subtitles are disabled throughout, which leaves subtitle-anchored questions partly inaccessible to every visual selector and depresses all arms together.
 GPT-5-mini compression uses a pixel ratio rather than Qwen token accounting, and some GPT selector results survive only as aggregates rather than per-item records.
+Our rule set is also narrower than the comparison table it is matched against: MDP3 and Q-Frame appear in \citet{chen2026lddr} and we do not run them.
+Neither has a published number at our exact cell---Qwen3-VL-8B, eight frames, LongCLIP scorer---so neither port could be validated against anything, which is the condition that let the AKS padding error stand undetected (\S\ref{sec:discussion}).
+We judged two more unvalidated rows worse than a stated gap, and note that MDP3's relevance--diversity--sequentiality objective falls inside the DPP family whose behaviour \S\ref{sec:mechanism} already characterises, while Q-Frame couples selection to resolution and so measures the composite this paper decomposes rather than a rule at fixed budget.
 
 \section{Ethical Considerations}
 \label{sec:ethics}
