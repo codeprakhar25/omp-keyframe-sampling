@@ -14,12 +14,13 @@ Verification gates (abort if any fails):
 """
 from __future__ import annotations
 
+import os
 import json
 import math
 import sys
 from pathlib import Path
 
-BASE = Path("/home/prakh/ml-resarch/slm-lab/results")
+BASE = Path(os.environ.get("SLM_RESULTS", "results"))
 MC = BASE / "lmmseval_matrix_clean"
 Q = "Qwen__Qwen3-VL-8B-Instruct"
 

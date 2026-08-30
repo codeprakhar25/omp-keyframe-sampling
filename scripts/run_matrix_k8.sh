@@ -25,17 +25,17 @@
 #   3. LD_LIBRARY_PATH -> slmenv nvidia/*/lib: torch dlopen()s native libs
 #      (libnvrtc-builtins.so.13.0) that resolve via the loader path only.
 set -uo pipefail
-SLM=/workspace/slm-lab
+SLM=${SLM:-/workspace/slm-lab}
 cd "$SLM"
 OUT=$SLM/results/lmmseval_matrix_clean
 mkdir -p "$OUT"
 
-export HF_HOME=/workspace/hf
+export HF_HOME=${HF_HOME:-/workspace/hf}
 export PYTHONPATH="/workspace/lmms-eval:$SLM/slmenv/lib/python3.11/site-packages"
 export FORCE_QWENVL_VIDEO_READER=decord
 NV_LIBS=$(ls -d "$SLM"/slmenv/lib/python3.11/site-packages/nvidia/*/lib 2>/dev/null | tr '\n' ':')
 export LD_LIBRARY_PATH="${NV_LIBS}${LD_LIBRARY_PATH:-}"
-PYBIN=/workspace/lmmsenv/bin/python
+PYBIN=${PYBIN:-/workspace/lmmsenv/bin/python}
 
 P=$SLM/results/picks_lmmseval
 export LVB_PICKS_LC_K8="$P/picks_lc_k8.json"
