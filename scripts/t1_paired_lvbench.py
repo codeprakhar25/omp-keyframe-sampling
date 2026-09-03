@@ -1,7 +1,12 @@
 import json
+import os
 from math import comb
 
-SP = "/tmp/claude-1000/-home-prakh-ml-resarch-slm-lab/ddbad3fe-64e6-4e39-9994-e64b82be2ddf/scratchpad/lvb"
+# Directory of per-arm lmms-eval sample JSONLs, one file per name in ARMS below.
+# These per-arm LVBench runs are NOT part of the release (data/predictions/ ships a
+# single generic LVBench run only). Point SLM_PREDS at your own run outputs, produced
+# by scripts/lmmseval_run.sh over the pick files in data/picks/.
+SP = os.environ.get("SLM_PREDS", "data/predictions")
 ARMS = ["uniform", "topk", "omp", "aks", "focus", "dppmm", "omp_k16"]
 
 

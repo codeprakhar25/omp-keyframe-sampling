@@ -1,7 +1,10 @@
-import json, glob
+import json, glob, os
 from math import comb
 
-SP = "/tmp/claude-1000/-home-prakh-ml-resarch-slm-lab/ddbad3fe-64e6-4e39-9994-e64b82be2ddf/scratchpad/vmm"
+# Directory of per-arm lmms-eval sample JSONLs. The uniform / topk / omp arms this
+# script needs are in the release under data/predictions/, where filenames carry an
+# lmms-eval timestamp prefix (20260722_155022_samples_videomme_uniform_k8_short.jsonl).
+SP = os.environ.get("SLM_PREDS", "data/predictions")
 
 
 def score(r):

@@ -19,7 +19,10 @@ import math
 import os
 import sys
 
-S = "/tmp/claude-1000/-home-prakh-ml-resarch-slm-lab/0ab058d6-632f-4cd5-b392-3074c17e67ab/scratchpad/claimA"
+# Directory of the compression-arm lmms-eval sample JSONLs (full_*/d53_*/ivl8b_*).
+# These arms are NOT part of the release; regenerate them with scripts/lmmseval_run.sh
+# at the reduced spatial budgets, then point SLM_CLAIMA at the output directory.
+S = os.environ.get("SLM_CLAIMA", "data/predictions")
 MARGINS = (0.02, 0.03, 0.04)
 
 

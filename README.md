@@ -18,7 +18,7 @@ with a SigLIP swap as a robustness check.
 harness/          selection rules, scoring, answerer adapters, metrics
 harness/lmmseval_patch/   lmms-eval task definitions for every benchmark, bin and budget
 scripts/          pick generation, evaluation drivers, statistics, figures
-data/             frame selections, per-item predictions, aggregate tables
+data/             frame selections, per-item predictions
 ```
 
 ### harness/
@@ -98,9 +98,18 @@ the stem; the paper reports both settings.
 
 ## Data
 
-`data/` holds the frame selections, the per-item predictions permitted by the
-benchmark licenses, and the aggregate result tables. Benchmark video files are
-not included; obtain them from the original benchmark releases. The cached
+`data/picks/` holds the selected frame indices for every rule, bin and budget.
+`data/predictions/` holds the per-item lmms-eval predictions permitted by the
+benchmark licenses, covering the selection-axis arms: uniform, top-k and OMP
+under LongCLIP and SigLIP on the LongVideoBench duration bins, the Video-MME
+duration splits, and the blind-floor control.
+
+Not every arm reported in the paper is included. The per-arm LVBench runs, the
+spatial-compression arms, and the InternVL3 transfer arms are not in the
+release, so `scripts/t1_paired_lvbench.py` and `scripts/claim_a_tost.py` need
+prediction files you regenerate yourself; each script names what it expects and
+reads its input directory from an environment variable. Benchmark video files
+are not included; obtain them from the original benchmark releases. The cached
 scorer embeddings are also excluded for size, and can be rebuilt from step 2
 above.
 
