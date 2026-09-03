@@ -18,6 +18,7 @@ with a SigLIP swap as a robustness check.
 harness/          selection rules, scoring, answerer adapters, metrics
 harness/lmmseval_patch/   lmms-eval task definitions for every benchmark, bin and budget
 scripts/          pick generation, evaluation drivers, statistics, figures
+prereg/           pre-registration documents, written before the arms they describe
 data/             frame selections, per-item predictions
 ```
 
@@ -112,6 +113,16 @@ reads its input directory from an environment variable. Benchmark video files
 are not included; obtain them from the original benchmark releases. The cached
 scorer embeddings are also excluded for size, and can be rebuilt from step 2
 above.
+
+## Pre-registration
+
+`prereg/` holds the pre-registration documents for the arms that were registered
+before they ran. Each states the contrast, the hypothesis and test, a coverage
+gate, and the predictions recorded in advance, followed by the result and any
+deviations. They are published as written; nothing was edited after the fact.
+
+The 3600 s fused-query replication reported in the paper is registered in
+`prereg/2026-08-30_fused_query_3600s.md`.
 
 ## Citation
 
