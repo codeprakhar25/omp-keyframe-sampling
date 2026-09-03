@@ -124,17 +124,6 @@ deviations. They are published as written; nothing was edited after the fact.
 The 3600 s fused-query replication reported in the paper is registered in
 `prereg/2026-08-30_fused_query_3600s.md`.
 
-## Citation
-
-```bibtex
-@article{khatri2026allocation,
-  title  = {Select, Compress, Reinvest: A Controlled Study of Visual-Token
-            Allocation in Long-Video MLLMs},
-  author = {Khatri, Prakhar},
-  year   = {2026}
-}
-```
-
 ## License
 
 MIT. See `LICENSE`.
