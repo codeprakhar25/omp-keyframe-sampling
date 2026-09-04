@@ -1,7 +1,7 @@
 # Visual-token allocation in long-video MLLMs
 
 Code and results for *Select, Compress, Reinvest: A Controlled Study of
-Visual-Token Allocation in Long-Video MLLMs*.
+Visual-Token Allocation in Long-Video MLLMs*. Paper: [arXiv:2609.03820](https://arxiv.org/abs/2609.03820).
 
 A video language model given an hour of footage can afford roughly eight frames
 out of 3,600. This repository contains the harness used to study how that budget
@@ -123,6 +123,20 @@ deviations. They are published as written; nothing was edited after the fact.
 
 The 3600 s fused-query replication reported in the paper is registered in
 `prereg/2026-08-30_fused_query_3600s.md`.
+
+## Citation
+
+```bibtex
+@misc{khatri2026allocation,
+  title         = {Select, Compress, Reinvest: A Controlled Study of Visual-Token Allocation in Long-Video MLLMs},
+  author        = {Khatri, Prakhar},
+  year          = {2026},
+  eprint        = {2609.03820},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV},
+  url           = {https://arxiv.org/abs/2609.03820}
+}
+```
 
 ## License
 
