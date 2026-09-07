@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.env
+*.env
+venv/
+.venv/
+results/embeds_*/
+*.safetensors
+*.mp4
