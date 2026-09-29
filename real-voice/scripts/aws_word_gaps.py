@@ -32,12 +32,13 @@ def gaps(words, dur):
     if not words:
         return {"dur": round(dur, 2), "no_words": True, "n_words": 0, "lead_s": round(dur, 2), "trail_s": 0.0,
                 "max_gap": 0.0, "n_gap1": 0, "n_gap2": 0, "words_per_s": 0.0}
-    g = [max(0.0, b.start - a.end) for a, b in zip(words, words[1:])]
-    span = max(1e-6, words[-1].end - words[0].start)
-    return {"dur": round(dur, 2), "no_words": False, "n_words": len(words), "lead_s": round(words[0].start, 2),
-            "trail_s": round(max(0.0, dur - words[-1].end), 2), "max_gap": round(max(g, default=0.0), 2),
-            "n_gap1": sum(x >= 1.0 for x in g), "n_gap2": sum(x >= 2.0 for x in g),
-            "words_per_s": round(len(words) / span, 2)}
+    words = [(float(w.start), float(w.end)) for w in words]   # faster-whisper gives numpy floats: json.dumps fails on int64 sums
+    g = [max(0.0, b[0] - a[1]) for a, b in zip(words, words[1:])]
+    span = max(1e-6, words[-1][1] - words[0][0])
+    return {"dur": round(dur, 2), "no_words": False, "n_words": len(words), "lead_s": round(words[0][0], 2),
+            "trail_s": round(max(0.0, dur - words[-1][1]), 2), "max_gap": round(max(g, default=0.0), 2),
+            "n_gap1": int(sum(x >= 1.0 for x in g)), "n_gap2": int(sum(x >= 2.0 for x in g)),
+            "words_per_s": round(float(len(words) / span), 2)}
 
 
 def main():
@@ -74,7 +75,7 @@ def main():
                 dur = sf.info(str(f)).duration
                 segs, _ = asr.transcribe(str(f), language=it.get("lang", "en"), beam_size=1, word_timestamps=True)
                 words = [w for s in segs for w in (s.words or [])]
-                rows.append({"id": it["id"], **gaps(words, dur)})
+                rows.append({"id": it["id"], **gaps(words, float(dur))})
         n = max(len(rows), 1)
         summ = {"n": len(rows), "max_gap_mean": round(sum(r["max_gap"] for r in rows) / n, 3),
                 "clips_gap2": sum(r["n_gap2"] > 0 for r in rows), "clips_gap1": sum(r["n_gap1"] > 0 for r in rows),
