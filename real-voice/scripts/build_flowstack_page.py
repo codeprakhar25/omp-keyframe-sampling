@@ -26,6 +26,8 @@ REFS = [("fxen", k, f) for k, f in (("svh1", "svh_1"), ("svh2", "svh_2"), ("svh3
                                     ("svh5", "svh_5"), ("svh6", "svh_6"), ("ctrl", "libritts_en_m_7127"))] + \
        [("fxpk", k, f"pk_{k}") for k in ("en1", "en2", "hi1", "hi2", "mx1", "mx2")]
 LINES = ("en_1", "en_2")
+NAMES = {"sh": "stock NeuTTS-Air", "a": "v8 A (our fine-tune)", "ix": "IndexTTS2", "cz": "CosyVoice3 ref-in-LM",
+         "cx": "CosyVoice3 ref-in-flow"}
 
 
 def opaque(arm: str) -> str:
@@ -39,6 +41,8 @@ def s3json(key):
 
 def stage(arm: str, refdir: Path) -> Path | None:
     d = MAIN / "data/samples" / opaque(arm)
+    if (d / "items.json").exists():   # already staged: reuse (rebuilds, e.g. --unblind, must not refetch)
+        return d
     items = []
     for pre, rk, rf in REFS:
         run = f"{pre}_{arm}_{rk}_s7"
@@ -71,6 +75,7 @@ def main() -> int:
     ap.add_argument("--arms", default="sh,a,ix")
     ap.add_argument("--late", default="")
     ap.add_argument("--set", default="fxen", choices=["fxen", "fxpk"])
+    ap.add_argument("--unblind", action="store_true", help="label every slot with its system, same page + verdicts")
     a = ap.parse_args()
     global PROBE, REFS
     PROBE = f"{PROBE}_{a.set}"
@@ -90,7 +95,8 @@ def main() -> int:
         if d:
             specs.append(f"+{arm}={d}")
     builder = MAIN / "scripts/build_v7_blind_page.py"
-    return subprocess.run([sys.executable, str(builder), PROBE, *specs], cwd=MAIN).returncode
+    extra = ["--unblind", ",".join(f"{k}={v}" for k, v in NAMES.items())] if a.unblind else []
+    return subprocess.run([sys.executable, str(builder), PROBE, *specs, *extra], cwd=MAIN).returncode
 
 
 if __name__ == "__main__":

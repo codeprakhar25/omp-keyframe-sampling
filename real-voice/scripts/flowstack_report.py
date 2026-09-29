@@ -22,12 +22,23 @@ REFS = [("fxen", r) for r in ("ctrl", "svh1", "svh2", "svh3", "svh4", "svh5", "s
 SIM_FILES = ["fxensim_cv", "fxensim_ix", "fxensim_sh", "fxensim_a", "fxpksim_sh", "fxpksim_a"]
 
 
+CACHE = Path("/tmp/flowstack_report_cache")
+
+
+def sync():
+    # One bulk sync instead of ~400 serial `s3 cp` calls (that version hit a 15 min timeout).
+    subprocess.run(["aws", "s3", "sync", f"s3://{B}/{P}/", str(CACHE), "--region", R, "--only-show-errors",
+                    "--exclude", "*", "--include", "wgap_fx*.json", "--include", "whisper_wer_fx*.json",
+                    "--include", "fx*sim_*.json"], check=True)
+
+
 def s3json(key):
-    r = subprocess.run(["aws", "s3", "cp", f"s3://{B}/{P}/{key}", "-", "--region", R], capture_output=True, text=True)
-    return json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else None
+    f = CACHE / key
+    return json.loads(f.read_text()) if f.exists() else None
 
 
 def main():
+    sync()
     sims = {}
     for f in SIM_FILES:
         d = s3json(f"{f}.json")
@@ -55,12 +66,12 @@ def main():
                          "no_words": sum(i["no_words"] for i in g),
                          "wps": round(sum(i["words_per_s"] for i in g) / len(g), 2),
                          "sim": round(sum(sm) / len(sm), 3) if sm else None})
-    out = Path(__file__).resolve().parent.parent / "data/eval/flowstack_report.json"
+    out = Path("/home/prakh/ml-resarch/real-voice/data/eval/flowstack_report.json")   # main checkout, next to other reports
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(rows, indent=1))
     print("| system | ref | n | WER | gap>=2s | gap>=1s | longest gap mean / max | no words | words/s | SIM |")
     print("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|")
-    for r in sorted(rows, key=lambda r: ([k for k, _ in REFS].index((r["set"], r["ref"])), [k for k, _ in SYSTEMS].index(r["key"]))):
+    for r in sorted(rows, key=lambda r: (REFS.index((r["set"], r["ref"])), [k for k, _ in SYSTEMS].index(r["key"]))):
         print(f"| {r['system']} | {r['ref']} | {r['n']} | {r['wer']} | {r['clips_gap2']} | {r['clips_gap1']} | "
               f"{r['max_gap_mean']} / {r['max_gap_max']} | {r['no_words']} | {r['wps']} | {r['sim']} |")
     print("\npooled by system (bad refs = svh1-6 + all laptop refs, ctrl excluded):")
