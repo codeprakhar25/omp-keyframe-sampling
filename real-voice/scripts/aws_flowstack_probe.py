@@ -166,6 +166,9 @@ def main():
     ap.add_argument("--seeds", default="7,11,23")
     ap.add_argument("--out-prefix", required=True, help="runs named <out-prefix>_<mode>_<name>_s<seed>")
     a = ap.parse_args()
+    # The box bootstrap exports HF_HUB_ENABLE_HF_TRANSFER=1, but these per-repo venvs have no hf_transfer, so every
+    # hub download inside them (model snapshot, IndexTTS2's runtime aux models) died with ValueError. Plain downloads.
+    os.environ.pop("HF_HUB_ENABLE_HF_TRANSFER", None)
     d = WORK / "flowstack"
     tag = f"{a.system}_{a.out_prefix}"
     (d / tag / "ref").mkdir(parents=True, exist_ok=True)
