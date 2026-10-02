@@ -31,7 +31,10 @@ S+=";aws_incumbent_ours.py $FLAGS --items items_fxpk.json --langs en,hi --runs $
 S+=";aws_gap_cap.py --arms $GC --prefix $P --skip-done"
 S+=";aws_whisper_wer.py --arms $EN,$PK,$GCD --prefix $P --langs en"
 S+=";aws_indicconformer_wer.py --arms $PK,$PKGC --prefix $P --name-tmpl inc_{arm} --langs hi"
-S+=";aws_word_gaps.py --arms $EN,$PK,$GCD --prefix $P --langs en --skip-done"
+S+=";aws_word_gaps.py --arms $EN,$PK,$GCD --prefix $P --langs en,hi --skip-done"
+# Hindi word gaps for the raw C and A laptop-ref arms too (cbase / fxpka scored English only; rerun overwrites with en+hi,
+# greedy Whisper is deterministic so the English rows do not change).
+[ "$B" = fe ] && S+=";aws_word_gaps.py --arms $(join $(for a in c a; do for n in $PKN; do for s in $SEEDS; do echo fxpk_${a}_${n}_s${s}; done; done; done)) --prefix $P --langs en,hi"
 S+=";aws_fx_sil.py --arms $EN,$PK,$GCD"
 S+=";aws_fxen_sim.py --arms $EN,$ENGC --out fxensim_$K"
 S+=";aws_fxen_sim.py --arms $PK,$PKGC --out fxpksim_$K"
