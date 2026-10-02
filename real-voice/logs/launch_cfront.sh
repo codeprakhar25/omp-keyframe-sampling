@@ -29,11 +29,14 @@ S="aws_ref_frontend.py --refs $REFS --variants $V"
 S+=";aws_incumbent_ours.py $FLAGS --items items_fxen.json --langs en --runs $(join "${enr[@]}")"
 S+=";aws_incumbent_ours.py $FLAGS --items items_fxpk.json --langs en,hi --runs $(join "${pkr[@]}")"
 S+=";aws_gap_cap.py --arms $GC --prefix $P --skip-done"
-S+=";aws_whisper_wer.py --arms $EN,$PK,$GCD --prefix $P --langs en"
+# fe box also rescores the raw C baseline: the cbase box's Whisper steps died on the PyAV metadata_errors TypeError.
+CB=""; [ "$B" = fe ] && CB=",$(join $(for n in $SVHN; do for s in $SEEDS; do echo fxen_c_${n}_s${s}; done; done; for n in $PKN; do for s in $SEEDS; do echo fxpk_c_${n}_s${s}; done; done))"
+S+=";aws_whisper_wer.py --arms $EN,$PK,$GCD$CB --prefix $P --langs en"
 S+=";aws_indicconformer_wer.py --arms $PK,$PKGC --prefix $P --name-tmpl inc_{arm} --langs hi"
 S+=";aws_word_gaps.py --arms $EN,$PK,$GCD --prefix $P --langs en,hi --skip-done"
 # Hindi word gaps for the raw C and A laptop-ref arms too (cbase / fxpka scored English only; rerun overwrites with en+hi,
 # greedy Whisper is deterministic so the English rows do not change).
+[ "$B" = fe ] && S+=";aws_word_gaps.py --arms $(join $(for n in $SVHN; do for s in $SEEDS; do echo fxen_c_${n}_s${s}; done; done)) --prefix $P --langs en"
 [ "$B" = fe ] && S+=";aws_word_gaps.py --arms $(join $(for a in c a; do for n in $PKN; do for s in $SEEDS; do echo fxpk_${a}_${n}_s${s}; done; done; done)) --prefix $P --langs en,hi"
 S+=";aws_fx_sil.py --arms $EN,$PK,$GCD"
 S+=";aws_fxen_sim.py --arms $EN,$ENGC --out fxensim_$K"
@@ -73,7 +76,10 @@ EOS
 case "${1:-plan}" in
 plan) echo "$S" | tr ';' '\n' | cut -c1-240;;
 up)
-  # Scorers on s3 code/ already match the main checkout (md5 checked 2026-10-02); only the step list is new.
+  # New frontend scripts + the PyAV-fixed Whisper scorers (audio passed as arrays; backward compatible for other users
+  # of code/). The other scorers on s3 code/ match the main checkout (md5 checked 2026-10-02).
+  for f in aws_ref_frontend.py aws_gap_cap.py aws_whisper_wer.py aws_word_gaps.py; do
+    aws s3 cp "$(dirname "$0")/../scripts/$f" s3://$BUCKET/code/ --region $REGION --only-show-errors; done
   echo "$S" | aws s3 cp - s3://$BUCKET/code/cfront_steps_${B}.txt --region $REGION --only-show-errors
   echo "start $(date -u +%T)"
   for i in $(seq 1 30); do

@@ -41,6 +41,18 @@ def gaps(words, dur):
             "words_per_s": round(float(len(words) / span), 2)}
 
 
+
+def load16(path):
+    """16 kHz mono float32 for faster-whisper. Passing a file path makes it call av.open(..., metadata_errors=...),
+    which newer PyAV releases reject (TypeError, 2026-10-02 cbase box); an array skips PyAV entirely."""
+    import librosa
+    import numpy as np
+    import soundfile as sf
+    y, sr = sf.read(str(path), dtype="float32")
+    if y.ndim > 1:
+        y = y.mean(axis=1)
+    return (librosa.resample(y, orig_sr=sr, target_sr=16000) if sr != 16000 else y).astype(np.float32)
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--arms", required=True)
@@ -73,7 +85,7 @@ def main():
                 if not f.exists():
                     continue
                 dur = sf.info(str(f)).duration
-                segs, _ = asr.transcribe(str(f), language=it.get("lang", "en"), beam_size=1, word_timestamps=True)
+                segs, _ = asr.transcribe(load16(f), language=it.get("lang", "en"), beam_size=1, word_timestamps=True)
                 words = [w for s in segs for w in (s.words or [])]
                 rows.append({"id": it["id"], **gaps(words, float(dur))})
         n = max(len(rows), 1)
