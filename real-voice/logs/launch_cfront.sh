@@ -17,30 +17,36 @@ join(){ local IFS=,; echo "$*"; }
 en=(); enr=(); for n in $SVHN; do for s in $SEEDS; do en+=("fxen_${K}_${n}_s${s}"); enr+=("fxen_${K}_${n}_s${s}:en=${SVHF[$n]}_${V}:${s}"); done; done
 pk=(); pkr=(); for n in $PKN; do for s in $SEEDS; do pk+=("fxpk_${K}_${n}_s${s}"); pkr+=("fxpk_${K}_${n}_s${s}:pk_${n}_${V}:${s}"); done; done
 gc=("${en[@]}" "${pk[@]}")
+# fd box also runs the re-encode control crw: svh_* ref wavs are NeuCodec decodes and the baseline prompts with their
+# stored codes, while cleaned refs are re-encoded; crw = unedited wav re-encoded, so cfe/cfd - crw is the cleaning alone.
+rw=(); rwr=(); if [ "$B" = fd ]; then for n in $SVHN; do for s in $SEEDS; do rw+=("fxen_crw_${n}_s${s}"); rwr+=("fxen_crw_${n}_s${s}:en=${SVHF[$n]}_rw:${s}"); done; done; fi
 if [ "$B" = fe ]; then for n in $SVHN; do for s in $SEEDS; do gc+=("fxen_c_${n}_s${s}"); done; done
   for n in $PKN; do for s in $SEEDS; do gc+=("fxpk_c_${n}_s${s}"); done; done; fi
 gcd=(); for x in "${gc[@]}"; do gcd+=("${x}_gc"); done
+RW=$(join "${rw[@]}"); RWS=""; [ -n "$RW" ] && RWS=",$RW"
 EN=$(join "${en[@]}"); PK=$(join "${pk[@]}"); GC=$(join "${gc[@]}"); GCD=$(join "${gcd[@]}")
 ENGC=$(join $(printf '%s\n' "${gcd[@]}" | grep '^fxen_')); PKGC=$(join $(printf '%s\n' "${gcd[@]}" | grep '^fxpk_'))
 REFS="svh_1,svh_2,svh_3,svh_4,svh_5,svh_6,libritts_en_m_7127,pk_en1,pk_en2,pk_hi1,pk_hi2,pk_mx1,pk_mx2"
 FLAGS="--ckpt runs/air_v8_c/ckpt_final --prefix $P --danda --chunk 0 --text-fixes --skip-done"
 
 S="aws_ref_frontend.py --refs $REFS --variants $V"
-S+=";aws_incumbent_ours.py $FLAGS --items items_fxen.json --langs en --runs $(join "${enr[@]}")"
+[ "$B" = fd ] && S+=";aws_ref_frontend.py --refs svh_1,svh_2,svh_3,svh_4,svh_5,svh_6,libritts_en_m_7127 --variants rw"
+S+=";aws_incumbent_ours.py $FLAGS --items items_fxen.json --langs en --runs $(join "${enr[@]}" "${rwr[@]}")"
 S+=";aws_incumbent_ours.py $FLAGS --items items_fxpk.json --langs en,hi --runs $(join "${pkr[@]}")"
 S+=";aws_gap_cap.py --arms $GC --prefix $P --skip-done"
 # fe box also rescores the raw C baseline: the cbase box's Whisper steps died on the PyAV metadata_errors TypeError.
 CB=""; [ "$B" = fe ] && CB=",$(join $(for n in $SVHN; do for s in $SEEDS; do echo fxen_c_${n}_s${s}; done; done; for n in $PKN; do for s in $SEEDS; do echo fxpk_c_${n}_s${s}; done; done))"
-S+=";aws_whisper_wer.py --arms $EN,$PK,$GCD$CB --prefix $P --langs en"
+S+=";aws_whisper_wer.py --arms $EN,$PK,$GCD$CB$RWS --prefix $P --langs en"
 S+=";aws_indicconformer_wer.py --arms $PK,$PKGC --prefix $P --name-tmpl inc_{arm} --langs hi"
-S+=";aws_word_gaps.py --arms $EN,$PK,$GCD --prefix $P --langs en,hi --skip-done"
+S+=";aws_word_gaps.py --arms $EN,$PK,$GCD$RWS --prefix $P --langs en,hi --skip-done"
 # Hindi word gaps for the raw C and A laptop-ref arms too (cbase / fxpka scored English only; rerun overwrites with en+hi,
 # greedy Whisper is deterministic so the English rows do not change).
 [ "$B" = fe ] && S+=";aws_word_gaps.py --arms $(join $(for n in $SVHN; do for s in $SEEDS; do echo fxen_c_${n}_s${s}; done; done)) --prefix $P --langs en"
 [ "$B" = fe ] && S+=";aws_word_gaps.py --arms $(join $(for a in c a; do for n in $PKN; do for s in $SEEDS; do echo fxpk_${a}_${n}_s${s}; done; done; done)) --prefix $P --langs en,hi"
-S+=";aws_fx_sil.py --arms $EN,$PK,$GCD"
+S+=";aws_fx_sil.py --arms $EN,$PK,$GCD$RWS"
 S+=";aws_fxen_sim.py --arms $EN,$ENGC --out fxensim_$K"
 S+=";aws_fxen_sim.py --arms $PK,$PKGC --out fxpksim_$K"
+[ "$B" = fd ] && S+=";aws_fxen_sim.py --arms $RW --out fxensim_crw"
 
 up_now(){ local o; o=$(timeout 60 aws ec2 describe-instances --region $REGION --filters Name=tag:Name,Values=rv-ear-$TAG \
   Name=instance-state-name,Values=pending,running --query 'Reservations[].Instances[].InstanceId' --output text) || return 1; [ -n "$o" ]; }
@@ -51,7 +57,7 @@ launch_one(){ # launch_one type spot(1|"")
   [ -n "$spot" ] && extra+=(--instance-market-options '{"MarketType":"spot","SpotOptions":{"SpotInstanceType":"one-time","InstanceInterruptionBehavior":"terminate"}}')
   ud=$(cat <<EOS
 #!/bin/bash
-export RV_BUCKET=${BUCKET} RV_REGION=${REGION} RV_MAX_HOURS=3 RV_TAG=${TAG} RV_OUT_PREFIX=${P} RV_TRAINSET=eval/neu_air_trainset_v8a2
+export RV_BUCKET=${BUCKET} RV_REGION=${REGION} RV_MAX_HOURS=4 RV_TAG=${TAG} RV_OUT_PREFIX=${P} RV_TRAINSET=eval/neu_air_trainset_v8a2
 mkdir -p /opt/rv/code
 export RV_STEPS="\$(aws s3 cp s3://${BUCKET}/code/cfront_steps_${B}.txt - --region ${REGION})"
 for f in aws_word_gaps.py aws_ref_frontend.py aws_gap_cap.py; do aws s3 cp s3://${BUCKET}/code/\$f /opt/rv/code/ --region ${REGION}; done
@@ -78,7 +84,7 @@ plan) echo "$S" | tr ';' '\n' | cut -c1-240;;
 up)
   # New frontend scripts + the PyAV-fixed Whisper scorers (audio passed as arrays; backward compatible for other users
   # of code/). The other scorers on s3 code/ match the main checkout (md5 checked 2026-10-02).
-  for f in aws_ref_frontend.py aws_gap_cap.py aws_whisper_wer.py aws_word_gaps.py; do
+  for f in aws_ref_frontend.py aws_gap_cap.py aws_whisper_wer.py aws_word_gaps.py aws_fxen_sim.py; do
     aws s3 cp "$(dirname "$0")/../scripts/$f" s3://$BUCKET/code/ --region $REGION --only-show-errors; done
   echo "$S" | aws s3 cp - s3://$BUCKET/code/cfront_steps_${B}.txt --region $REGION --only-show-errors
   echo "start $(date -u +%T)"

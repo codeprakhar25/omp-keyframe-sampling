@@ -158,7 +158,11 @@ def main():
             meta.pop("codes", None)   # force the harness to encode the cleaned wav
             y, sr = sf.read(str(td / f"{ref}.wav"), dtype="float32")
             for v in a.variants.split(","):
-                y2, st = process(y, sr, v == "fedn")
+                if v == "rw":   # control: unedited wav, codes dropped -> isolates the re-encode from the cleaning
+                    y2, st = (y.mean(axis=1) if y.ndim > 1 else y), {"dur_in_s": round(len(y) / sr, 2),
+                                                                     "dur_out_s": round(len(y) / sr, 2), "edit": None}
+                else:
+                    y2, st = process(y, sr, v == "fedn")
                 name = f"{ref}_{v}"
                 sf.write(str(td / f"{name}.wav"), y2, sr, subtype="PCM_16")
                 (td / f"{name}.json").write_text(json.dumps({**meta, "dur": st["dur_out_s"], "frontend": v,
