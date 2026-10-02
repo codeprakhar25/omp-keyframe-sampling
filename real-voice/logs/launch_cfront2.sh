@@ -7,6 +7,8 @@
 # raw C baseline arms) and the usual rulers score all of it.
 #   logs/launch_cfront.sh plan fe|fd | up fe|fd
 set -euo pipefail
+# Spot first, then on-demand (user 2026-10-02 after two spot reclaims). type:1 = spot, type: = on-demand.
+TYPES="${TYPES:-g5.xlarge:1 g6.xlarge:1 g6e.xlarge:1 g5.xlarge: g6.xlarge:}"
 # EC2 can launch in several regions (us-east-1 spot capacity scored 1-2/10 on 2026-10-02, us-east-2 9/10); S3 and the
 # box-side scripts stay on the us-east-1 bucket, so RV_REGION in user-data is always us-east-1.
 EC2_REGIONS="${EC2_REGIONS:-us-east-1 us-east-2}"
@@ -93,7 +95,7 @@ up)
   echo "start $(date -u +%T)"
   for i in $(seq 1 60); do
     up_now && { echo "UP $(date -u +%T)"; exit 0; }
-    for er in $EC2_REGIONS; do for tm in g5.xlarge:1 g6.xlarge:1 g6e.xlarge:1; do   # spot only, 4-vCPU G types with bf16
+    for er in $EC2_REGIONS; do for tm in $TYPES; do
       launch_one "${tm%%:*}" "${tm#*:}" "$er" && { sleep 20; up_now && { echo "UP $(date -u +%T) on $tm"; exit 0; }; }
     done; done
     sleep 240

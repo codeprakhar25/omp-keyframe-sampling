@@ -4,6 +4,8 @@
 # score DNSMOS P.835 + brouhaha SNR/C50 -> s3 eval/data_audit_v1/dnsmos_census_v8/{clips.jsonl,summary.json}.
 #   logs/launch_dnsmos.sh plan | up
 set -euo pipefail
+# Spot first, then on-demand (user 2026-10-02 after two spot reclaims). type:1 = spot, type: = on-demand.
+TYPES="${TYPES:-g5.xlarge:1 g6.xlarge:1 g6e.xlarge:1 g5.xlarge: g6.xlarge:}"
 REGION=us-east-1; BUCKET=real-voice-mio-692707725608; P=eval/data_audit_v1; TAG=dnsmos
 S="aws_dnsmos_census.py --trainset eval/neu_air_trainset_v8a2 --per-group 400"
 
@@ -46,7 +48,7 @@ up)
   echo "start $(date -u +%T)"
   for i in $(seq 1 60); do
     up_now && { echo "UP $(date -u +%T)"; exit 0; }
-    for tm in g5.xlarge:1 g6.xlarge:1; do   # spot only (user 2026-10-02: queue on spot)
+    for tm in $TYPES; do
       launch_one "${tm%%:*}" "${tm#*:}" && { sleep 20; up_now && { echo "UP $(date -u +%T) on $tm"; exit 0; }; }
     done
     sleep 240

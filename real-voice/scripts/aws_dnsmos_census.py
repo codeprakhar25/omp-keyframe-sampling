@@ -106,9 +106,18 @@ def phase_score(a):
         urllib.request.urlretrieve(DNSMOS_URL, dn)
     sc = Scorer(str(dn))
     meta = [json.loads(l) for l in open(OUT / "meta.jsonl", encoding="utf-8")]
+    # Resume: a spot reclaim on 2026-10-02 lost 10k scored clips that only uploaded at the end. Partial results now go
+    # to S3 every 1000 clips, and a rerun keeps the rows already there (keyed by trainset row id).
     rows = []
-    with open(OUT / "clips.jsonl", "w", encoding="utf-8") as f:
+    aws("s3", "cp", f"s3://{BUCKET}/{a.prefix}/clips.jsonl", str(OUT / "clips.jsonl"), check=False)
+    if (OUT / "clips.jsonl").exists():
+        rows = [json.loads(l) for l in open(OUT / "clips.jsonl", encoding="utf-8") if l.strip()]
+    done = {r["id"] for r in rows}
+    print(f"  resume: {len(done)} clips already scored", flush=True)
+    with open(OUT / "clips.jsonl", "a", encoding="utf-8") as f:
         for k, m in enumerate(meta):
+            if m["id"] in done:
+                continue
             x = np.load(OUT / "a16" / f"{m['n']}.npy").astype(np.float32) / 32767
             try:
                 s = {**sc.score(x), **audio_stats(x, 16000)}
@@ -117,7 +126,9 @@ def phase_score(a):
             rows.append({**m, **s})
             f.write(json.dumps(rows[-1], ensure_ascii=False) + "\n")
             if k % 1000 == 0:
-                print(f"  scored {k}/{len(meta)}", flush=True)
+                f.flush()
+                aws("s3", "cp", str(OUT / "clips.jsonl"), f"s3://{BUCKET}/{a.prefix}/clips.jsonl", check=False)
+                print(f"  scored {k}/{len(meta)} (partial uploaded)", flush=True)
     by = defaultdict(list)
     for r in rows:
         if "ovrl" in r:
