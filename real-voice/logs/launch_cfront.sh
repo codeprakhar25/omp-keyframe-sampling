@@ -90,7 +90,7 @@ up)
   echo "start $(date -u +%T)"
   for i in $(seq 1 60); do
     up_now && { echo "UP $(date -u +%T)"; exit 0; }
-    for tm in g5.xlarge:1 g6.xlarge:1; do   # spot only (user 2026-10-02: queue on spot)
+    for tm in g5.xlarge:1 g6.xlarge:1 g6e.xlarge:1; do   # spot only, all 4-vCPU G types with bf16 (g4dn T4 has no bf16)
       launch_one "${tm%%:*}" "${tm#*:}" && { sleep 20; up_now && { echo "UP $(date -u +%T) on $tm"; exit 0; }; }
     done
     sleep 240
