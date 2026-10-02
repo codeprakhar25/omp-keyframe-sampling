@@ -88,9 +88,9 @@ up)
     aws s3 cp "$(dirname "$0")/../scripts/$f" s3://$BUCKET/code/ --region $REGION --only-show-errors; done
   echo "$S" | aws s3 cp - s3://$BUCKET/code/cfront_steps_${B}.txt --region $REGION --only-show-errors
   echo "start $(date -u +%T)"
-  for i in $(seq 1 30); do
+  for i in $(seq 1 60); do
     up_now && { echo "UP $(date -u +%T)"; exit 0; }
-    for tm in g5.xlarge:1 g6.xlarge:1 g5.xlarge: g6.xlarge:; do
+    for tm in g5.xlarge:1 g6.xlarge:1; do   # spot only (user 2026-10-02: queue on spot)
       launch_one "${tm%%:*}" "${tm#*:}" && { sleep 20; up_now && { echo "UP $(date -u +%T) on $tm"; exit 0; }; }
     done
     sleep 240
