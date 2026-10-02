@@ -45,6 +45,10 @@ bp.SUITES += [
     ("cf_pk_en", "English, laptop refs", "Everyday laptop-mic refs speaking English: natural, clear, ref voice?"),
     ("cf_pk_hi", "Hindi, laptop refs", "Same laptop refs speaking Hindi: natural, every word there, no cut-off ending?"),
 ]
+# User 2026-10-02: split "slow / stretched" -- a stretched word is a worse fault than an overall slow pace.
+# The "slow" key keeps its name so the picks already saved still load; it now means slow pace only.
+bp.FLAGS = [("slow", "slow pace (whole clip)"), ("stretch", "stretched words")] + \
+           [f for f in bp.FLAGS if f[0] != "slow"]
 
 
 def opaque(arm: str) -> str:
