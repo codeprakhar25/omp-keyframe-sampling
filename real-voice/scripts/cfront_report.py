@@ -22,7 +22,8 @@ B, R, P = "real-voice-mio-692707725608", "us-east-1", "eval/incumbent_v1"
 CACHE = Path("/tmp/cfront_report_cache")
 SYSTEMS = [("sh", "", "stock Air"), ("a", "", "v8 A"), ("ix", "", "IndexTTS2"), ("c", "", "v8 C raw"),
            ("c", "_gc", "C + gap cap"), ("cfe", "", "C + clean ref"), ("cfe", "_gc", "C + clean ref + gap cap"),
-           ("cfd", "", "C + denoise ref"), ("cfd", "_gc", "C + denoise ref + gap cap")]
+           ("cfd", "", "C + denoise ref"), ("cfd", "_gc", "C + denoise ref + gap cap"),
+           ("crw", "", "C + re-encoded ref (control)")]
 REFS = [("fxen", r) for r in ("ctrl", "svh1", "svh2", "svh3", "svh4", "svh5", "svh6")] + \
        [("fxpk", r) for r in ("en1", "en2", "hi1", "hi2", "mx1", "mx2")]
 SEEDS = (7, 11, 23)
